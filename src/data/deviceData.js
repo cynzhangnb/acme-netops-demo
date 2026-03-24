@@ -1,0 +1,31 @@
+export const allDevices = [
+  { id: 'd1', hostname: 'CR-BOS-01', ip: '10.1.1.1', type: 'Core Router', site: 'Boston Core', status: 'up', model: 'ASR 9001', lastSeen: '1 min ago', ports: 24, portsUsed: 18 },
+  { id: 'd2', hostname: 'CR-BOS-02', ip: '10.1.1.2', type: 'Core Router', site: 'Boston Core', status: 'up', model: 'ASR 9001', lastSeen: '1 min ago', ports: 24, portsUsed: 16 },
+  { id: 'd3', hostname: 'FW-BOS-01', ip: '10.0.1.1', type: 'Firewall', site: 'Boston Core', status: 'up', model: 'ASA 5585', lastSeen: '1 min ago', ports: 8, portsUsed: 6 },
+  { id: 'd4', hostname: 'DS-BOS-01', ip: '10.2.1.1', type: 'Distribution Switch', site: 'Boston North', status: 'up', model: 'Catalyst 9300', lastSeen: '2 min ago', ports: 48, portsUsed: 31 },
+  { id: 'd5', hostname: 'DS-BOS-02', ip: '10.2.1.2', type: 'Distribution Switch', site: 'Boston Core', status: 'up', model: 'Catalyst 9300', lastSeen: '2 min ago', ports: 48, portsUsed: 44 },
+  { id: 'd6', hostname: 'DS-BOS-03', ip: '10.2.1.3', type: 'Distribution Switch', site: 'Boston South', status: 'degraded', model: 'Catalyst 9300', lastSeen: '3 min ago', ports: 48, portsUsed: 29 },
+  { id: 'd7', hostname: 'DS-BOS-04', ip: '10.2.1.4', type: 'Distribution Switch', site: 'Boston East', status: 'up', model: 'Catalyst 9300', lastSeen: '2 min ago', ports: 48, portsUsed: 22 },
+  { id: 'd8', hostname: 'AS-BOS-01', ip: '10.3.1.1', type: 'Access Switch', site: 'Boston North', status: 'up', model: 'Catalyst 2960', lastSeen: '4 min ago', ports: 24, portsUsed: 19 },
+  { id: 'd9', hostname: 'AS-BOS-02', ip: '10.3.1.2', type: 'Access Switch', site: 'Boston North', status: 'up', model: 'Catalyst 2960', lastSeen: '4 min ago', ports: 24, portsUsed: 14 },
+  { id: 'd10', hostname: 'AS-BOS-03', ip: '10.3.1.3', type: 'Access Switch', site: 'Boston Core', status: 'up', model: 'Catalyst 2960', lastSeen: '5 min ago', ports: 24, portsUsed: 21 },
+  { id: 'd11', hostname: 'AS-BOS-04', ip: '10.3.1.4', type: 'Access Switch', site: 'Boston South', status: 'down', model: 'Catalyst 2960', lastSeen: '47 min ago', ports: 24, portsUsed: 0 },
+  { id: 'd12', hostname: 'AS-BOS-05', ip: '10.3.1.5', type: 'Access Switch', site: 'Boston East', status: 'up', model: 'Catalyst 2960', lastSeen: '5 min ago', ports: 24, portsUsed: 17 },
+]
+
+export const unusedPorts = [
+  { id: 'p1', device: 'DS-BOS-01', port: 'Gi0/0/35', lastActive: '47 days ago', vlan: '—', description: 'unused', speed: '1G' },
+  { id: 'p2', device: 'DS-BOS-01', port: 'Gi0/0/36', lastActive: '47 days ago', vlan: '—', description: 'unused', speed: '1G' },
+  { id: 'p3', device: 'DS-BOS-02', port: 'Gi0/0/12', lastActive: '62 days ago', vlan: '100', description: 'old-server-rack-B', speed: '1G' },
+  { id: 'p4', device: 'DS-BOS-02', port: 'Gi0/0/13', lastActive: '62 days ago', vlan: '100', description: 'old-server-rack-B', speed: '1G' },
+  { id: 'p5', device: 'DS-BOS-04', port: 'Gi0/0/28', lastActive: '31 days ago', vlan: '200', description: 'printer-floor-3', speed: '1G' },
+  { id: 'p6', device: 'AS-BOS-01', port: 'Fa0/18', lastActive: '88 days ago', vlan: '100', description: 'workstation-B18', speed: '100M' },
+  { id: 'p7', device: 'AS-BOS-01', port: 'Fa0/19', lastActive: '91 days ago', vlan: '100', description: 'workstation-B19', speed: '100M' },
+  { id: 'p8', device: 'AS-BOS-02', port: 'Fa0/22', lastActive: '35 days ago', vlan: '300', description: 'voip-desk-22', speed: '100M' },
+  { id: 'p9', device: 'AS-BOS-03', port: 'Gi0/5', lastActive: '40 days ago', vlan: '200', description: 'storage-node-5', speed: '1G' },
+  { id: 'p10', device: 'AS-BOS-03', port: 'Gi0/6', lastActive: '40 days ago', vlan: '200', description: 'storage-node-6', speed: '1G' },
+  { id: 'p11', device: 'AS-BOS-05', port: 'Gi0/11', lastActive: '55 days ago', vlan: '400', description: 'lab-device-11', speed: '1G' },
+  { id: 'p12', device: 'AS-BOS-05', port: 'Gi0/12', lastActive: '55 days ago', vlan: '400', description: 'lab-device-12', speed: '1G' },
+  { id: 'p13', device: 'CR-BOS-01', port: 'Te0/3/0', lastActive: '90 days ago', vlan: '—', description: 'reserved-uplink', speed: '10G' },
+  { id: 'p14', device: 'CR-BOS-02', port: 'Te0/3/0', lastActive: '90 days ago', vlan: '—', description: 'reserved-uplink', speed: '10G' },
+]
