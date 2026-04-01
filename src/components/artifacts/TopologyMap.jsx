@@ -158,7 +158,7 @@ function ResetIcon()   { return <svg width="12" height="12" viewBox="0 0 12 12" 
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TopologyMap({ highlight }) {
+export default function TopologyMap({ highlight, widgetMode = false }) {
   const containerRef = useRef(null)
   const nodeRefs    = useRef({})
   const [lines, setLines] = useState([])
@@ -206,18 +206,18 @@ export default function TopologyMap({ highlight }) {
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
-      <div className="dot-grid" />
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: widgetMode ? '#fff' : undefined }}>
+      {!widgetMode && <div className="dot-grid" />}
 
-      {/* Zoom toolbar */}
-      <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {/* Zoom toolbar — focus mode only */}
+      {!widgetMode && <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <button style={toolBtnStyle} onClick={() => setZoom(z => Math.min(z + 0.2, 2))}   onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ZoomInIcon /></button>
         <button style={toolBtnStyle} onClick={() => setZoom(z => Math.max(z - 0.2, 0.5))} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ZoomOutIcon /></button>
         <button style={toolBtnStyle} onClick={() => setZoom(1)}                            onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ResetIcon /></button>
-      </div>
+      </div>}
 
-      {/* Legend */}
-      {isRoutingMode ? (
+      {/* Legend — focus mode only */}
+      {!widgetMode && isRoutingMode ? (
         <div style={{
           position: 'absolute', top: 10, left: 10, zIndex: 10,
           background: '#fff', border: '1px solid #e0e0e0', borderRadius: 8,
@@ -243,7 +243,7 @@ export default function TopologyMap({ highlight }) {
             <span style={{ color: '#666' }}>internal</span>
           </div>
         </div>
-      ) : group?.label ? (
+      ) : (!widgetMode && group?.label) ? (
         <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #e4e4e4', borderRadius: 20, padding: '4px 10px', fontSize: 11 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: group.color }} />
           <span style={{ color: '#555' }}>{group.label}</span>

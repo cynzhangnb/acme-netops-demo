@@ -6,8 +6,8 @@ import ChatView from './ChatView'
 import SplitView from './SplitView'
 import { deriveSessionName } from './ChatPane'
 
-export default function AIWorkspace({ initialPrompt = '', onSessionNameChange }) {
-  const [localViewMode, setLocalViewMode] = useState('entry')
+export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, onNew, restoredSession }) {
+  const [localViewMode, setLocalViewMode] = useState(restoredSession ? 'split' : 'entry')
   const didAutoSend = useRef(false)
   const [topologyHighlight, setTopologyHighlight] = useState(null)
   const [inputPrefill, setInputPrefill] = useState('')
@@ -15,7 +15,29 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange })
   const {
     artifacts, activeArtifactId, setActiveArtifactId,
     addArtifact, removeArtifact,
-  } = useArtifactManager()
+  } = useArtifactManager(
+    restoredSession?.artifacts || [],
+    restoredSession?.activeArtifactId || null,
+  )
+
+  const [widgets, setWidgets] = useState([])
+
+  // Clear widgets when active artifact changes
+  const prevActiveRef = useRef(null)
+  useEffect(() => {
+    if (prevActiveRef.current !== null && prevActiveRef.current !== activeArtifactId) {
+      setWidgets([])
+    }
+    prevActiveRef.current = activeArtifactId
+  }, [activeArtifactId])
+
+  const handleAddWidget = useCallback((artifactRef) => {
+    setWidgets(prev => {
+      if (prev.some(w => w.type === artifactRef.type && w.label === artifactRef.label)) return prev
+      return [...prev, artifactRef]
+    })
+    setLocalViewMode('split')
+  }, [])
 
   const handleTriggerSplit = useCallback(() => {
     setLocalViewMode('split')
@@ -62,6 +84,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange })
     onTriggerSplit: handleTriggerSplit,
     onSetTopologyHighlight: handleSetHighlight,
     onPrefillInput: setInputPrefill,
+    initialMessages: restoredSession?.messages || [],
   })
 
   useEffect(() => {
@@ -88,6 +111,8 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange })
     messages, isStreaming, onSend: handleSend,
     onSaveArtifact: handleSaveArtifact,
     onOpenArtifact: handleOpenArtifact,
+    onAddWidget: handleAddWidget,
+    onNew,
   }
 
   if (localViewMode === 'entry') {
@@ -103,6 +128,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange })
         onSetActiveArtifact={setActiveArtifactId}
         onRemoveArtifact={handleRemoveArtifact}
         topologyHighlight={topologyHighlight}
+        widgets={widgets}
         inputPrefill={inputPrefill}
       />
     )

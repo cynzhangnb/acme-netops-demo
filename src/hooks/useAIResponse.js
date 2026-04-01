@@ -4,8 +4,8 @@ import { matchResponse } from '../data/mockResponses'
 let msgCounter = 0
 function genMsgId() { return `msg-${++msgCounter}` }
 
-export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onPrefillInput }) {
-  const [messages, setMessages] = useState([])
+export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onPrefillInput, initialMessages = [] }) {
+  const [messages, setMessages] = useState(initialMessages)
   const [isStreaming, setIsStreaming] = useState(false)
   const timerRef = useRef(null)
 

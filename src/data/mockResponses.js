@@ -1,5 +1,28 @@
 // Mock AI response registry — keyword-matched responses for demo scenarios
 
+const TROUBLESHOOT_VOICE_CONTENT = `## Diagnosis Summary
+Voice traffic from 10.8.1.4 → 10.8.3.134 is likely impacted by a routing inconsistency near Core-Router-2
+
+[ARTIFACT]
+
+## Key Findings
+
+### Path analysis
+- Traffic path shows asymmetry between forward and return routes
+- Latency spike observed at Core-Router-2 → Edge-Router-7
+
+### Routing inconsistency
+- Route to 10.8.3.0/24 differs from baseline snapshot
+- Possible suboptimal next-hop selection
+
+→ Compare Route Table
+
+### Recent network change
+- BGP policy updated on Core-Router-2 (~2 hours ago)
+- Route preference modified for voice VLAN traffic
+
+→ View Change Analysis`
+
 // Shared explore response content — used by both 'explore' and 'boston' keyword matches
 const EXPLORE_RESPONSE_CONTENT = `Here's a high-level view of the Boston data center. It follows a standard 3-tier architecture with clear separation between core, distribution, and access layers.
 
@@ -22,6 +45,18 @@ Traffic is aggregated at the distribution layer, making it a critical point for 
 - connections for a specific device or switch`
 
 export const responseRegistry = [
+  {
+    id: 'troubleshoot-voice',
+    keywords: ['voice issue', 'voice', '10.8.1'],
+    priority: 15,
+    response: {
+      content: TROUBLESHOOT_VOICE_CONTENT,
+      artifactType: 'voicePath',
+      artifactLabel: 'Voice Path Analysis',
+      artifactDataKey: 'voice-path-boston',
+    },
+    sideEffects: [],
+  },
   {
     id: 'explore-network',
     keywords: ['explore'],
@@ -46,7 +81,6 @@ export const responseRegistry = [
       artifactType: 'topology',
       artifactLabel: 'Boston data center map',
       artifactDataKey: 'boston-full',
-      prefillNext: 'Show me the recent traffic trend for the uplink interfaces on the core switch',
     },
     sideEffects: [
       { type: 'triggerSplitView' },

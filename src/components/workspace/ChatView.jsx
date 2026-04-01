@@ -1,6 +1,6 @@
 import ChatPane from './ChatPane'
 
-export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill }) {
+export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill, onNew }) {
   return (
     <div style={{ height: '100%' }}>
       <ChatPane
@@ -10,6 +10,7 @@ export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact
         onSaveArtifact={onSaveArtifact}
         onOpenArtifact={onOpenArtifact}
         inputPrefill={inputPrefill}
+        onNew={onNew}
       />
     </div>
   )

@@ -3,9 +3,9 @@ import { useState, useCallback } from 'react'
 let artifactCounter = 0
 function genArtifactId() { return `artifact-${++artifactCounter}` }
 
-export function useArtifactManager() {
-  const [artifacts, setArtifacts] = useState([])
-  const [activeArtifactId, setActiveArtifactId] = useState(null)
+export function useArtifactManager(initialArtifacts = [], initialActiveId = null) {
+  const [artifacts, setArtifacts] = useState(initialArtifacts)
+  const [activeArtifactId, setActiveArtifactId] = useState(initialActiveId)
 
   const addArtifact = useCallback((artifact) => {
     const id = genArtifactId()

@@ -27,29 +27,32 @@ const NET_RAIL = [
 
 /* ── Fake session data ───────────────────────────────────────────────────── */
 const FAKE_SESSIONS = [
-  { id: 'current', name: null, preview: 'Exploring BGP route policies…', ago: 'Now', artifacts: 0, current: true },
-  { id: 's1',      name: 'Core Router Analysis',    preview: 'Analyzed routing tables on Core-Router-01', ago: '2h ago',  artifacts: 2  },
-  { id: 's2',      name: 'Firewall Policy Review',  preview: 'Reviewed DMZ firewall ACL rules',           ago: 'Yesterday', artifacts: 1 },
-  { id: 's3',      name: 'VLAN Segmentation',       preview: 'Mapped VLANs across distribution layer',   ago: '2d ago',  artifacts: 3  },
-  { id: 's4',      name: 'Incident · Packet Loss',  preview: 'Traced packet drops on AccessSwitch-F2',   ago: '3d ago',  artifacts: 1  },
-  { id: 's5',      name: 'BGP Peer Troubleshoot',   preview: 'Investigated BGP flap on Edge-Router-02',  ago: '5d ago',  artifacts: 2  },
-  { id: 's6',      name: 'Topology Discovery',      preview: 'Full discovery run across hybrid network',  ago: '1w ago',  artifacts: 4  },
+  { id: 'current', name: null,              preview: '',                                              ago: 'Now',       artifacts: 0, current: true },
+  { id: 's1',      name: 'Boston Network',  preview: 'Explored topology of the Boston data center',  ago: 'Just now',  artifacts: 1  },
+  { id: 's2',      name: 'Core Router Analysis',    preview: 'Analyzed routing tables on Core-Router-01', ago: '2h ago',  artifacts: 2  },
+  { id: 's3',      name: 'Firewall Policy Review',  preview: 'Reviewed DMZ firewall ACL rules',           ago: 'Yesterday', artifacts: 1 },
+  { id: 's4',      name: 'VLAN Segmentation',       preview: 'Mapped VLANs across distribution layer',   ago: '2d ago',  artifacts: 3  },
+  { id: 's5',      name: 'Incident · Packet Loss',  preview: 'Traced packet drops on AccessSwitch-F2',   ago: '3d ago',  artifacts: 1  },
+  { id: 's6',      name: 'BGP Peer Troubleshoot',   preview: 'Investigated BGP flap on Edge-Router-02',  ago: '5d ago',  artifacts: 2  },
 ]
 
 /* ── Session History Pane ────────────────────────────────────────────────── */
-function SessionHistoryPane({ onClose, currentSessionName }) {
+function SessionHistoryPane({ onClose, currentSessionName, onSelectSession }) {
   return (
     <div style={{
-      width: 260, flexShrink: 0,
-      borderRight: '1px solid #e8e8e8',
+      width: 264,
       background: '#fff',
       display: 'flex', flexDirection: 'column',
-      height: '100%',
+      border: '1px solid #e8e8e8',
+      borderRadius: 10,
+      boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+      maxHeight: 'calc(100vh - 100px)',
+      overflow: 'hidden',
     }}>
       {/* Header */}
       <div style={{
         height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 14px', borderBottom: '1px solid #ebebeb', flexShrink: 0,
+        padding: '0 14px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
       }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Session History</span>
         <button
@@ -66,54 +69,67 @@ function SessionHistoryPane({ onClose, currentSessionName }) {
 
       {/* Session list */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
-        {FAKE_SESSIONS.map((s, i) => (
-          <div
-            key={s.id}
-            style={{
-              padding: '10px 14px',
-              borderBottom: '1px solid #f5f5f5',
-              cursor: 'pointer',
-              background: s.current ? '#f7f9ff' : 'transparent',
-              position: 'relative',
-            }}
-            onMouseEnter={e => { if (!s.current) e.currentTarget.style.background = '#f8f8f8' }}
-            onMouseLeave={e => { if (!s.current) e.currentTarget.style.background = 'transparent' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                {s.current && (
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
-                )}
-                <span style={{ fontSize: 12, fontWeight: s.current ? 600 : 500, color: s.current ? '#111' : '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {s.current ? (currentSessionName || 'New Session') : s.name}
-                </span>
+        {FAKE_SESSIONS.map((s) => {
+          const displayName = s.current ? (currentSessionName || 'New Session') : s.name
+          const isNewEmpty = s.current && displayName === 'New Session'
+          return (
+            <div
+              key={s.id}
+              onClick={() => { if (!s.current) { onSelectSession?.(s.id); onClose() } }}
+              style={{
+                padding: '10px 14px',
+                borderBottom: '1px solid #f5f5f5',
+                cursor: s.current ? 'default' : 'pointer',
+                background: s.current ? '#f7f9ff' : 'transparent',
+                position: 'relative',
+              }}
+              onMouseEnter={e => { if (!s.current) e.currentTarget.style.background = '#f8f8f8' }}
+              onMouseLeave={e => { if (!s.current) e.currentTarget.style.background = 'transparent' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: s.preview && !isNewEmpty ? 3 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  {s.current && (
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontSize: 12, fontWeight: s.current ? 600 : 500, color: s.current ? '#111' : '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {displayName}
+                  </span>
+                </div>
+                <span style={{ fontSize: 10, color: '#bbb', flexShrink: 0, marginLeft: 8 }}>{s.ago}</span>
               </div>
-              <span style={{ fontSize: 10, color: '#bbb', flexShrink: 0, marginLeft: 8 }}>{s.ago}</span>
+              {s.preview && !isNewEmpty && (
+                <div style={{ fontSize: 11, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: s.current ? 12 : 0 }}>
+                  {s.preview}
+                </div>
+              )}
+              {s.artifacts > 0 && (
+                <div style={{ marginTop: 5, paddingLeft: s.current ? 12 : 0 }}>
+                  <span style={{ fontSize: 10, color: '#999', background: '#f0f0f0', borderRadius: 3, padding: '1px 6px' }}>
+                    {s.artifacts} artifact{s.artifacts !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
             </div>
-            <div style={{ fontSize: 11, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: s.current ? 12 : 0 }}>
-              {s.preview}
-            </div>
-            {s.artifacts > 0 && (
-              <div style={{ marginTop: 5, paddingLeft: s.current ? 12 : 0 }}>
-                <span style={{ fontSize: 10, color: '#999', background: '#f0f0f0', borderRadius: 3, padding: '1px 6px' }}>
-                  {s.artifacts} artifact{s.artifacts !== 1 ? 's' : ''}
-                </span>
-              </div>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
 }
 
-export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoInventory, currentSessionName, networkPanel, onNetworkPanelClick }) {
+export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoInventory, currentSessionName, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning }) {
   const [activePanel, setActivePanel] = useState(null)
 
   function handleIconClick(id) {
+    if (id === 'home')       { onGoHome();       return }
     if (id === 'network')    { onGoNetwork();    return }
     if (id === 'inventory')  { onGoInventory();  return }
     setActivePanel(prev => prev === id ? null : id)
+  }
+
+  function handleSelectSession(id) {
+    onOpenSession?.(id)
+    setActivePanel(null)
   }
 
   return (
@@ -124,16 +140,32 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
     }}>
       <TopBar
         onGoHome={onGoHome}
-        onGoAI={onGoAI}
         onGoNetwork={onGoNetwork}
         activeView={activeView}
       />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         {activeView !== 'network' && (
-          <Sidebar variant={activeView === 'workspace' ? 'workspace' : 'home'} activePanel={activePanel} onIconClick={handleIconClick} />
+          <Sidebar variant={activeView === 'workspace' ? 'workspace' : 'home'} activePanel={activePanel} activeView={activeView} onIconClick={handleIconClick} />
         )}
-        {activeView !== 'home' && activeView !== 'network' && activePanel === 'history' && (
-          <SessionHistoryPane onClose={() => setActivePanel(null)} currentSessionName={currentSessionName} />
+        {activePanel === 'history' && (
+          <>
+            {/* Backdrop — click outside to close */}
+            <div
+              onClick={() => setActivePanel(null)}
+              style={{ position: 'absolute', inset: 0, zIndex: 199 }}
+            />
+            {/* Floating pane anchored just right of the sidebar */}
+            <div style={{
+              position: 'absolute', left: 52, top: 8,
+              zIndex: 200,
+            }}>
+              <SessionHistoryPane
+                onClose={() => setActivePanel(null)}
+                currentSessionName={currentSessionName}
+                onSelectSession={handleSelectSession}
+              />
+            </div>
+          </>
         )}
         {activeView === 'network' && (
           <aside style={{ width: 44, flexShrink: 0, height: '100%', background: '#fafafa', borderRight: '1px solid #ebebeb', display: 'flex', flexDirection: 'column', padding: '10px 0', gap: 2 }}>
@@ -155,7 +187,11 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         {activeView === 'network' && networkPanel === 'devices' && (
           <DeviceBrowserPane onClose={() => onNetworkPanelClick('devices')} />
         )}
-        <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <main style={{
+          flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          opacity: isTransitioning ? 0 : 1,
+          transition: 'opacity 0.18s ease',
+        }}>
           {children}
         </main>
       </div>

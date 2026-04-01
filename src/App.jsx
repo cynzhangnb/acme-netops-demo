@@ -1,11 +1,51 @@
 import { useState, useCallback } from 'react'
 import AppFrame from './components/layout/AppFrame'
 import HomePage from './components/home/HomePage'
-import AIWorkspace from './components/workspace/AIWorkspace'
 import InputArea from './components/workspace/InputArea'
 import ShareModal from './components/modals/ShareModal'
 import DocumentModal from './components/modals/DocumentModal'
 import { useSessionManager } from './hooks/useSessionManager'
+
+/* ── Boston Network restored session snapshot ───────────────────────────── */
+const BOSTON_RESTORED_SESSION = {
+  messages: [
+    {
+      id: 'r-msg-1',
+      role: 'user',
+      content: 'Help me understand my network. Scope: Boston data center. Focus on: topology and structure',
+      timestamp: '2026-03-24T10:00:00.000Z',
+    },
+    {
+      id: 'r-msg-2',
+      role: 'assistant',
+      content: `Here's a high-level view of the Boston data center. It follows a standard 3-tier architecture with clear separation between core, distribution, and access layers.
+
+**Scope:**
+- 127 devices · 3 tiers · 18 segments (42 VLANs)
+
+**Structure:**
+- Core layer (top): 2 routers providing backbone connectivity
+- Distribution layer (middle): 6 switches aggregating traffic
+- Access layer (bottom): 45 switches connecting end systems
+
+Each access switch connects upstream through distribution to the core, forming a hierarchical structure.
+
+**Key Insight:**
+Traffic is aggregated at the distribution layer, making it a critical point for performance and troubleshooting.
+
+**You can explore further:**
+- how routing is handled across layers
+- how the network is segmented
+- connections for a specific device or switch`,
+      timestamp: '2026-03-24T10:00:02.000Z',
+      artifactRef: { type: 'topology', label: 'Boston data center map', dataKey: 'boston-full' },
+    },
+  ],
+  artifacts: [
+    { id: 'r-artifact-1', type: 'topology', label: 'Boston data center map', dataKey: 'boston-full', savedToWorkspace: true },
+  ],
+  activeArtifactId: 'r-artifact-1',
+}
 
 /* ── Network topology illustration ─────────────────────────────────────── */
 function NetworkIllustration() {
@@ -277,21 +317,35 @@ function NetworkView({ onStartAI }) {
 
 /* ── App ────────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'inventory'
+  const [viewMode, setViewMode] = useState('home') // 'home' | 'network' | 'inventory'
   const [modalOpen, setModalOpen] = useState(null)
-  const [workspaceKey, setWorkspaceKey] = useState(0)
+  const [homeSessionKey, setHomeSessionKey] = useState(0)
   const [initialPrompt, setInitialPrompt] = useState('')
+  const [restoredSession, setRestoredSession] = useState(null)
   const [currentSessionName, setCurrentSessionName] = useState('New Session')
   const [networkPanel, setNetworkPanel] = useState(null)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   const { sessions, activeSessionId, createSession, deleteSession, selectSession } = useSessionManager()
 
+  // Fade-out → swap content → fade-in
+  const navigate = useCallback((callback) => {
+    setIsTransitioning(true)
+    setTimeout(() => {
+      callback()
+      setTimeout(() => setIsTransitioning(false), 40)
+    }, 180)
+  }, [])
+
   const enterWorkspace = useCallback((prompt = '') => {
-    setInitialPrompt(prompt)
-    createSession('New Session')
-    setViewMode('workspace')
-    setWorkspaceKey(k => k + 1)
-  }, [createSession])
+    navigate(() => {
+      setInitialPrompt(prompt)
+      setRestoredSession(null)
+      createSession('New Session')
+      setHomeSessionKey(k => k + 1)
+      setViewMode('home')
+    })
+  }, [createSession, navigate])
 
   const enterNetwork = useCallback(() => {
     setViewMode('network')
@@ -302,10 +356,14 @@ export default function App() {
   }, [])
 
   const handleSelectSession = useCallback((id) => {
-    selectSession(id)
-    setViewMode('workspace')
-    setWorkspaceKey(k => k + 1)
-  }, [selectSession])
+    navigate(() => {
+      selectSession(id)
+      setInitialPrompt('')
+      setRestoredSession(id === 's1' ? BOSTON_RESTORED_SESSION : null)
+      setHomeSessionKey(k => k + 1)
+      setViewMode('home')
+    })
+  }, [selectSession, navigate])
 
   const handleDeleteSession = useCallback((id) => {
     deleteSession(id)
@@ -316,28 +374,30 @@ export default function App() {
     <>
       <AppFrame
         activeView={viewMode}
-        onGoHome={() => setViewMode('home')}
+        onGoHome={() => { setViewMode('home'); setHomeSessionKey(0); setInitialPrompt('') }}
         onGoAI={() => enterWorkspace()}
         onGoNetwork={enterNetwork}
         onGoInventory={enterInventory}
         currentSessionName={currentSessionName}
+        onOpenSession={handleSelectSession}
         networkPanel={networkPanel}
         onNetworkPanelClick={(id) => setNetworkPanel(prev => prev === id ? null : id)}
+        isTransitioning={isTransitioning}
       >
         {viewMode === 'home' ? (
           <HomePage
             sessions={sessions}
             onStartAI={enterWorkspace}
             onOpenSession={handleSelectSession}
+            initialPrompt={initialPrompt}
+            sessionKey={homeSessionKey}
+            onSessionNameChange={setCurrentSessionName}
+            restoredSession={restoredSession}
           />
         ) : viewMode === 'network' ? (
           <NetworkView onStartAI={enterWorkspace} />
-        ) : viewMode === 'inventory' ? (
-          <InventoryView onStartAI={enterWorkspace} />
         ) : (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
-            <AIWorkspace key={workspaceKey} initialPrompt={initialPrompt} onSessionNameChange={setCurrentSessionName} />
-          </div>
+          <InventoryView onStartAI={enterWorkspace} />
         )}
       </AppFrame>
 

@@ -3,8 +3,8 @@ import ChatPane from './ChatPane'
 import ArtifactPane from '../artifacts/ArtifactPane'
 
 export default function SplitView({
-  messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill,
-  artifacts, activeArtifactId, onSetActiveArtifact, onRemoveArtifact, topologyHighlight,
+  messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill,
+  artifacts, activeArtifactId, onSetActiveArtifact, onRemoveArtifact, topologyHighlight, widgets, onNew,
 }) {
   const artifactRef = useRef(null)
   const isResizing = useRef(false)
@@ -56,7 +56,9 @@ export default function SplitView({
           onSend={onSend}
           onSaveArtifact={onSaveArtifact}
           onOpenArtifact={onOpenArtifact}
+          onAddWidget={onAddWidget}
           inputPrefill={inputPrefill}
+          onNew={onNew}
         />
       </div>
 
@@ -73,7 +75,7 @@ export default function SplitView({
       {/* Artifact pane */}
       <div
         ref={artifactRef}
-        style={{ flex: '0 0 50%', minWidth: 260, overflow: 'hidden', transition: 'flex-basis 0.3s cubic-bezier(0.4,0,0.2,1)' }}
+        style={{ flex: '0 0 60%', minWidth: 260, overflow: 'hidden', transition: 'flex-basis 0.3s cubic-bezier(0.4,0,0.2,1)' }}
       >
         <ArtifactPane
           artifacts={artifacts}
@@ -81,6 +83,7 @@ export default function SplitView({
           onSetActive={onSetActiveArtifact}
           onRemove={onRemoveArtifact}
           topologyHighlight={topologyHighlight}
+          widgets={widgets}
         />
       </div>
     </div>

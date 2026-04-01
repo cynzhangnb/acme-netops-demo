@@ -10,6 +10,7 @@ export const SESSION_NAME_RULES = [
   { keywords: ['routing'], name: 'Routing Design' },
   { keywords: ['vlan'], name: 'VLAN Segmentation' },
   { keywords: ['unused'], name: 'Unused Ports Audit' },
+  { keywords: ['voice issue', 'voice'], name: 'Troubleshoot voice issues from 10.8.1.4 to 10.8.3.134' },
   { keywords: ['troubleshoot'], name: 'Troubleshooting' },
   { keywords: ['discover'], name: 'Device Discovery' },
   { keywords: ['intent'], name: 'Routing Intent' },
@@ -24,7 +25,7 @@ export function deriveSessionName(messages) {
     if (rule.keywords.some(kw => allText.includes(kw))) return rule.name
   }
   const first = userMessages[0].content.trim()
-  return first.length > 32 ? first.slice(0, 30) + '…' : first
+  return first.length > 72 ? first.slice(0, 70) + '…' : first
 }
 
 function PlusIcon() {
@@ -36,7 +37,7 @@ function PlusIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew }) {
   const bottomRef = useRef(null)
   const sessionName = deriveSessionName(messages)
 
@@ -51,7 +52,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: '#111', letterSpacing: '-0.01em' }}>{sessionName}</span>
         <button
-          onClick={() => {}}
+          onClick={() => onNew?.()}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', border: 'none', borderRadius: 6, background: 'transparent', fontSize: 11, fontWeight: 500, color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' }}
           onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
@@ -68,6 +69,8 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             message={msg}
             onSaveArtifact={onSaveArtifact}
             onOpenArtifact={onOpenArtifact}
+            onAddWidget={onAddWidget}
+
           />
         ))}
         {isStreaming && <SkeletonMessage />}

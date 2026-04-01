@@ -14,16 +14,6 @@ function BurgerIcon() {
 
 // All tab icons rendered at the same 15×15 px — uniform optical weight
 
-function HomeIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9,22 9,12 15,12 15,22"/>
-    </svg>
-  )
-}
-
 // Simple 4-point star — clean AI metaphor, single path, same visual weight as HomeIcon
 function AITabIcon() {
   return (
@@ -113,7 +103,7 @@ function Tab({ icon, label, active, onClick }) {
 }
 
 /* ── TopBar ─────────────────────────────────────────────────────────────── */
-export default function TopBar({ onGoHome, onGoAI, onGoNetwork, activeView }) {
+export default function TopBar({ onGoHome, onGoNetwork, activeView }) {
   return (
     <header style={{
       height: 44, background: '#fff', borderBottom: '1px solid #e4e4e4',
@@ -145,14 +135,6 @@ export default function TopBar({ onGoHome, onGoAI, onGoNetwork, activeView }) {
         >
           ACME NetOps <ChevronDownIcon />
         </div>
-      </div>
-
-      {/* ── Navigation tabs ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-        <Tab icon={<HomeIcon />}       label={null}          active={activeView === 'home'}      onClick={onGoHome}    />
-        <VDivider />
-        <Tab icon={<AITabIcon />}      label="AI Workspace"  active={activeView === 'workspace'} onClick={onGoAI}      />
-        {/* Network tab hidden — page preserved, not removed */}
       </div>
 
       <div style={{ flex: 1 }} />
