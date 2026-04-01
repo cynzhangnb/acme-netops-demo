@@ -155,15 +155,34 @@ function ZoomInIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" 
 function ZoomOutIcon() { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.2"/><line x1="3" y1="5.5" x2="8" y2="5.5" stroke="currentColor" strokeWidth="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ResetIcon()   { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 0 1 4-4 4 4 0 0 1 2.83 1.17L11 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><polyline points="11,2 11,5 8,5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
 
+const NODE_MENU_ITEMS = [
+  { id: 'view-config', label: 'View Configuration' },
+  { id: 'view-properties', label: 'View Properties' },
+  { id: 'extend-neighbour', label: 'Extend Neighbour' },
+]
+
+function buildNodePrompt(actionId, node) {
+  if (!node) return ''
+  if (actionId === 'view-config') {
+    return `Show me the running configuration for ${node.label} (${node.ip}) and explain the key sections.`
+  }
+  if (actionId === 'view-properties') {
+    return `Show me the device properties for ${node.label} (${node.ip}), including role, status, IP, AS, and connected neighbors.`
+  }
+  return `Extend neighbour view from ${node.label} (${node.ip}) and show the next-hop devices and links around it.`
+}
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TopologyMap({ highlight, widgetMode = false }) {
+export default function TopologyMap({ highlight, widgetMode = false, onNodeAction }) {
   const containerRef = useRef(null)
   const nodeRefs    = useRef({})
   const [lines, setLines] = useState([])
   const [zoom,  setZoom]  = useState(1)
   const [hoveredNode, setHoveredNode] = useState(null)
+  const [selectedNodeId, setSelectedNodeId] = useState(null)
+  const [contextMenu, setContextMenu] = useState(null)
 
   const group         = highlight ? HIGHLIGHT_GROUPS[highlight] : null
   const isRoutingMode = group?.mode === 'routing'
@@ -196,8 +215,65 @@ export default function TopologyMap({ highlight, widgetMode = false }) {
     return () => { clearTimeout(timer); ro.disconnect() }
   }, [computeLines, zoom, highlight])
 
+  useEffect(() => {
+    function closeMenu() {
+      setContextMenu(null)
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setContextMenu(null)
+    }
+    window.addEventListener('mousedown', closeMenu)
+    window.addEventListener('scroll', closeMenu, true)
+    window.addEventListener('resize', closeMenu)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', closeMenu)
+      window.removeEventListener('scroll', closeMenu, true)
+      window.removeEventListener('resize', closeMenu)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
   function isNodeHighlighted(id) { return !group || group.nodes.includes(id) }
   function isEdgeHighlighted(id) { return !group || group.edges.includes(id) }
+
+  function handleNodeContextMenu(e, node) {
+    e.preventDefault()
+    e.stopPropagation()
+    const bounds = containerRef.current?.getBoundingClientRect()
+    if (!bounds) return
+    const menuWidth = 164
+    const menuHeight = 102
+    const x = Math.min(e.clientX - bounds.left, bounds.width - menuWidth - 8)
+    const y = Math.min(e.clientY - bounds.top, bounds.height - menuHeight - 8)
+    setSelectedNodeId(node.id)
+    setContextMenu({
+      nodeId: node.id,
+      x: Math.max(8, x),
+      y: Math.max(8, y),
+    })
+  }
+
+  function handleMenuAction(actionId) {
+    const node = NODES.find(n => n.id === contextMenu?.nodeId)
+    if (!node) return
+    setSelectedNodeId(node.id)
+    setContextMenu(null)
+    onNodeAction?.({
+      actionId,
+      node,
+      prompt: buildNodePrompt(actionId, node),
+    })
+  }
+
+  function handleNodeSelect(node) {
+    if (!node) return
+    setSelectedNodeId(node.id)
+    onNodeAction?.({
+      actionId: 'select-node',
+      node,
+    })
+  }
 
   const toolBtnStyle = {
     width: 26, height: 26, border: '1px solid #e0e0e0', borderRadius: 5,
@@ -253,6 +329,7 @@ export default function TopologyMap({ highlight, widgetMode = false }) {
       {/* Graph container */}
       <div
         ref={containerRef}
+        onMouseDown={() => setContextMenu(null)}
         style={{
           position: 'absolute', inset: 0,
           transform: `scale(${zoom})`, transformOrigin: 'center center',
@@ -325,6 +402,7 @@ export default function TopologyMap({ highlight, widgetMode = false }) {
         {NODES.map(node => {
           const hl = isNodeHighlighted(node.id)
           const isHovered = hoveredNode === node.id
+          const isSelected = selectedNodeId === node.id
 
           return (
             <div
@@ -335,12 +413,14 @@ export default function TopologyMap({ highlight, widgetMode = false }) {
                 left: `${node.px}%`, top: `${node.py}%`,
                 position: 'absolute',
                 opacity: isRoutingMode ? 1 : (group ? (hl ? 1 : 0.15) : 1),
-                borderColor: isHovered ? '#2563eb' : (group && hl && !isRoutingMode ? group.color : '#d4d4d4'),
-                boxShadow: isHovered ? '0 2px 8px rgba(37,99,235,0.18)' : (group && hl && !isRoutingMode ? `0 0 0 2px ${group.color}22` : 'none'),
+                borderColor: isSelected || isHovered ? '#2563eb' : (group && hl && !isRoutingMode ? group.color : '#d4d4d4'),
+                boxShadow: isSelected || isHovered ? '0 2px 8px rgba(37,99,235,0.18)' : (group && hl && !isRoutingMode ? `0 0 0 2px ${group.color}22` : 'none'),
                 transition: 'all 0.35s ease',
               }}
               onMouseEnter={() => setHoveredNode(node.id)}
               onMouseLeave={() => setHoveredNode(null)}
+              onClick={(e) => { e.stopPropagation(); handleNodeSelect(node) }}
+              onContextMenu={(e) => handleNodeContextMenu(e, node)}
             >
               <NodeIcon type={node.type} />
 
@@ -350,6 +430,48 @@ export default function TopologyMap({ highlight, widgetMode = false }) {
           )
         })}
       </div>
+
+      {contextMenu && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 30,
+            width: 164,
+            background: '#fff',
+            border: '1px solid #dfdfdf',
+            borderRadius: 9,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)',
+            padding: 5,
+          }}
+        >
+          {NODE_MENU_ITEMS.map(item => (
+            <button
+              key={item.id}
+              onClick={() => handleMenuAction(item.id)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '7px 9px',
+                border: 'none',
+                borderRadius: 7,
+                background: 'transparent',
+                color: '#2f2d29',
+                fontSize: 11.5,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f3f0ea'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Hover tooltip */}
       {hoveredNode && (() => {

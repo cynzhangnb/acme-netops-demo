@@ -317,7 +317,7 @@ function NetworkView({ onStartAI }) {
 
 /* ── App ────────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [viewMode, setViewMode] = useState('home') // 'home' | 'network' | 'inventory'
+  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'inventory'
   const [modalOpen, setModalOpen] = useState(null)
   const [homeSessionKey, setHomeSessionKey] = useState(0)
   const [initialPrompt, setInitialPrompt] = useState('')
@@ -343,7 +343,7 @@ export default function App() {
       setRestoredSession(null)
       createSession('New Session')
       setHomeSessionKey(k => k + 1)
-      setViewMode('home')
+      setViewMode('workspace')
     })
   }, [createSession, navigate])
 
@@ -361,7 +361,7 @@ export default function App() {
       setInitialPrompt('')
       setRestoredSession(id === 's1' ? BOSTON_RESTORED_SESSION : null)
       setHomeSessionKey(k => k + 1)
-      setViewMode('home')
+      setViewMode('workspace')
     })
   }, [selectSession, navigate])
 
@@ -384,7 +384,7 @@ export default function App() {
         onNetworkPanelClick={(id) => setNetworkPanel(prev => prev === id ? null : id)}
         isTransitioning={isTransitioning}
       >
-        {viewMode === 'home' ? (
+        {viewMode === 'home' || viewMode === 'workspace' ? (
           <HomePage
             sessions={sessions}
             onStartAI={enterWorkspace}
@@ -393,6 +393,7 @@ export default function App() {
             sessionKey={homeSessionKey}
             onSessionNameChange={setCurrentSessionName}
             restoredSession={restoredSession}
+            currentSessionName={currentSessionName}
           />
         ) : viewMode === 'network' ? (
           <NetworkView onStartAI={enterWorkspace} />

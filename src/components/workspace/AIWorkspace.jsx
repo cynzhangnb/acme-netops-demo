@@ -6,7 +6,7 @@ import ChatView from './ChatView'
 import SplitView from './SplitView'
 import { deriveSessionName } from './ChatPane'
 
-export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, onNew, restoredSession }) {
+export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, onNew, restoredSession, currentSessionName = 'New Session' }) {
   const [localViewMode, setLocalViewMode] = useState(restoredSession ? 'split' : 'entry')
   const didAutoSend = useRef(false)
   const [topologyHighlight, setTopologyHighlight] = useState(null)
@@ -94,14 +94,20 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
 
   useEffect(() => {
     if (onSessionNameChange) {
-      onSessionNameChange(deriveSessionName(messages))
+      onSessionNameChange(deriveSessionName(messages, currentSessionName))
     }
-  }, [messages]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, currentSessionName]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSend(text) {
     if (localViewMode === 'entry') setLocalViewMode('chat')
     setInputPrefill('')
     sendMessage(text)
+  }
+
+  function handleTopologyNodeAction({ prompt }) {
+    if (!prompt) return
+    setInputPrefill(prompt)
+    if (localViewMode === 'entry') setLocalViewMode('chat')
   }
 
   const sharedProps = {
@@ -110,6 +116,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
     onOpenArtifact: handleOpenArtifact,
     onAddWidget: handleAddWidget,
     onNew,
+    currentSessionName,
   }
 
   if (localViewMode === 'entry') {
@@ -127,6 +134,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
         topologyHighlight={topologyHighlight}
         widgets={widgets}
         inputPrefill={inputPrefill}
+        onTopologyNodeAction={handleTopologyNodeAction}
       />
     )
   }

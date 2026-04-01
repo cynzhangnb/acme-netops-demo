@@ -5,6 +5,7 @@ import DeviceTable from './DeviceTable'
 import VoicePath from './VoicePath'
 import ChangeAnalysis from './ChangeAnalysis'
 import ShareModal from '../modals/ShareModal'
+import { getDeviceConfig } from '../../data/deviceConfigs'
 
 function CloseIcon() {
   return <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -28,6 +29,551 @@ function BackArrowIcon() {
       <polyline points="7,2 3,6.5 7,11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
       <line x1="3" y1="6.5" x2="11" y2="6.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
+  )
+}
+
+function SearchIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.2"/>
+      <line x1="8.6" y1="8.6" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
+function ChevronUpIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <polyline points="2,6 5,3 8,6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <polyline points="2,4 5,7 8,4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function buildConfigPaneState(device) {
+  return {
+    mode: 'single',
+    dock: 'right',
+    leftDevice: device,
+    rightDevice: null,
+    pendingSelection: null,
+    searchQuery: '',
+    activeMatchIndex: 0,
+    statusMessage: null,
+    width: 420,
+    height: 300,
+  }
+}
+
+function ConfigCodeView({ title, subtitle, configText, query, allMatches, activeMatchIndex, paneKey, compact = false, onClosePane, closeLabel }) {
+  const lineRefs = useRef({})
+  const lines = configText.split('\n')
+
+  useEffect(() => {
+    const active = allMatches[activeMatchIndex]
+    if (!active || active.pane !== paneKey) return
+    const el = lineRefs.current[active.lineIndex]
+    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [allMatches, activeMatchIndex, paneKey])
+
+  const activeLookup = new Set(
+    allMatches
+      .map((match, index) => ({ ...match, index }))
+      .filter(match => match.pane === paneKey)
+      .map(match => `${match.lineIndex}:${match.occurrenceIndex}:${match.index}`)
+  )
+
+  function renderLine(line, lineIndex) {
+    if (!query) return line || ' '
+    const regex = new RegExp(`(${escapeRegExp(query)})`, 'ig')
+    const parts = line.split(regex)
+    let occurrenceIndex = -1
+    return parts.map((part, index) => {
+      if (!part) return <span key={index} />
+      const isMatch = part.toLowerCase() === query.toLowerCase()
+      if (!isMatch) return <span key={index}>{part}</span>
+      occurrenceIndex += 1
+      const globalIndex = allMatches.findIndex(match => match.pane === paneKey && match.lineIndex === lineIndex && match.occurrenceIndex === occurrenceIndex)
+      const isActive = globalIndex === activeMatchIndex
+      return (
+        <mark
+          key={index}
+          style={{
+            background: isActive ? '#fbbf24' : '#fef08a',
+            color: '#1f1f1d',
+            borderRadius: 3,
+            padding: '0 1px',
+          }}
+        >
+          {part}
+        </mark>
+      )
+    })
+  }
+
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        border: 'none',
+        borderRadius: 0,
+        overflow: 'hidden',
+        background: '#fff',
+      }}
+    >
+      <div style={{ height: 32, padding: '0 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1efea', flexShrink: 0, background: '#fcfbf9' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#1f1f1d', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {subtitle ? `${title} ${subtitle}` : title}
+          </div>
+        </div>
+        {onClosePane && (
+          <button
+            onClick={onClosePane}
+            aria-label={closeLabel || `Close ${title} configuration`}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#98958f', width: 22, height: 22, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+          >
+            <CloseIcon />
+          </button>
+        )}
+      </div>
+      <div className="config-scroll-area" style={{ flex: 1, overflow: 'auto', background: '#fffdf9' }}>
+        {lines.map((line, lineIndex) => (
+          <div
+            key={lineIndex}
+            ref={el => { lineRefs.current[lineIndex] = el }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '24px 1fr',
+              gap: 6,
+              padding: '0 8px 0 6px',
+              minHeight: 24,
+              alignItems: 'baseline',
+                background: activeLookup.has(`${lineIndex}:0:${activeMatchIndex}`) ? '#fff7d6' : 'transparent',
+            }}
+          >
+            <span style={{ fontSize: 11, color: '#a19d95', textAlign: 'right', userSelect: 'none', paddingTop: 3 }}>{lineIndex + 1}</span>
+            <code style={{ fontSize: 11.5, lineHeight: 1.75, color: '#222', fontFamily: 'SFMono-Regular, Menlo, Monaco, Consolas, monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-word', padding: '2px 0' }}>
+              {renderLine(line, lineIndex)}
+            </code>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DockRightIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <rect x="1.25" y="1.25" width="9.5" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1"/>
+      <line x1="7.25" y1="1.5" x2="7.25" y2="10.5" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  )
+}
+
+function DockBottomIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <rect x="1.25" y="1.25" width="9.5" height="9.5" rx="1.5" stroke="currentColor" strokeWidth="1"/>
+      <line x1="1.5" y1="7.25" x2="10.5" y2="7.25" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  )
+}
+
+function ConfigWorkspacePane({ state, onClose, onEnterCompare, onSetDock, onSearchChange, onPrevMatch, onNextMatch, onCloseCompareSide }) {
+  const leftText = state.leftDevice ? getDeviceConfig(state.leftDevice.label) : ''
+  const rightText = state.rightDevice ? getDeviceConfig(state.rightDevice.label) : ''
+  const searchNeedles = state.searchQuery.trim()
+  const activePanes = state.mode === 'compare' ? ['left', 'right'] : ['left']
+  const sourceByPane = { left: leftText, right: rightText }
+  const allMatches = []
+
+  if (searchNeedles) {
+    activePanes.forEach(pane => {
+      const lines = sourceByPane[pane].split('\n')
+      lines.forEach((line, lineIndex) => {
+        const regex = new RegExp(escapeRegExp(searchNeedles), 'ig')
+        let match
+        let occurrenceIndex = 0
+        while ((match = regex.exec(line)) !== null) {
+          allMatches.push({ pane, lineIndex, occurrenceIndex })
+          occurrenceIndex += 1
+        }
+      })
+    })
+  }
+
+  const safeActiveMatchIndex = allMatches.length ? Math.min(state.activeMatchIndex, allMatches.length - 1) : 0
+  const isBottomDock = state.dock === 'bottom'
+  const title = state.mode === 'compare'
+    ? `Comparing ${state.leftDevice?.label || '—'} ↔ ${state.rightDevice?.label || '—'}`
+    : 'Configuration'
+  const subtitle = ''
+
+  const shellStyle = isBottomDock
+    ? { height: state.height, borderTop: '1px solid #e8e6e1', borderLeft: 'none', width: '100%' }
+    : { width: state.width, borderLeft: '1px solid #e8e6e1', borderTop: 'none', height: '100%' }
+
+  return (
+    <aside style={{ ...shellStyle, flexShrink: 0, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        .config-scroll-area::-webkit-scrollbar { width: 8px; height: 8px; }
+        .config-scroll-area::-webkit-scrollbar-track { background: transparent; }
+        .config-scroll-area::-webkit-scrollbar-thumb { background: #d7d2ca; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+        .config-scroll-area { scrollbar-width: thin; scrollbar-color: #d7d2ca transparent; }
+      `}</style>
+      <div style={{ padding: '12px 14px 10px', borderBottom: '1px solid #f1efea', flexShrink: 0 }}>
+        {isBottomDock ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flexShrink: 1 }}>
+              <div style={{ minWidth: 110, flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1f1f1d', lineHeight: 1.2 }}>{title}</div>
+              </div>
+              <div style={{ position: 'relative', width: 'min(320px, 32vw)', minWidth: 180, flexShrink: 1 }}>
+                <span style={{ position: 'absolute', left: 10, top: 8, color: '#8a8a84' }}><SearchIcon /></span>
+                <input
+                  value={state.searchQuery}
+                  onChange={e => onSearchChange(e.target.value)}
+                  placeholder="Search configuration"
+                  style={{ width: '100%', height: 30, borderRadius: 6, border: '1px solid #dfdbd4', padding: '0 10px 0 28px', fontSize: 12, outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: '#6f6c66', minWidth: 40, textAlign: 'right' }}>
+                  {allMatches.length ? `${safeActiveMatchIndex + 1}/${allMatches.length}` : '0/0'}
+                </span>
+                <button onClick={onPrevMatch} disabled={!allMatches.length} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #ddd8d1', background: '#fff', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: allMatches.length ? 'pointer' : 'default', opacity: allMatches.length ? 1 : 0.45 }}><ChevronUpIcon /></button>
+                <button onClick={onNextMatch} disabled={!allMatches.length} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #ddd8d1', background: '#fff', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: allMatches.length ? 'pointer' : 'default', opacity: allMatches.length ? 1 : 0.45 }}><ChevronDownIcon /></button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              {state.mode === 'single' ? (
+                <button
+                  onClick={onEnterCompare}
+                  style={{ height: 28, padding: '0 10px', borderRadius: 6, border: 'none', background: 'transparent', color: '#2f2d29', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  + Compare
+                </button>
+              ) : null}
+              <button
+                onClick={() => onSetDock('right')}
+                aria-label="Dock configuration pane right"
+                title="Dock right"
+                style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <DockRightIcon />
+              </button>
+              <button
+                onClick={onClose}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9a9892', width: 24, height: 24, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, minHeight: 28 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1f1f1d', lineHeight: 1.2 }}>{title}</div>
+                {subtitle && <div style={{ fontSize: 11, color: '#7b776f', marginTop: 4 }}>{subtitle}</div>}
+                {state.statusMessage && <div style={{ fontSize: 11, color: '#9a3412', marginTop: 4 }}>{state.statusMessage}</div>}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {state.mode === 'single' ? (
+                  <button
+                    onClick={onEnterCompare}
+                    style={{ height: 28, padding: '0 10px', borderRadius: 6, border: 'none', background: 'transparent', color: '#2f2d29', fontSize: 11.5, fontWeight: 600, cursor: 'pointer' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    + Compare
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => onSetDock('bottom')}
+                  aria-label="Dock configuration pane bottom"
+                  title="Dock bottom"
+                  style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <DockBottomIcon />
+                </button>
+                <button
+                  onClick={onClose}
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9a9892', width: 24, height: 24, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'nowrap' }}>
+              <div style={{ position: 'relative', flex: '1 1 auto', minWidth: 0 }}>
+                <span style={{ position: 'absolute', left: 10, top: 8, color: '#8a8a84' }}><SearchIcon /></span>
+                <input
+                  value={state.searchQuery}
+                  onChange={e => onSearchChange(e.target.value)}
+                  placeholder="Search configuration"
+                  style={{ width: '100%', height: 30, borderRadius: 6, border: '1px solid #dfdbd4', padding: '0 10px 0 28px', fontSize: 12, outline: 'none' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: '#6f6c66', minWidth: 40, textAlign: 'right' }}>
+                  {allMatches.length ? `${safeActiveMatchIndex + 1}/${allMatches.length}` : '0/0'}
+                </span>
+                <button onClick={onPrevMatch} disabled={!allMatches.length} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #ddd8d1', background: '#fff', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: allMatches.length ? 'pointer' : 'default', opacity: allMatches.length ? 1 : 0.45 }}><ChevronUpIcon /></button>
+                <button onClick={onNextMatch} disabled={!allMatches.length} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #ddd8d1', background: '#fff', color: '#2f2d29', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: allMatches.length ? 'pointer' : 'default', opacity: allMatches.length ? 1 : 0.45 }}><ChevronDownIcon /></button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: state.mode === 'compare' ? 'row' : 'column',
+          gap: 0,
+          padding: 0,
+        }}
+      >
+        <ConfigCodeView
+          title={state.leftDevice?.label || '—'}
+          subtitle={state.leftDevice?.ip || 'No device selected'}
+          configText={leftText}
+          query={state.searchQuery}
+          allMatches={allMatches}
+          activeMatchIndex={safeActiveMatchIndex}
+          paneKey="left"
+          compact={state.mode === 'single'}
+          onClosePane={state.mode === 'compare' ? () => onCloseCompareSide('left') : null}
+          closeLabel={state.leftDevice ? `Close ${state.leftDevice.label} configuration` : 'Close left configuration'}
+        />
+        {state.mode === 'compare' && (
+          state.rightDevice ? (
+            <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #ece9e3' }}>
+              <ConfigCodeView
+                title={state.rightDevice.label}
+                subtitle={state.rightDevice.ip || 'No management IP'}
+                configText={rightText}
+                query={state.searchQuery}
+                allMatches={allMatches}
+                activeMatchIndex={safeActiveMatchIndex}
+                paneKey="right"
+                onClosePane={() => onCloseCompareSide('right')}
+                closeLabel={state.rightDevice ? `Close ${state.rightDevice.label} configuration` : 'Close right configuration'}
+              />
+            </div>
+          ) : (
+            <div style={{ flex: 1, minWidth: 0, borderLeft: '1px solid #ece9e3', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fcfbf9', color: '#7b776f', fontSize: 12, padding: 24, textAlign: 'center' }}>
+              Select another device to view configuration and compare.
+            </div>
+          )
+        )}
+      </div>
+    </aside>
+  )
+}
+
+function buildDeviceProperties(node) {
+  if (!node) return null
+
+  const roleMap = {
+    'core-router': 'Core Router',
+    'dist-switch': 'Distribution Switch',
+    'access-switch': 'Access Switch',
+    'edge-router': 'Edge Router',
+    endpoint: 'Endpoint',
+  }
+
+  const healthMap = {
+    up: 'Healthy',
+    degraded: 'Degraded',
+    down: 'Down',
+  }
+
+  return {
+    node,
+    title: node.label,
+    subtitle: node.ip || 'No management IP',
+    tabs: {
+      overview: [
+        { section: 'Identity', label: 'Hostname', value: node.label },
+        { section: 'Identity', label: 'Mgmt IP', value: node.ip || '—' },
+        { section: 'Identity', label: 'Mgmt Interface', value: node.type === 'endpoint' ? 'eth0' : node.type === 'core-router' ? 'GigabitEthernet0/0/0' : 'Ethernet0/3' },
+        { section: 'Identity', label: 'Device Type', value: roleMap[node.type] === 'Core Router' ? 'Cisco Router' : roleMap[node.type] || 'Network Device' },
+        { section: 'Identity', label: 'Table Status', value: node.status === 'down' ? '0' : node.status === 'degraded' ? '21' : '35' },
+        { section: 'Identity', label: 'Vendor', value: 'Cisco' },
+        { section: 'Identity', label: 'Model', value: node.type === 'core-router' ? 'ASR 1001-X' : node.type === 'dist-switch' ? 'C9500-24Y4C' : node.type === 'access-switch' ? 'C9300-48P' : 'IP Endpoint' },
+        { section: 'Identity', label: 'Software Version', value: node.type === 'endpoint' ? '—' : node.type === 'core-router' ? '17.9.4a' : '17.3.6' },
+        { section: 'Identity', label: 'Serial Number', value: node.type === 'endpoint' ? '—' : `69${node.label.length}3${(node.ip || '').replace(/\D/g, '').slice(0, 6) || '0604'}` },
+        { section: 'Identity', label: 'Site', value: 'My Network\\NetBrain DC\\Boston' },
+        { section: 'Identity', label: 'Geolocation', value: 'Boston, MA, US' },
+        { section: 'Identity', label: 'Location', value: 'Boston' },
+        { section: 'Identity', label: 'External Zone', value: node.type === 'edge-router' ? 'Internet Edge' : '—' },
+        { section: 'Identity', label: 'Contact', value: 'Network Operations' },
+        { section: 'System', label: 'System Memory Size', value: node.type === 'endpoint' ? '—' : node.type === 'core-router' ? '8839753088' : '4294967296' },
+        { section: 'System', label: 'Operating System', value: node.type === 'endpoint' ? 'Embedded' : 'IOS' },
+        { section: 'System', label: 'Asset Tag', value: node.type === 'endpoint' ? 'VOICE-ENDPOINT' : `BOS-${node.label}` },
+        { section: 'System', label: 'Hierarchy Layer', value: node.type === 'core-router' ? 'Core' : node.type === 'dist-switch' ? 'Distribution' : node.type === 'access-switch' ? 'Access' : 'Endpoint' },
+        { section: 'System', label: 'Description', value: node.badge || (node.type === 'endpoint' ? 'Voice endpoint' : 'Managed infrastructure node') },
+        { section: 'System', label: 'sysObjectID', value: node.type === 'endpoint' ? '—' : '1.3.6.1.4.1.9.1.1' },
+        { section: 'Health', label: 'Status', value: healthMap[node.status] || (node.badge ? 'Attention required' : 'Healthy') },
+        { section: 'Health', label: 'CPU', value: node.status === 'degraded' ? '74%' : node.status === 'down' ? '—' : '31%' },
+        { section: 'Health', label: 'Memory', value: node.status === 'degraded' ? '61%' : node.status === 'down' ? '—' : '44%' },
+      ],
+      interfaces: [
+        { section: 'Interfaces', label: 'Active Interfaces', value: node.type === 'endpoint' ? '1' : node.type === 'core-router' ? '18' : '24' },
+        { section: 'Interfaces', label: 'Neighbours', value: node.type === 'endpoint' ? '1 direct path' : 'Topology-connected' },
+        { section: 'Interfaces', label: 'Primary Link', value: node.type === 'endpoint' ? 'Voice endpoint uplink' : 'Primary forwarding path' },
+      ],
+      alerts: [
+        { section: 'Alerts', label: 'Open Alerts', value: node.badge ? '1' : node.status === 'down' ? '1' : '0' },
+        { section: 'Alerts', label: 'Last Change', value: node.status === 'degraded' ? '2 hours ago' : 'No recent changes' },
+        { section: 'Alerts', label: 'Health Signal', value: node.badge || (node.status === 'down' ? 'Connectivity loss' : 'Within baseline') },
+      ],
+    },
+  }
+}
+
+function DevicePropertiesPane({ data, onClose }) {
+  if (!data) return null
+  const [activeTab, setActiveTab] = useState('overview')
+  const rows = data.tabs[activeTab] || []
+  let currentSection = null
+
+  return (
+    <aside style={{
+      width: 336,
+      flexShrink: 0,
+      height: '100%',
+      background: '#fff',
+      borderLeft: '1px solid #e8e6e1',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <div style={{
+        height: 48,
+        padding: '0 14px 0 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid #f1efea',
+        flexShrink: 0,
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1f1f1d', lineHeight: 1.2 }}>{data.title}</div>
+          <div style={{ fontSize: 11, color: '#8a8a84', marginTop: 2 }}>{data.subtitle}</div>
+        </div>
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a9892', width: 24, height: 24, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          onMouseEnter={e => e.currentTarget.style.background = '#f3f0ea'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <CloseIcon />
+        </button>
+      </div>
+
+      <div style={{
+        height: 32,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 16,
+        padding: '0 16px',
+        borderBottom: '1px solid #f1efea',
+        flexShrink: 0,
+      }}>
+        {[
+          { id: 'overview', label: 'Device' },
+          { id: 'interfaces', label: 'Interfaces' },
+          { id: 'alerts', label: 'Alerts' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              height: 31,
+              border: 'none',
+              borderBottom: activeTab === tab.id ? '2px solid #2563eb' : '2px solid transparent',
+              background: 'transparent',
+              color: activeTab === tab.id ? '#2563eb' : '#5f6368',
+              fontSize: 11.5,
+              fontWeight: activeTab === tab.id ? 600 : 500,
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 0 16px' }}>
+        <div>
+          {rows.map((row, index) => {
+            const showSection = row.section !== currentSection
+            currentSection = row.section
+            return (
+              <div key={`${row.section}-${row.label}`}>
+                {showSection && (
+                  <div style={{
+                    padding: index === 0 ? '10px 16px 6px' : '18px 16px 6px',
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: '#6a665f',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {row.section}
+                  </div>
+                )}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '120px 1fr',
+                  gap: 12,
+                  padding: '7px 16px',
+                  borderBottom: '1px solid #efede8',
+                  alignItems: 'center',
+                }}>
+                  <div style={{ fontSize: 11.5, color: '#4f4b45' }}>{row.label}</div>
+                  <div style={{ fontSize: 12, color: '#111111', textAlign: 'right', fontWeight: 400 }}>{row.value || '—'}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </aside>
   )
 }
 
@@ -78,23 +624,23 @@ function computeSnap(candidate, others) {
   return { snapX, snapY, guides }
 }
 
-function ArtifactContent({ artifact, highlight, widgetMode }) {
+function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction }) {
   if (!artifact) return null
 
   if (artifact.type === 'topology' && widgetMode) {
     // In widget mode, scale the map proportionally to fit the widget
     return (
       <div style={{ width: '100%', height: '100%', overflow: 'hidden', position: 'relative' }}>
-        <ScaledTopology highlight={highlight} />
+        <ScaledTopology highlight={highlight} onTopologyNodeAction={onTopologyNodeAction} />
       </div>
     )
   }
 
   switch (artifact.type) {
-    case 'topology':      return <TopologyMap highlight={highlight} widgetMode={false} />
+    case 'topology':      return <TopologyMap highlight={highlight} widgetMode={false} onNodeAction={onTopologyNodeAction} />
     case 'chart':         return <TrafficChart />
     case 'table':         return <DeviceTable />
-    case 'voicePath':     return <VoicePath widgetMode={widgetMode} />
+    case 'voicePath':     return <VoicePath widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
     case 'changeAnalysis': return <ChangeAnalysis />
     default: return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
@@ -105,7 +651,7 @@ function ArtifactContent({ artifact, highlight, widgetMode }) {
 }
 
 // Topology rendered at natural size, scaled down to fill the widget container
-function ScaledTopology({ highlight }) {
+function ScaledTopology({ highlight, onTopologyNodeAction }) {
   const outerRef = useRef(null)
   const [scale, setScale] = useState(1)
 
@@ -130,7 +676,7 @@ function ScaledTopology({ highlight }) {
         transformOrigin: 'top left',
         position: 'absolute', top: 0, left: 0,
       }}>
-        <TopologyMap highlight={highlight} widgetMode={true} />
+        <TopologyMap highlight={highlight} widgetMode={true} onNodeAction={onTopologyNodeAction} />
       </div>
     </div>
   )
@@ -150,7 +696,7 @@ function ResizeHandle({ onMouseDown }) {
   )
 }
 
-function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete }) {
+function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete, onTopologyNodeAction }) {
   return (
     <div
       onMouseDown={() => onFocus(item.id)}
@@ -218,6 +764,7 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
           artifact={item}
           highlight={item.isMain ? highlight : null}
           widgetMode={true}
+          onTopologyNodeAction={onTopologyNodeAction}
         />
       </div>
 
@@ -226,9 +773,11 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
   )
 }
 
-export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, widgets = [] }) {
+export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, widgets = [], onTopologyNodeAction }) {
   const active = artifacts.find(a => a.id === activeArtifactId)
   const [modal, setModal] = useState(null)
+  const [propertiesPane, setPropertiesPane] = useState(null)
+  const [configPane, setConfigPane] = useState(null)
   const canvasRef = useRef(null)
   const [canvasItems, setCanvasItems] = useState([])
   const [focusedId, setFocusedId] = useState(null)
@@ -238,8 +787,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const canvasItemsRef = useRef([])
   const dragState = useRef(null)
   const resizeState = useRef(null)
+  const configResizeState = useRef(null)
 
   useEffect(() => { canvasItemsRef.current = canvasItems }, [canvasItems])
+
+  useEffect(() => {
+    setPropertiesPane(null)
+    setConfigPane(null)
+  }, [activeArtifactId])
 
   // Reset canvas when active artifact changes
   useEffect(() => {
@@ -364,8 +919,26 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
         const newH = Math.max(140, origH + (e.clientY - startY))
         setCanvasItems(prev => prev.map(i => i.id === id ? { ...i, w: newW, h: newH } : i))
       }
+      if (configResizeState.current) {
+        const { dock, startX, startY, startWidth, startHeight } = configResizeState.current
+        if (dock === 'right') {
+          const delta = startX - e.clientX
+          const width = Math.max(320, Math.min(920, startWidth + delta))
+          setConfigPane(prev => prev ? { ...prev, width } : prev)
+        } else {
+          const delta = startY - e.clientY
+          const height = Math.max(220, Math.min(640, startHeight + delta))
+          setConfigPane(prev => prev ? { ...prev, height } : prev)
+        }
+      }
     }
-    function onMouseUp() { dragState.current = null; resizeState.current = null; document.body.style.cursor = ''; setSnapGuides([]) }
+    function onMouseUp() {
+      dragState.current = null
+      resizeState.current = null
+      configResizeState.current = null
+      document.body.style.cursor = ''
+      setSnapGuides([])
+    }
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
     return () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
@@ -373,6 +946,101 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
 
   const isFocusMode = canvasItems.length === 1
   const expandedItem = expandedItemId ? canvasItems.find(i => i.id === expandedItemId) : null
+
+  function updateConfigPaneFromNode(node, sourceAction = 'view-config') {
+    if (!node) return
+
+    setConfigPane(prev => {
+      if (!prev) return buildConfigPaneState(node)
+
+      if (prev.mode === 'single') {
+        return {
+          ...prev,
+          leftDevice: node,
+          statusMessage: sourceAction === 'select-node' ? 'Configuration updated from map selection.' : null,
+          activeMatchIndex: 0,
+        }
+      }
+
+      if (prev.pendingSelection === 'second') {
+        return {
+          ...prev,
+          rightDevice: node,
+          pendingSelection: null,
+          statusMessage: null,
+          activeMatchIndex: 0,
+        }
+      }
+
+      if (!prev.rightDevice) {
+        return {
+          ...prev,
+          rightDevice: node,
+          pendingSelection: null,
+          statusMessage: null,
+          activeMatchIndex: 0,
+        }
+      }
+
+      return {
+        ...prev,
+        statusMessage: 'Close one configuration to compare a different device.',
+      }
+    })
+  }
+
+  function handleNodeAction(action) {
+    if (action?.actionId === 'select-node') {
+      if (propertiesPane) setPropertiesPane(buildDeviceProperties(action.node))
+      if (configPane?.mode === 'single') updateConfigPaneFromNode(action.node, 'select-node')
+      return
+    }
+    if (action?.actionId === 'view-properties') {
+      setConfigPane(null)
+      setPropertiesPane(buildDeviceProperties(action.node))
+      return
+    }
+    if (action?.actionId === 'view-config') {
+      setPropertiesPane(null)
+      updateConfigPaneFromNode(action.node, 'view-config')
+      return
+    }
+    onTopologyNodeAction?.(action)
+  }
+
+  function handleConfigResizeStart(e) {
+    if (!configPane) return
+    e.preventDefault()
+    e.stopPropagation()
+    configResizeState.current = {
+      dock: configPane.dock,
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: configPane.width,
+      startHeight: configPane.height,
+    }
+    document.body.style.cursor = configPane.dock === 'right' ? 'col-resize' : 'row-resize'
+  }
+
+  function handleCloseCompareSide(side) {
+    setConfigPane(prev => {
+      if (!prev) return prev
+      if (prev.mode !== 'compare') return prev
+
+      const remainingDevice = side === 'left' ? prev.rightDevice : prev.leftDevice
+      if (!remainingDevice) return null
+
+      return {
+        ...prev,
+        mode: 'single',
+        leftDevice: remainingDevice,
+        rightDevice: null,
+        pendingSelection: null,
+        activeMatchIndex: 0,
+        statusMessage: null,
+      }
+    })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isFocusMode ? '#fff' : '#f0f0f0' }}>
@@ -418,6 +1086,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
       </div>
 
       {/* Content */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          minHeight: 0,
+          flexDirection: configPane?.dock === 'bottom' ? 'column' : 'row',
+        }}
+      >
       <div ref={canvasRef} style={{ flex: 1, position: 'relative', overflow: (isFocusMode || expandedItem) ? 'hidden' : 'auto' }}>
         {/* Expanded widget focus view */}
         {expandedItem ? (
@@ -434,14 +1110,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
               </button>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} />
+              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} />
             </div>
           </div>
         ) : isFocusMode ? (
           /* Focus mode: single artifact fills the pane, no widget chrome */
           canvasItems.length === 1 ? (
             <div style={{ position: 'absolute', inset: 0 }}>
-              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} />
+              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} />
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
@@ -480,12 +1156,93 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
                     isNew={newItemIds.has(item.id)}
                     onEnlarge={setExpandedItemId}
                     onDelete={id => setCanvasItems(prev => prev.filter(i => i.id !== id))}
+                    onTopologyNodeAction={handleNodeAction}
                   />
                 ))}
               </div>
             )
           })()
         )}
+      </div>
+      {configPane && (
+        <div
+          onMouseDown={handleConfigResizeStart}
+          aria-hidden="true"
+          style={{
+            flexShrink: 0,
+            width: configPane.dock === 'right' ? 4 : '100%',
+            height: configPane.dock === 'bottom' ? 4 : '100%',
+            cursor: configPane.dock === 'right' ? 'col-resize' : 'row-resize',
+            background: 'transparent',
+            position: 'relative',
+            zIndex: 10,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <div
+            style={configPane.dock === 'right'
+              ? { position: 'absolute', top: 0, bottom: 0, left: 1, width: 1, background: '#e4e4e4' }
+              : { position: 'absolute', left: 0, right: 0, top: 1, height: 1, background: '#e4e4e4' }}
+          />
+        </div>
+      )}
+      {configPane && (
+        <ConfigWorkspacePane
+          state={configPane}
+          onClose={() => setConfigPane(null)}
+          onEnterCompare={() => setConfigPane(prev => {
+            if (!prev?.leftDevice) return prev
+            return {
+              ...prev,
+              mode: 'compare',
+              rightDevice: null,
+              pendingSelection: 'second',
+              activeMatchIndex: 0,
+              statusMessage: null,
+              width: Math.max(prev.width, 680),
+              height: Math.max(prev.height, 320),
+            }
+          })}
+          onSetDock={(dock) => setConfigPane(prev => prev ? { ...prev, dock } : prev)}
+          onSearchChange={(searchQuery) => setConfigPane(prev => prev ? { ...prev, searchQuery, activeMatchIndex: 0 } : prev)}
+          onPrevMatch={() => setConfigPane(prev => {
+            if (!prev) return prev
+            const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
+            const matchCount = paneKeys.reduce((count, key) => {
+              const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
+              if (!prev.searchQuery.trim()) return count
+              return count + lines.reduce((lineCount, line) => {
+                const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
+                return lineCount + (matches ? matches.length : 0)
+              }, 0)
+            }, 0)
+            if (!matchCount) return prev
+            return { ...prev, activeMatchIndex: (prev.activeMatchIndex - 1 + matchCount) % matchCount }
+          })}
+          onNextMatch={() => setConfigPane(prev => {
+            if (!prev) return prev
+            const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
+            const matchCount = paneKeys.reduce((count, key) => {
+              const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
+              if (!prev.searchQuery.trim()) return count
+              return count + lines.reduce((lineCount, line) => {
+                const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
+                return lineCount + (matches ? matches.length : 0)
+              }, 0)
+            }, 0)
+            if (!matchCount) return prev
+            return { ...prev, activeMatchIndex: (prev.activeMatchIndex + 1) % matchCount }
+          })}
+          onCloseCompareSide={handleCloseCompareSide}
+        />
+      )}
+      {propertiesPane && (
+        <DevicePropertiesPane
+          data={propertiesPane}
+          onClose={() => setPropertiesPane(null)}
+        />
+      )}
       </div>
 
       {modal === 'share' && <ShareModal onClose={() => setModal(null)} />}

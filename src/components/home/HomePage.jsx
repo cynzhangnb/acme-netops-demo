@@ -167,7 +167,7 @@ const SHORTCUTS = [
   { label: 'Discover Network' },
 ]
 
-export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0, onSessionNameChange, restoredSession }) {
+export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0, onSessionNameChange, restoredSession, currentSessionName }) {
   const [homeInput, setHomeInput] = useState('')
   const [insightWidth, setInsightWidth] = useState(380)
   const isDragging = useRef(false)
@@ -207,6 +207,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
           onSessionNameChange={onSessionNameChange}
           onNew={() => onStartAI('')}
           restoredSession={restoredSession}
+          currentSessionName={currentSessionName}
         />
       </div>
     )

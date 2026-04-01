@@ -6,7 +6,7 @@ import InputArea from './InputArea'
 export const SESSION_NAME_RULES = [
   { keywords: ['boston'], name: 'Boston Network' },
   { keywords: ['nyc', 'new york'], name: 'NYC Network' },
-  { keywords: ['traffic', 'trend'], name: 'Traffic Analysis' },
+  { keywords: ['traffic', 'trend'], preserveName: true },
   { keywords: ['routing'], name: 'Routing Design' },
   { keywords: ['vlan'], name: 'VLAN Segmentation' },
   { keywords: ['unused'], name: 'Unused Ports Audit' },
@@ -17,12 +17,15 @@ export const SESSION_NAME_RULES = [
   { keywords: ['capacity', 'bandwidth'], name: 'Capacity Planning' },
 ]
 
-export function deriveSessionName(messages) {
+export function deriveSessionName(messages, currentName = 'New Session') {
   const userMessages = messages.filter(m => m.role === 'user')
-  if (userMessages.length === 0) return 'New Session'
+  if (userMessages.length === 0) return currentName || 'New Session'
   const allText = userMessages.map(m => m.content).join(' ').toLowerCase()
   for (const rule of SESSION_NAME_RULES) {
-    if (rule.keywords.some(kw => allText.includes(kw))) return rule.name
+    if (rule.keywords.some(kw => allText.includes(kw))) {
+      if (rule.preserveName) return currentName || 'New Session'
+      return rule.name
+    }
   }
   const first = userMessages[0].content.trim()
   return first.length > 72 ? first.slice(0, 70) + '…' : first
@@ -37,9 +40,9 @@ function PlusIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName }) {
   const bottomRef = useRef(null)
-  const sessionName = deriveSessionName(messages)
+  const sessionName = deriveSessionName(messages, currentSessionName)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })

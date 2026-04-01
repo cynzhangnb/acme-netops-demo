@@ -4,9 +4,9 @@ import TopBar from './TopBar'
 import DeviceBrowserPane from '../network/DeviceBrowserPane'
 
 /* ── Network rail ────────────────────────────────────────────────────────── */
-const NIC = { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: '#555', strokeWidth: '1.6', strokeLinecap: 'round', strokeLinejoin: 'round' }
+const NIC = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.85', strokeLinecap: 'round', strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' }
 
-function NetDevicesIcon() { return <svg {...NIC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="#555" stroke="none"/></svg> }
+function NetDevicesIcon() { return <svg {...NIC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> }
 function NetMapsIcon()    { return <svg {...NIC}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> }
 function NetNoteIcon()    { return <svg {...NIC}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> }
 function NetRectIcon()    { return <svg {...NIC}><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg> }
@@ -145,7 +145,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         {activeView !== 'network' && (
-          <Sidebar variant={activeView === 'workspace' ? 'workspace' : 'home'} activePanel={activePanel} activeView={activeView} onIconClick={handleIconClick} />
+          <Sidebar variant="home" activePanel={activePanel} activeView={activeView} onIconClick={handleIconClick} />
         )}
         {activePanel === 'history' && (
           <>
@@ -175,7 +175,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
               const Icon = slot.Icon
               return (
                 <div key={slot.id} className="sbi-wrap" onClick={() => onNetworkPanelClick(slot.id)}>
-                  <div className="sbi-icon" style={{ background: active ? '#eef3fb' : 'transparent' }}>
+                  <div className="sbi-icon" style={{ background: active ? '#ece9e2' : 'transparent', color: '#514f49' }}>
                     <Icon />
                   </div>
                   <div className="sbi-tooltip">{slot.tooltip}</div>

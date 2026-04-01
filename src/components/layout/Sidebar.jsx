@@ -1,6 +1,6 @@
-// Collapsed 44 px sidebar — variant-aware with icon tooltips
 import { useState } from 'react'
 
+// Collapsed 44 px sidebar — variant-aware with icon tooltips
 function UserIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa"
@@ -11,24 +11,61 @@ function UserIcon() {
   )
 }
 
-const IC = { width: 19, height: 19, viewBox: '0 0 24 24', fill: 'none', stroke: '#555', strokeWidth: '1.6', strokeLinecap: 'round', strokeLinejoin: 'round' }
+const IC = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.85', strokeLinecap: 'round', strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' }
 
-function HomeIcon()      { return <svg {...IC}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg> }
-function HistoryIcon()   { return <svg {...IC}><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/><polyline points="3.5 9.5 5.5 7.5 3.5 5.5"/><path d="M3.5 7.5 A9 9 0 0 1 12 3"/></svg> }
-function NetworkIcon()   { return <svg {...IC}><circle cx="11" cy="11" r="8.5"/><line x1="2.5" y1="11" x2="19.5" y2="11"/><path d="M11 2.5 C8 5.5 8 16.5 11 19.5"/><path d="M11 2.5 C14 5.5 14 16.5 11 19.5"/><circle cx="19" cy="19" r="2.5" fill="#555" stroke="none"/></svg> }
-function InventoryIcon() {
+function HomeIcon() {
   return (
-    <svg {...IC}>
-      <rect x="2" y="2"  width="20" height="6" rx="1.5"/>
-      <rect x="2" y="9"  width="20" height="6" rx="1.5"/>
-      <rect x="2" y="16" width="20" height="6" rx="1.5"/>
-      <circle cx="6.5" cy="5"  r="1" fill="#555" stroke="none"/>
-      <circle cx="6.5" cy="12" r="1" fill="#555" stroke="none"/>
-      <circle cx="6.5" cy="19" r="1" fill="#555" stroke="none"/>
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
+      <g transform="scale(0.75)">
+        <path
+          d="M16.6123,2.2138a1.01,1.01,0,0,0-1.2427,0L1,13.4194l1.2427,1.5717L4,13.6209V26a2.0041,2.0041,0,0,0,2,2H26a2.0037,2.0037,0,0,0,2-2V13.63L29.7573,15,31,13.4282ZM18,26H14V18h4Zm2,0V18a2.0023,2.0023,0,0,0-2-2H14a2.002,2.002,0,0,0-2,2v8H6V12.0615l10-7.79,10,7.8005V26Z"
+          fill="currentColor"
+        />
+      </g>
     </svg>
   )
 }
-function DevicesIcon()   { return <svg {...IC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="#555" stroke="none"/></svg> }
+function HistoryIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
+      <g transform="scale(0.75)">
+        <path
+          d="M16,30A14,14,0,1,1,30,16,14,14,0,0,1,16,30ZM16,4A12,12,0,1,0,28,16,12,12,0,0,0,16,4Z"
+          fill="currentColor"
+        />
+        <path
+          d="M20.59 22L15 16.41V7H17V15.58L22 20.59L20.59 22Z"
+          fill="currentColor"
+        />
+      </g>
+    </svg>
+  )
+}
+function NetworkIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
+      <g transform="scale(0.75)">
+        <path
+          d="M16,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM5,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM27,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM6,24v-3h9v3h2v-3h9v3h2v-3c0-1.1-.9-2-2-2h-9v-3h-2v3H6c-1.1,0-2,.9-2,2v3h2ZM21.7,6.1c-.8-2.4-3.1-4.1-5.7-4.1s-4.9,1.7-5.7,4.1c-1.9.3-3.3,1.9-3.3,3.9s1.8,4,4,4h10c2.2,0,4-1.8,4-4s-1.4-3.6-3.3-3.9ZM21,12h-10c-1.1,0-2-.9-2-2s.9-2,2-2h1c0-2.2,1.8-4,4-4s4,1.8,4,4h1c1.1,0,2,.9,2,2s-.9,2-2,2Z"
+          fill="currentColor"
+        />
+      </g>
+    </svg>
+  )
+}
+function InventoryIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
+      <g transform="translate(-0.8 -0.8) scale(0.8)">
+        <path
+          d="M24,25h-3v-3h3v3ZM29,22h-3v3h3v-3ZM24,27h-3v3h3v-3ZM29,27h-3v3h3v-3ZM20,8h-8v2h8v-2ZM17,28H6v-4h2v-2h-2v-5h2v-2h-2v-5h2v-2h-2v-4h18v15h2V4c0-1.1-.9-2-2-2H6c-1.1,0-2,.9-2,2v4h-2v2h2v5h-2v2h2v5h-2v2h2v4c0,1.1.9,2,2,2h11v-2ZM20,15h-8v2h8v-2Z"
+          fill="currentColor"
+        />
+      </g>
+    </svg>
+  )
+}
+function DevicesIcon()   { return <svg {...IC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> }
 function MapsIcon()      { return <svg {...IC}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> }
 function NoteIcon()      { return <svg {...IC}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> }
 function RectangleIcon() { return <svg {...IC}><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg> }
@@ -46,7 +83,7 @@ const ICON_MAP = {
 const WORKSPACE_SLOTS = [
   { type: 'icon', id: 'home',    tooltip: 'Home',    icon: 'home'    },
   { type: 'icon', id: 'history', tooltip: 'History', icon: 'history' },
-  { type: 'placeholder' },
+  { type: 'icon', id: 'network', tooltip: 'Network', icon: 'network' },
   { type: 'divider' },
   { type: 'placeholder' },
   { type: 'placeholder' },
@@ -57,8 +94,7 @@ const HOME_SLOTS = [
   { type: 'icon', id: 'home',      tooltip: 'Home',      icon: 'home'      },
   { type: 'icon', id: 'history',   tooltip: 'History',   icon: 'history'   },
   { type: 'divider' },
-  { type: 'placeholder' },
-  { type: 'placeholder' },
+  { type: 'icon', id: 'network',   tooltip: 'Network',   icon: 'network'   },
   { type: 'icon', id: 'inventory', tooltip: 'Inventory', icon: 'inventory' },
 ]
 
@@ -76,15 +112,17 @@ const NETWORK_SLOTS = [
 function SidebarIcon({ tooltip, iconName, active, onClick }) {
   const Icon = ICON_MAP[iconName]
   const [hovered, setHovered] = useState(false)
-  const bg = active ? (hovered ? '#e8e8e8' : '#fff') : 'transparent'
+  const iconBg = active ? '#ece9e2' : hovered ? '#f0ede7' : 'transparent'
+  const iconColor = '#514f49'
+
   return (
     <div
-      className={`sbi-wrap${active ? ' sbi-wrap--active' : ''}`}
+      className="sbi-wrap"
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="sbi-icon" style={{ background: bg, width: active ? 32 : 24, height: active ? 32 : 24, borderRadius: 8 }}>
+      <div className="sbi-icon" style={{ background: iconBg, color: iconColor }}>
         {Icon && <Icon />}
       </div>
       <div className="sbi-tooltip">{tooltip}</div>
@@ -104,11 +142,11 @@ export default function Sidebar({ variant = 'workspace', activePanel, activeView
       <nav style={{ flex: 1, padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {slots.map((slot, i) => {
           if (slot.type === 'divider') {
-            return <div key="div" style={{ height: 1, background: '#e8e8e8', margin: '6px 10px' }} />
+            return <div key="div" style={{ height: 1, background: '#dddddd', margin: '6px 10px' }} />
           }
           if (slot.type === 'icon') {
             const isActive = slot.id === 'home'
-              ? activeView === 'home'
+              ? activeView === 'home' && !activePanel
               : activePanel === (slot.id || slot.tooltip)
             return (
               <SidebarIcon

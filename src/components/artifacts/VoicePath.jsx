@@ -1,5 +1,22 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+const NODE_MENU_ITEMS = [
+  { id: 'view-config', label: 'View Configuration' },
+  { id: 'view-properties', label: 'View Properties' },
+  { id: 'extend-neighbour', label: 'Extend Neighbour' },
+]
+
+function buildNodePrompt(actionId, node) {
+  if (!node) return ''
+  if (actionId === 'view-config') {
+    return `Show me the running configuration for ${node.label} (${node.ip || 'endpoint'}) and explain the key sections.`
+  }
+  if (actionId === 'view-properties') {
+    return `Show me the device properties for ${node.label}${node.ip ? ` (${node.ip})` : ''}, including role, status, path context, and connected neighbors.`
+  }
+  return `Extend neighbour view from ${node.label}${node.ip ? ` (${node.ip})` : ''} and show the adjacent devices and links around it.`
+}
+
 // ── Initial node layout ───────────────────────────────────────────────────────
 const INIT = {
   src:     { x: 315, y: 20,  w: 80,  h: 30 },
@@ -81,20 +98,40 @@ function Markers() {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function VoicePath({ widgetMode = false }) {
+export default function VoicePath({ widgetMode = false, onNodeAction }) {
   const [pos, setPos]     = useState(INIT)
   const [pan, setPan]     = useState({ x: 40, y: 20 })
   const [scale, setScale] = useState(1)
+  const [selectedNodeId, setSelectedNodeId] = useState(null)
+  const [contextMenu, setContextMenu] = useState(null)
   const dragging  = useRef(null)   // { id, startX, startY, origX, origY }
   const panning   = useRef(null)   // { startX, startY, origPanX, origPanY }
   const containerRef = useRef(null)
+
+  const nodeMeta = {
+    src:     { id: 'src', label: '10.8.1.4', ip: '10.8.1.4', type: 'endpoint' },
+    asSrc:   { id: 'asSrc', label: 'AS-BOS-01', ip: '10.8.1.1', type: 'access-switch' },
+    dsSrc:   { id: 'dsSrc', label: 'DS-BOS-01', ip: '10.1.1.1', type: 'dist-switch' },
+    crBos02: { id: 'crBos02', label: 'CR-BOS-02', ip: '10.0.0.2', type: 'core-router' },
+    crBos01: { id: 'crBos01', label: 'CR-BOS-01', ip: '10.0.0.1', type: 'core-router' },
+    erBos07: { id: 'erBos07', label: 'ER-BOS-07', ip: '10.2.7.1', type: 'edge-router' },
+    dsDst:   { id: 'dsDst', label: 'DS-BOS-03', ip: '10.1.3.1', type: 'dist-switch' },
+    asDst:   { id: 'asDst', label: 'AS-BOS-03', ip: '10.8.3.1', type: 'access-switch' },
+    dst:     { id: 'dst', label: '10.8.3.134', ip: '10.8.3.134', type: 'endpoint' },
+  }
 
   // ── Pointer events ───────────────────────────────────────────────────────
   const onNodeDown = useCallback((e, id) => {
     e.stopPropagation()
     e.preventDefault()
+    if (e.button !== 0) return
+    setSelectedNodeId(id)
+    onNodeAction?.({
+      actionId: 'select-node',
+      node: nodeMeta[id],
+    })
     dragging.current = { id, startX: e.clientX, startY: e.clientY, origX: pos[id].x, origY: pos[id].y }
-  }, [pos])
+  }, [pos, onNodeAction, nodeMeta])
 
   const onBgDown = useCallback((e) => {
     if (dragging.current) return
@@ -137,6 +174,25 @@ export default function VoicePath({ widgetMode = false }) {
     return () => el.removeEventListener('wheel', onWheel)
   }, [])
 
+  useEffect(() => {
+    function closeMenu() {
+      setContextMenu(null)
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') setContextMenu(null)
+    }
+    window.addEventListener('mousedown', closeMenu)
+    window.addEventListener('scroll', closeMenu, true)
+    window.addEventListener('resize', closeMenu)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', closeMenu)
+      window.removeEventListener('scroll', closeMenu, true)
+      window.removeEventListener('resize', closeMenu)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
+
   // ── Compute edge paths from current positions ────────────────────────────
   const { cx, cy, top, bot, lft, rgt } = g(pos)
 
@@ -168,22 +224,48 @@ export default function VoicePath({ widgetMode = false }) {
   const Node = ({ id, label, ip, icon: Icon, iconColor, borderColor, bg, badge, badgeColor }) => {
     const n = pos[id]
     const isEp = id === 'src' || id === 'dst'
+    const isSelected = selectedNodeId === id
+    const resolvedBorderColor = isSelected ? '#2563eb' : (borderColor || '#d4d4d4')
+    const resolvedShadow = isSelected
+      ? '0 0 0 2px rgba(37,99,235,0.14), 0 2px 8px rgba(37,99,235,0.18)'
+      : borderColor && borderColor !== '#d4d4d4'
+        ? `0 0 0 2px ${borderColor}28, 0 1px 4px rgba(0,0,0,0.07)`
+        : '0 1px 3px rgba(0,0,0,0.06)'
     return (
       <div
         onMouseDown={(e) => onNodeDown(e, id)}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          const bounds = containerRef.current?.getBoundingClientRect()
+          if (!bounds) return
+          const menuWidth = 164
+          const menuHeight = 102
+          const x = Math.min(e.clientX - bounds.left, bounds.width - menuWidth - 8)
+          const y = Math.min(e.clientY - bounds.top, bounds.height - menuHeight - 8)
+          setSelectedNodeId(id)
+          setContextMenu({ nodeId: id, x: Math.max(8, x), y: Math.max(8, y) })
+        }}
+        onMouseUp={(e) => {
+          if (e.button !== 0) return
+          e.stopPropagation()
+          setSelectedNodeId(id)
+          onNodeAction?.({
+            actionId: 'select-node',
+            node: nodeMeta[id],
+          })
+        }}
         style={{
           position: 'absolute',
           left: n.x, top: n.y, width: n.w, height: n.h,
           background: bg || '#fff',
-          border: `1.5px solid ${borderColor || '#d4d4d4'}`,
+          border: `1.5px solid ${resolvedBorderColor}`,
           borderRadius: isEp ? 10 : 7,
           display: 'flex', alignItems: 'center',
           gap: isEp ? 5 : 6,
           padding: isEp ? '0 8px' : '0 8px',
           cursor: 'grab',
-          boxShadow: borderColor && borderColor !== '#d4d4d4'
-            ? `0 0 0 2px ${borderColor}28, 0 1px 4px rgba(0,0,0,0.07)`
-            : '0 1px 3px rgba(0,0,0,0.06)',
+          boxShadow: resolvedShadow,
           userSelect: 'none',
         }}
       >
@@ -218,6 +300,57 @@ export default function VoicePath({ widgetMode = false }) {
         cursor: panning.current ? 'grabbing' : 'default',
       }}
     >
+      {contextMenu && (
+        <div
+          onMouseDown={e => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            zIndex: 30,
+            width: 164,
+            background: '#fff',
+            border: '1px solid #dfdfdf',
+            borderRadius: 9,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)',
+            padding: 5,
+          }}
+        >
+          {NODE_MENU_ITEMS.map(item => (
+            <button
+              key={item.id}
+              onClick={() => {
+                const node = nodeMeta[contextMenu.nodeId]
+                setContextMenu(null)
+                if (!node) return
+                onNodeAction?.({
+                  actionId: item.id,
+                  node,
+                  prompt: buildNodePrompt(item.id, node),
+                })
+              }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '7px 9px',
+                border: 'none',
+                borderRadius: 7,
+                background: 'transparent',
+                color: '#2f2d29',
+                fontSize: 11.5,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f3f0ea'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Zoom controls — focus mode only */}
       {!widgetMode && <div style={{
         position: 'absolute', bottom: 16, right: 16, zIndex: 20,
@@ -239,7 +372,7 @@ export default function VoicePath({ widgetMode = false }) {
 
       {/* Legend — focus mode only */}
       {!widgetMode && <div style={{
-        position: 'absolute', top: 12, right: 16, zIndex: 20,
+        position: 'absolute', bottom: 16, left: 16, zIndex: 20,
         background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
         padding: '7px 11px', display: 'flex', flexDirection: 'column', gap: 5,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06)', pointerEvents: 'none',
