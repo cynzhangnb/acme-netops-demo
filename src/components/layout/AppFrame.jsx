@@ -122,7 +122,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
   function handleIconClick(id) {
     if (id === 'home')       { onGoHome();       return }
-    if (id === 'network')    { onGoNetwork();    return }
+    if (id === 'network')    { return }
     if (id === 'inventory')  { onGoInventory();  return }
     setActivePanel(prev => prev === id ? null : id)
   }
