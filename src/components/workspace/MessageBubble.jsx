@@ -112,10 +112,12 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
     // Inline link: → Link text
     if (line.startsWith('→ ')) {
       const linkText = line.slice(2)
+      const IMPLEMENTED_LINKS = ['View Change Analysis']
+      const isActive = IMPLEMENTED_LINKS.includes(linkText)
       out.push(
-        <div key={i} style={{ fontSize: 13, fontWeight: 500, color: '#1a4fba', marginTop: 6, marginBottom: 2, cursor: 'pointer', display: 'inline-block' }}
-          onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-          onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+        <div key={i} style={{ fontSize: 13, fontWeight: 500, color: '#1a4fba', marginTop: 6, marginBottom: 2, cursor: isActive ? 'pointer' : 'default', display: 'inline-block' }}
+          onMouseEnter={e => { if (isActive) e.currentTarget.style.textDecoration = 'underline' }}
+          onMouseLeave={e => { if (isActive) e.currentTarget.style.textDecoration = 'none' }}
           onClick={() => {
             if (linkText === 'View Change Analysis' && onOpenArtifact) {
               onOpenArtifact({ type: 'changeAnalysis', label: 'Recent Network Change' })

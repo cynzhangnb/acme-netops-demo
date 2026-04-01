@@ -32,10 +32,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
   }, [activeArtifactId])
 
   const handleAddWidget = useCallback((artifactRef) => {
-    setWidgets(prev => {
-      if (prev.some(w => w.type === artifactRef.type && w.label === artifactRef.label)) return prev
-      return [...prev, artifactRef]
-    })
+    setWidgets(prev => [...prev, artifactRef])
     setLocalViewMode('split')
   }, [])
 

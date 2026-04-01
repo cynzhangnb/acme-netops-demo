@@ -35,6 +35,49 @@ function BackArrowIcon() {
 const TOPO_NATURAL_W = 640
 const TOPO_NATURAL_H = 500
 
+// Canvas smart-snap (FigJam style)
+const GRID = 16 // used only for initial placement
+const WIDGET_GAP = 8 // spacing between widgets on initial placement
+const SNAP_THRESHOLD = 6 // px proximity to trigger alignment snap
+
+function snapToGrid(v) { return Math.round(v / GRID) * GRID }
+
+function computeSnap(candidate, others) {
+  const { x, y, w, h } = candidate
+  const xPoints = [
+    { val: x,       offset: 0   },
+    { val: x + w/2, offset: w/2 },
+    { val: x + w,   offset: w   },
+  ]
+  const yPoints = [
+    { val: y,       offset: 0   },
+    { val: y + h/2, offset: h/2 },
+    { val: y + h,   offset: h   },
+  ]
+  let snapX = null, snapY = null, snapXPos = null, snapYPos = null
+  let minDX = SNAP_THRESHOLD, minDY = SNAP_THRESHOLD
+
+  for (const b of others) {
+    for (const { val, offset } of xPoints) {
+      for (const bv of [b.x, b.x + b.w / 2, b.x + b.w]) {
+        const d = Math.abs(val - bv)
+        if (d < minDX) { minDX = d; snapX = bv - offset; snapXPos = bv }
+      }
+    }
+    for (const { val, offset } of yPoints) {
+      for (const bv of [b.y, b.y + b.h / 2, b.y + b.h]) {
+        const d = Math.abs(val - bv)
+        if (d < minDY) { minDY = d; snapY = bv - offset; snapYPos = bv }
+      }
+    }
+  }
+
+  const guides = []
+  if (snapX !== null) guides.push({ axis: 'x', pos: snapXPos })
+  if (snapY !== null) guides.push({ axis: 'y', pos: snapYPos })
+  return { snapX, snapY, guides }
+}
+
 function ArtifactContent({ artifact, highlight, widgetMode }) {
   if (!artifact) return null
 
@@ -191,6 +234,7 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const [focusedId, setFocusedId] = useState(null)
   const [newItemIds, setNewItemIds] = useState(new Set())
   const [expandedItemId, setExpandedItemId] = useState(null) // widget in focus view
+  const [snapGuides, setSnapGuides] = useState([])
   const canvasItemsRef = useRef([])
   const dragState = useRef(null)
   const resizeState = useRef(null)
@@ -254,11 +298,11 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
 
         // Secondary widgets: 50% width, placed side by side below main
         const rowWidgets = next.filter(i => !i.isMain)
-        const widgetW = Math.max(220, Math.round((cw - 48) / 2))
-        const widgetH = Math.max(180, Math.round(ch * 0.40))
+        const widgetW = snapToGrid(Math.max(220, Math.round((cw - 48) / 2)))
+        const widgetH = snapToGrid(Math.max(180, Math.round(ch * 0.40)))
 
         // Place this new widget after existing ones in the row
-        const rowX = 16 + rowWidgets.length * (widgetW + 16)
+        const rowX = snapToGrid(GRID + rowWidgets.length * (widgetW + WIDGET_GAP))
 
         const newItem = {
           id: `widget-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -303,18 +347,25 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
     function onMouseMove(e) {
       if (dragState.current) {
         const { id, startX, startY, origX, origY } = dragState.current
-        setCanvasItems(prev => prev.map(i =>
-          i.id === id ? { ...i, x: Math.max(0, origX + (e.clientX - startX)), y: Math.max(0, origY + (e.clientY - startY)) } : i
-        ))
+        const rawX = Math.max(0, origX + (e.clientX - startX))
+        const rawY = Math.max(0, origY + (e.clientY - startY))
+        const items = canvasItemsRef.current
+        const item = items.find(i => i.id === id)
+        if (item) {
+          const others = items.filter(i => i.id !== id)
+          const { snapX, snapY, guides } = computeSnap({ ...item, x: rawX, y: rawY }, others)
+          setSnapGuides(guides)
+          setCanvasItems(prev => prev.map(i => i.id === id ? { ...i, x: snapX ?? rawX, y: snapY ?? rawY } : i))
+        }
       }
       if (resizeState.current) {
         const { id, startX, startY, origW, origH } = resizeState.current
-        setCanvasItems(prev => prev.map(i =>
-          i.id === id ? { ...i, w: Math.max(200, origW + (e.clientX - startX)), h: Math.max(140, origH + (e.clientY - startY)) } : i
-        ))
+        const newW = Math.max(200, origW + (e.clientX - startX))
+        const newH = Math.max(140, origH + (e.clientY - startY))
+        setCanvasItems(prev => prev.map(i => i.id === id ? { ...i, w: newW, h: newH } : i))
       }
     }
-    function onMouseUp() { dragState.current = null; resizeState.current = null; document.body.style.cursor = '' }
+    function onMouseUp() { dragState.current = null; resizeState.current = null; document.body.style.cursor = ''; setSnapGuides([]) }
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
     return () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
@@ -412,6 +463,11 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
                   backgroundImage: 'radial-gradient(circle, #d0d0d0 1px, transparent 1px)',
                   backgroundSize: '24px 24px',
                 }} />
+                {snapGuides.map((g, i) => g.axis === 'x' ? (
+                  <div key={i} style={{ position: 'absolute', left: g.pos, top: 0, bottom: 0, width: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
+                ) : (
+                  <div key={i} style={{ position: 'absolute', top: g.pos, left: 0, right: 0, height: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
+                ))}
                 {canvasItems.map(item => (
                   <CanvasWidget
                     key={item.id}

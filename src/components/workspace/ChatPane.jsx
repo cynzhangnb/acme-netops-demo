@@ -50,14 +50,14 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
 
       {/* Session header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#111', letterSpacing: '-0.01em' }}>{sessionName}</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{sessionName}</span>
         <button
           onClick={() => onNew?.()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', border: 'none', borderRadius: 6, background: 'transparent', fontSize: 11, fontWeight: 500, color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' }}
+          style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
           onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
         >
-          <PlusIcon /> New
+          <PlusIcon />
         </button>
       </div>
 

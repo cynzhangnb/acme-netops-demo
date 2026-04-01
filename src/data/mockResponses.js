@@ -1,27 +1,33 @@
 // Mock AI response registry — keyword-matched responses for demo scenarios
 
 const TROUBLESHOOT_VOICE_CONTENT = `## Diagnosis Summary
-Voice traffic from 10.8.1.4 → 10.8.3.134 is likely impacted by a routing inconsistency near Core-Router-2
+Voice traffic degradation is most likely caused by a recent BGP policy change on Core-Router-2, which altered route selection and introduced asymmetric routing.
 
 [ARTIFACT]
 
 ## Key Findings
 
+### Recent network change
+- BGP policy updated on Core-Router-2 (~2 hours ago), modifying route preference for voice traffic
+- Static route updated for 10.8.3.0/24, changing next-hop selection
+
+→ View Change Analysis
+
+### Routing inconsistency
+- Route to 10.8.3.0/24 differs from baseline snapshot
+- Next-hop selection has changed
+
+→ Compare Route Table
+
 ### Path analysis
 - Traffic path shows asymmetry between forward and return routes
 - Latency spike observed at Core-Router-2 → Edge-Router-7
 
-### Routing inconsistency
-- Route to 10.8.3.0/24 differs from baseline snapshot
-- Possible suboptimal next-hop selection
+### Performance impact
+- Traffic increased from 18 Mbps to 50 Mbps over the past 12 days
+- Peak utilization reached 78%, approaching threshold
 
-→ Compare Route Table
-
-### Recent network change
-- BGP policy updated on Core-Router-2 (~2 hours ago)
-- Route preference modified for voice VLAN traffic
-
-→ View Change Analysis`
+→ View Traffic Trend`
 
 // Shared explore response content — used by both 'explore' and 'boston' keyword matches
 const EXPLORE_RESPONSE_CONTENT = `Here's a high-level view of the Boston data center. It follows a standard 3-tier architecture with clear separation between core, distribution, and access layers.
