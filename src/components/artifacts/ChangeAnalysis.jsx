@@ -72,9 +72,9 @@ function DiffPanel({ change }) {
   const unchanged = beforeLines.length - removed
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fffdf9' }}>
       {/* Diff header */}
-      <div style={{ padding: '8px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 16, background: '#fafafa', flexShrink: 0 }}>
+      <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1efea', display: 'flex', alignItems: 'center', gap: 16, background: '#fcfbf9', flexShrink: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>{change.device} — {change.type}</span>
         <span style={{ fontSize: 11, color: '#888' }}>{change.timestamp}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 14 }}>
@@ -85,14 +85,14 @@ function DiffPanel({ change }) {
       </div>
 
       {/* Side-by-side diff */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: '#fffdf9' }}>
         {/* Before */}
-        <div style={{ flex: 1, borderRight: '1px solid #e8e8e8', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, borderRight: '1px solid #ece9e3', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffdf9' }}>
           <div style={{ padding: '6px 12px', background: '#fdf2f2', borderBottom: '1px solid #f0e0e0', fontSize: 11, fontWeight: 600, color: '#c0392b', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
             <span>Before</span>
             <span style={{ color: '#888', fontWeight: 400 }}>2026-03-22</span>
           </div>
-          <div style={{ flex: 1, overflow: 'auto', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.7 }}>
+          <div style={{ flex: 1, overflow: 'auto', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.7, background: '#fffdf9' }}>
             {Array.from({ length: maxLen }, (_, i) => {
               const text = beforeLines[i] ?? ''
               const changed = isChanged(i, 'before')
@@ -107,12 +107,12 @@ function DiffPanel({ change }) {
         </div>
 
         {/* After */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fffdf9' }}>
           <div style={{ padding: '6px 12px', background: '#f0fdf4', borderBottom: '1px solid #d0f0de', fontSize: 11, fontWeight: 600, color: '#1a7a3f', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
             <span>After</span>
             <span style={{ color: '#888', fontWeight: 400 }}>2026-03-29</span>
           </div>
-          <div style={{ flex: 1, overflow: 'auto', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.7 }}>
+          <div style={{ flex: 1, overflow: 'auto', fontFamily: 'monospace', fontSize: 11, lineHeight: 1.7, background: '#fffdf9' }}>
             {Array.from({ length: maxLen }, (_, i) => {
               const text = (change.after.split('\n'))[i] ?? ''
               const changed = isChanged(i, 'after')
