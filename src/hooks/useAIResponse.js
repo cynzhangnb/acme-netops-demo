@@ -4,7 +4,7 @@ import { matchResponse } from '../data/mockResponses'
 let msgCounter = 0
 function genMsgId() { return `msg-${++msgCounter}` }
 
-export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onPrefillInput, initialMessages = [] }) {
+export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onSetChangesMapOverlay, onPrefillInput, initialMessages = [] }) {
   const [messages, setMessages] = useState(initialMessages)
   const [isStreaming, setIsStreaming] = useState(false)
   const timerRef = useRef(null)
@@ -24,13 +24,14 @@ export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHigh
     const delay = 900 + Math.random() * 500
 
     timerRef.current = setTimeout(() => {
-      const matched = matchResponse(inputText)
+      const matched = matchResponse(inputText, messages)
       const { response, sideEffects } = matched
 
       // Process side effects
       if (sideEffects) {
         sideEffects.forEach(effect => {
           if (effect.type === 'setTopologyHighlight') onSetTopologyHighlight(effect.value)
+          if (effect.type === 'setChangesMapOverlay') onSetChangesMapOverlay?.(effect.value)
           if (effect.type === 'triggerSplitView') onTriggerSplit()
         })
       }
@@ -43,7 +44,7 @@ export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHigh
           label: response.artifactLabel,
           dataKey: response.artifactDataKey,
         }
-        if (response.artifactType === 'topology') {
+        if (response.artifactType === 'topology' || response.artifactType === 'changesMap') {
           onAddArtifact(artifactRef)
         }
         // chart/table stay inline until user saves them
@@ -65,7 +66,7 @@ export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHigh
         onPrefillInput(response.prefillNext)
       }
     }, delay)
-  }, [isStreaming, onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onPrefillInput])
+  }, [isStreaming, onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onSetChangesMapOverlay, onPrefillInput])
 
   const clearMessages = useCallback(() => {
     clearTimeout(timerRef.current)

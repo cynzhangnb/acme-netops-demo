@@ -50,7 +50,214 @@ Traffic is aggregated at the distribution layer, making it a critical point for 
 - how the network is segmented
 - connections for a specific device or switch`
 
+const DRAW_CHANGES_MAP_CONTENT = `Generated a map with the **6 devices** that had configuration changes in the last 7 days.`
+
+const DRAW_CHANGES_MAP_24H_CONTENT = `Generated a map with the **4 devices** that had configuration changes in the last 24 hours.`
+
+const RECENT_CHANGES_CONTENT = `**8 configuration changes detected** in the last 7 days across the Boston network.
+
+- **CR-BOS-01** — NTP server list updated; added 10.20.1.2 as secondary peer
+- **AS-BOS-01** — Interface Ethernet0/4 moved from VLAN 210 to VLAN 220
+- **DS-BOS-03** — Logging buffer size increased from 64000 to 128000
+- **CR-BOS-02** — BGP route-policy updated; voice traffic local-preference lowered from 150 → 100
+- **CR-BOS-02** — Static route for 10.8.3.0/24 next-hop changed to 10.0.2.1
+- **DS-BOS-01** — ACL \`MGMT-ACCESS\` modified; new permit entry added for 10.20.5.0/24
+- **DS-BOS-03** — OSPF hello interval changed from 10s → 5s on Ethernet0/1
+- **ER-BOS-07** — QoS policy \`WAN-QOS\` updated; voice class CIR reduced from 4096000 to 2048000
+
+→ View Change Analysis`
+
+const CHANGES_24H_CONTENT = `Filtered to last 24 hours — **5 configuration changes** detected.
+
+- **CR-BOS-02** — BGP route-policy updated; voice traffic local-preference lowered from 150 → 100
+- **CR-BOS-02** — Static route for 10.8.3.0/24 next-hop changed to 10.0.2.1
+- **DS-BOS-01** — ACL \`MGMT-ACCESS\` modified; new permit entry added for 10.20.5.0/24
+- **DS-BOS-03** — OSPF hello interval changed from 10s → 5s on Ethernet0/1
+- **ER-BOS-07** — QoS policy \`WAN-QOS\` updated; voice class CIR reduced from 4096000 to 2048000
+
+→ View Change Analysis`
+
+const QOS_CIR_CONTENT = `**ER-BOS-07**, **DS-BOS-03**, and **AS-BOS-03** have voice CIR below 4,096,000. Expand any row to see the relevant configuration.`
+
+const SERIAL_7D_CONTENT = `Added serial numbers to the **6 devices** with configuration changes in the **last 7 days**.`
+
+const SERIAL_24H_CONTENT = `Added serial numbers to the **4 devices** with configuration changes in the **last 24 hours**.`
+
+const IOS_VERSION_7D_CONTENT = `Showing OS versions for the **6 devices** with changes in the **last 7 days**.
+
+- 2 devices are running outdated OS versions — **CR-BOS-01** (21.2R3-S2) and **DS-BOS-03** (17.06.03)
+- Recommend scheduling upgrades during the next maintenance window`
+
+const IOS_VERSION_24H_CONTENT = `Showing OS versions for the **4 devices** with changes in the **last 24 hours**.
+
+- 1 device is running an outdated OS version — **DS-BOS-03** (17.06.03)
+- Recommend scheduling an upgrade during the next maintenance window`
+
+const BGP_DESIGN_CONTENT = `Displaying BGP topology for the current network
+
+- 3 devices are participating in BGP
+- **CR-BOS-01** and **CR-BOS-02** form an iBGP relationship
+- **ER-BOS-07** connects via eBGP`
+
+const CRC_ERRORS_CONTENT = `CRC errors detected on 2 links within the current view. CRC errors on CR-BOS-02 ↔ DS-BOS-01 may impact BGP connectivity observed in this topology.`
+
+const OSPF_DESIGN_CONTENT = `Highlighting OSPF topology on the current map.
+
+- OSPF handles local routing between distribution and access switches
+- **DS-BOS-01** peers with **AS-BOS-01** via OSPF (Area 0)
+- Note: **DS-BOS-03** recently changed its OSPF hello interval from 10s → 5s on Ethernet0/1`
+
 export const responseRegistry = [
+  {
+    id: 'draw-changes-map',
+    keywords: [],
+    priority: 16,
+    response: {
+      content: DRAW_CHANGES_MAP_CONTENT,
+      artifactType: 'changesMap',
+      artifactLabel: 'Changed Devices — Last 7 days',
+      artifactDataKey: null,
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'draw-changes-map-24h',
+    keywords: [],
+    priority: 16,
+    response: {
+      content: DRAW_CHANGES_MAP_24H_CONTENT,
+      artifactType: 'changesMap',
+      artifactLabel: 'Changed Devices — Last 24h',
+      artifactDataKey: 'last-24h',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'changes-24h',
+    keywords: ['last 24'],
+    priority: 15,
+    response: {
+      content: CHANGES_24H_CONTENT,
+      artifactType: 'changeAnalysis',
+      artifactLabel: 'Recent Changes · Last 24h',
+      artifactDataKey: 'last-24h',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'recent-changes',
+    keywords: ['configuration changes'],
+    priority: 14,
+    response: {
+      content: RECENT_CHANGES_CONTENT,
+      artifactType: null,
+      artifactLabel: null,
+      artifactDataKey: null,
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'qos-cir',
+    keywords: ['cir'],
+    priority: 14,
+    response: {
+      content: QOS_CIR_CONTENT,
+      artifactType: 'qosTable',
+      artifactLabel: 'Voice CIR Report',
+      artifactDataKey: null,
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'serial-7d',
+    keywords: [],
+    priority: 17,
+    response: {
+      content: SERIAL_7D_CONTENT,
+      artifactType: 'iosVersionTable',
+      artifactLabel: 'OS Versions',
+      artifactDataKey: 'serial',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'serial-24h',
+    keywords: [],
+    priority: 17,
+    response: {
+      content: SERIAL_24H_CONTENT,
+      artifactType: 'iosVersionTable',
+      artifactLabel: 'OS Versions',
+      artifactDataKey: 'last-24h-serial',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'ios-version-7d',
+    keywords: [],
+    priority: 16,
+    response: {
+      content: IOS_VERSION_7D_CONTENT,
+      artifactType: 'iosVersionTable',
+      artifactLabel: 'IOS Versions',
+      artifactDataKey: null,
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'ios-version-24h',
+    keywords: [],
+    priority: 16,
+    response: {
+      content: IOS_VERSION_24H_CONTENT,
+      artifactType: 'iosVersionTable',
+      artifactLabel: 'IOS Versions',
+      artifactDataKey: 'last-24h',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'bgp-design',
+    keywords: ['bgp'],
+    priority: 16,
+    response: {
+      content: BGP_DESIGN_CONTENT,
+      artifactType: null,
+      artifactLabel: null,
+      artifactDataKey: null,
+    },
+    sideEffects: [
+      { type: 'setChangesMapOverlay', value: 'bgp' },
+    ],
+  },
+  {
+    id: 'crc-errors',
+    keywords: ['crc'],
+    priority: 17,
+    response: {
+      content: CRC_ERRORS_CONTENT,
+      artifactType: 'crcTable',
+      artifactLabel: 'CRC Error Report',
+      artifactDataKey: null,
+    },
+    sideEffects: [
+      { type: 'setChangesMapOverlay', value: 'crc' },
+    ],
+  },
+  {
+    id: 'ospf-design',
+    keywords: ['ospf'],
+    priority: 16,
+    response: {
+      content: OSPF_DESIGN_CONTENT,
+      artifactType: null,
+      artifactLabel: null,
+      artifactDataKey: null,
+    },
+    sideEffects: [
+      { type: 'setChangesMapOverlay', value: 'ospf' },
+    ],
+  },
   {
     id: 'troubleshoot-voice',
     keywords: ['voice issue', 'voice', '10.8.1'],
@@ -295,8 +502,36 @@ You can also type **/** for a list of available commands.`,
   sideEffects: [],
 }
 
-export function matchResponse(inputText) {
+export function matchResponse(inputText, messages = []) {
   const lower = inputText.toLowerCase()
+
+  // Context-aware: "serial number" — pick 24h or 7d based on prior IOS table context
+  if (lower.includes('serial')) {
+    const lastAI = [...messages].reverse().find(m => m.role === 'assistant')
+    const lastContent = lastAI?.content?.toLowerCase() ?? ''
+    const is24h = lastContent.includes('24 hour') || lastContent.includes('last 24') || lastContent.includes('24h')
+    const id = is24h ? 'serial-24h' : 'serial-7d'
+    return responseRegistry.find(r => r.id === id) ?? fallbackResponse
+  }
+
+  // Context-aware: "ios version" — pick 24h or 7d based on prior context
+  if (lower.includes('ios') && (lower.includes('version') || lower.includes('versions'))) {
+    const lastAI = [...messages].reverse().find(m => m.role === 'assistant')
+    const lastContent = lastAI?.content?.toLowerCase() ?? ''
+    const is24h = lastContent.includes('24 hour') || lastContent.includes('last 24') || lastContent.includes('24h')
+    const id = is24h ? 'ios-version-24h' : 'ios-version-7d'
+    return responseRegistry.find(r => r.id === id) ?? fallbackResponse
+  }
+
+  // Context-aware: "draw ... map" — check the last AI message to pick the right device set
+  if ((lower.includes('draw') || lower.includes('show')) && lower.includes('map')) {
+    const lastAI = [...messages].reverse().find(m => m.role === 'assistant')
+    const lastContent = lastAI?.content?.toLowerCase() ?? ''
+    const is24h = lastContent.includes('24 hour') || lastContent.includes('last 24')
+    const id = is24h ? 'draw-changes-map-24h' : 'draw-changes-map'
+    return responseRegistry.find(r => r.id === id) ?? fallbackResponse
+  }
+
   const candidates = responseRegistry.filter(entry =>
     entry.keywords.length > 0 && entry.keywords.every(kw => lower.includes(kw))
   )

@@ -1,9 +1,9 @@
 export const SLASH_COMMANDS = [
   {
-    id: 'network',
-    name: '/network',
-    label: 'Explore this network',
-    prompt: 'Help me understand this network at a high level.',
+    id: 'qos',
+    name: '/qos',
+    label: 'QoS',
+    prompt: 'Which devices have voice CIR < 4096000?',
   },
   {
     id: 'routing',

@@ -10,7 +10,9 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
   const [localViewMode, setLocalViewMode] = useState(restoredSession ? 'split' : 'entry')
   const didAutoSend = useRef(false)
   const [topologyHighlight, setTopologyHighlight] = useState(null)
+  const [changesMapOverlay, setChangesMapOverlay] = useState(null)
   const [inputPrefill, setInputPrefill] = useState('')
+  const [sessionNameOverride, setSessionNameOverride] = useState(null)
 
   const {
     artifacts, activeArtifactId, setActiveArtifactId,
@@ -80,6 +82,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
     onAddArtifact: handleAddArtifact,
     onTriggerSplit: handleTriggerSplit,
     onSetTopologyHighlight: handleSetHighlight,
+    onSetChangesMapOverlay: setChangesMapOverlay,
     onPrefillInput: setInputPrefill,
     initialMessages: restoredSession?.messages || [],
   })
@@ -93,10 +96,16 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (sessionNameOverride) return // user renamed manually — don't overwrite
     if (onSessionNameChange) {
       onSessionNameChange(deriveSessionName(messages, currentSessionName))
     }
   }, [messages, currentSessionName]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleRenameSession(name) {
+    setSessionNameOverride(name)
+    onSessionNameChange?.(name)
+  }
 
   function handleSend(text) {
     if (localViewMode === 'entry') setLocalViewMode('chat')
@@ -117,6 +126,8 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
     onAddWidget: handleAddWidget,
     onNew,
     currentSessionName,
+    nameOverride: sessionNameOverride,
+    onRenameSession: handleRenameSession,
   }
 
   if (localViewMode === 'entry') {
@@ -132,6 +143,8 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
         onSetActiveArtifact={setActiveArtifactId}
         onRemoveArtifact={handleRemoveArtifact}
         topologyHighlight={topologyHighlight}
+        onClearTopologyOverlay={() => setTopologyHighlight(null)}
+        changesMapOverlay={changesMapOverlay}
         widgets={widgets}
         inputPrefill={inputPrefill}
         onTopologyNodeAction={handleTopologyNodeAction}

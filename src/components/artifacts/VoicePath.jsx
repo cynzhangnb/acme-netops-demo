@@ -125,13 +125,17 @@ export default function VoicePath({ widgetMode = false, onNodeAction }) {
     e.stopPropagation()
     e.preventDefault()
     if (e.button !== 0) return
+    setContextMenu(null)
     setSelectedNodeId(id)
     onNodeAction?.({
       actionId: 'select-node',
       node: nodeMeta[id],
     })
-    dragging.current = { id, startX: e.clientX, startY: e.clientY, origX: pos[id].x, origY: pos[id].y }
-  }, [pos, onNodeAction, nodeMeta])
+    if (!widgetMode) {
+      // Store intent to drag — don't activate until mouse moves past threshold
+      dragging.current = { id, startX: e.clientX, startY: e.clientY, origX: pos[id].x, origY: pos[id].y, active: false }
+    }
+  }, [pos, onNodeAction, nodeMeta, widgetMode])
 
   const onBgDown = useCallback((e) => {
     if (dragging.current) return
@@ -141,8 +145,15 @@ export default function VoicePath({ widgetMode = false, onNodeAction }) {
   const onMove = useCallback((e) => {
     if (dragging.current) {
       const { id, startX, startY, origX, origY } = dragging.current
-      const dx = (e.clientX - startX) / scale
-      const dy = (e.clientY - startY) / scale
+      const movedX = e.clientX - startX
+      const movedY = e.clientY - startY
+      // Only activate drag after moving 4px — prevents accidental drag on click
+      if (!dragging.current.active) {
+        if (Math.sqrt(movedX * movedX + movedY * movedY) < 4) return
+        dragging.current.active = true
+      }
+      const dx = movedX / scale
+      const dy = movedY / scale
       setPos(prev => ({ ...prev, [id]: { ...prev[id], x: origX + dx, y: origY + dy } }))
     } else if (panning.current) {
       const dx = e.clientX - panning.current.startX
@@ -158,8 +169,8 @@ export default function VoicePath({ widgetMode = false, onNodeAction }) {
 
   useEffect(() => {
     window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup',   onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+    window.addEventListener('mouseup', onUp, true)  // capture phase — fires before stopPropagation blocks it
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp, true) }
   }, [onMove, onUp])
 
   // Wheel zoom — attach with passive:false so we can preventDefault
@@ -264,7 +275,7 @@ export default function VoicePath({ widgetMode = false, onNodeAction }) {
           display: 'flex', alignItems: 'center',
           gap: isEp ? 5 : 6,
           padding: isEp ? '0 8px' : '0 8px',
-          cursor: 'grab',
+          cursor: widgetMode ? 'pointer' : 'grab',
           boxShadow: resolvedShadow,
           userSelect: 'none',
         }}

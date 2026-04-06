@@ -88,6 +88,19 @@ const HIGHLIGHT_GROUPS = {
     color: '#8b5cf6',
     label: 'VLAN 100 — Management',
   },
+  changes: {
+    nodes: ['cr1','cr2','ds1','ds3','es1'],
+    edges: ['e0','e1','e3','e5','e9'],
+    color: '#f59e0b',
+    label: 'Config Changes — Last 7 days',
+    nodeChanges: {
+      cr1: ['NTP'],
+      cr2: ['BGP Policy', 'Static Route'],
+      ds1: ['ACL'],
+      ds3: ['Logging', 'OSPF'],
+      es1: ['VLAN'],
+    },
+  },
 }
 
 
@@ -151,6 +164,59 @@ function NodeIcon({ type }) {
   return <AccessSwitchSvg />
 }
 
+function NodeChangeTag({ changes }) {
+  const [hovered, setHovered] = useState(false)
+  if (!changes || changes.length === 0) return null
+  const label = changes.length === 1 ? changes[0] : `${changes.length} changes`
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span style={{
+        fontSize: 8, fontWeight: 600, padding: '1px 4px', borderRadius: 3,
+        background: '#fef3c7', color: '#92400e', whiteSpace: 'nowrap', cursor: 'default',
+        display: 'inline-block',
+      }}>{label}</span>
+      {hovered && changes.length > 1 && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#1a1a1a', color: '#fff', borderRadius: 5,
+          padding: '4px 7px', fontSize: 10, whiteSpace: 'nowrap',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)', zIndex: 100,
+          display: 'flex', flexDirection: 'column', gap: 2,
+        }}>
+          <div style={{
+            position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '4px solid transparent', borderRight: '4px solid transparent',
+            borderBottom: '4px solid #1a1a1a',
+          }} />
+          {changes.map(c => <div key={c}>{c}</div>)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M1.5 6.5C1.5 6.5 3.5 2.5 6.5 2.5C9.5 2.5 11.5 6.5 11.5 6.5C11.5 6.5 9.5 10.5 6.5 10.5C3.5 10.5 1.5 6.5 1.5 6.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="6.5" cy="6.5" r="1.5" fill="currentColor" opacity="0.7"/>
+    </svg>
+  )
+}
+function EyeOffIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M1.5 6.5C1.5 6.5 3.5 2.5 6.5 2.5C9.5 2.5 11.5 6.5 11.5 6.5C11.5 6.5 9.5 10.5 6.5 10.5C3.5 10.5 1.5 6.5 1.5 6.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity="0.35"/>
+      <line x1="2" y1="2" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 function ZoomInIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.2"/><line x1="3" y1="5.5" x2="8" y2="5.5" stroke="currentColor" strokeWidth="1.2"/><line x1="5.5" y1="3" x2="5.5" y2="8" stroke="currentColor" strokeWidth="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ZoomOutIcon() { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="currentColor" strokeWidth="1.2"/><line x1="3" y1="5.5" x2="8" y2="5.5" stroke="currentColor" strokeWidth="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg> }
 function ResetIcon()   { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 0 1 4-4 4 4 0 0 1 2.83 1.17L11 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><polyline points="11,2 11,5 8,5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg> }
@@ -158,8 +224,25 @@ function ResetIcon()   { return <svg width="12" height="12" viewBox="0 0 12 12" 
 const NODE_MENU_ITEMS = [
   { id: 'view-config', label: 'View Configuration' },
   { id: 'view-properties', label: 'View Properties' },
-  { id: 'extend-neighbour', label: 'Extend Neighbour' },
+  { id: 'extend-neighbour', label: 'Extend Neighbors', hasSubmenu: true },
 ]
+
+const EXTEND_SUBMENU_ITEMS = [
+  { id: 'extend-all',      label: 'All neighbors' },
+  { id: 'extend-bgp',      label: 'BGP neighbors' },
+  { id: 'extend-ospf',     label: 'OSPF neighbors' },
+  { id: 'extend-l2',       label: 'Layer 2 neighbors' },
+  { separator: true },
+  { id: 'extend-advanced', label: 'Advanced selection…' },
+]
+
+function ChevronRightIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <polyline points="3.5,2 6.5,5 3.5,8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
 
 function buildNodePrompt(actionId, node) {
   if (!node) return ''
@@ -169,14 +252,20 @@ function buildNodePrompt(actionId, node) {
   if (actionId === 'view-properties') {
     return `Show me the device properties for ${node.label} (${node.ip}), including role, status, IP, AS, and connected neighbors.`
   }
+  if (actionId === 'extend-all')      return `Extend neighbor view from ${node.label} — show all directly connected neighbors.`
+  if (actionId === 'extend-bgp')      return `Extend neighbor view from ${node.label} — show BGP neighbors and peering sessions.`
+  if (actionId === 'extend-ospf')     return `Extend neighbor view from ${node.label} — show OSPF neighbors and adjacencies.`
+  if (actionId === 'extend-l2')       return `Extend neighbor view from ${node.label} — show Layer 2 neighbors via CDP/LLDP.`
+  if (actionId === 'extend-advanced') return `Show advanced neighbor selection for ${node.label} (${node.ip}).`
   return `Extend neighbour view from ${node.label} (${node.ip}) and show the next-hop devices and links around it.`
 }
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TopologyMap({ highlight, widgetMode = false, onNodeAction }) {
+export default function TopologyMap({ highlight, widgetMode = false, onNodeAction, onClearOverlay }) {
   const containerRef = useRef(null)
+  const outerRef     = useRef(null)
   const nodeRefs    = useRef({})
   const [lines, setLines] = useState([])
   const [zoom,  setZoom]  = useState(1)
@@ -184,8 +273,24 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
   const [selectedNodeId, setSelectedNodeId] = useState(null)
   const [contextMenu, setContextMenu] = useState(null)
 
+  const [hoveredMenuItem, setHoveredMenuItem] = useState(null)
+  const [overlayOn, setOverlayOn] = useState(true)
+
+  // Spacebar pan
+  const spaceRef     = useRef(false)
+  const isPanningRef = useRef(false)
+  const panStartRef  = useRef(null)
+  const panRef       = useRef({ x: 0, y: 0 })
+  const [pan,       setPan]       = useState({ x: 0, y: 0 })
+  const [spaceDown, setSpaceDown] = useState(false)
+  const [panning,   setPanning]   = useState(false)
+  // Reset visibility whenever the active overlay changes
+  useEffect(() => { setOverlayOn(true) }, [highlight])
+
   const group         = highlight ? HIGHLIGHT_GROUPS[highlight] : null
   const isRoutingMode = group?.mode === 'routing'
+  // When overlayOn is false, render the map as neutral (no highlight)
+  const effectiveGroup = overlayOn ? group : null
 
   const computeLines = useCallback(() => {
     if (!containerRef.current) return
@@ -234,8 +339,58 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
     }
   }, [])
 
-  function isNodeHighlighted(id) { return !group || group.nodes.includes(id) }
-  function isEdgeHighlighted(id) { return !group || group.edges.includes(id) }
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.code === 'Space' && !e.repeat) {
+        const tag = e.target.tagName.toLowerCase()
+        if (tag === 'input' || tag === 'textarea') return
+        e.preventDefault()
+        spaceRef.current = true
+        setSpaceDown(true)
+      }
+    }
+    function onKeyUp(e) {
+      if (e.code === 'Space') {
+        spaceRef.current = false
+        isPanningRef.current = false
+        setSpaceDown(false)
+        setPanning(false)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [])
+
+  useEffect(() => {
+    function onMouseMove(e) {
+      if (!isPanningRef.current || !panStartRef.current) return
+      const newPan = {
+        x: panStartRef.current.px + (e.clientX - panStartRef.current.sx),
+        y: panStartRef.current.py + (e.clientY - panStartRef.current.sy),
+      }
+      panRef.current = newPan
+      setPan(newPan)
+    }
+    function onMouseUp() {
+      if (isPanningRef.current) {
+        isPanningRef.current = false
+        setPanning(false)
+      }
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function isNodeHighlighted(id) { return !effectiveGroup || effectiveGroup.nodes.includes(id) }
+  function isEdgeHighlighted(id) { return !effectiveGroup || effectiveGroup.edges.includes(id) }
 
   function handleNodeContextMenu(e, node) {
     e.preventDefault()
@@ -259,6 +414,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
     if (!node) return
     setSelectedNodeId(node.id)
     setContextMenu(null)
+    setHoveredMenuItem(null)
     onNodeAction?.({
       actionId,
       node,
@@ -282,7 +438,22 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', background: widgetMode ? '#fff' : undefined }}>
+    <div
+      ref={outerRef}
+      style={{
+        position: 'relative', width: '100%', height: '100%', overflow: 'hidden',
+        background: widgetMode ? '#fff' : undefined,
+        cursor: panning ? 'grabbing' : spaceDown ? 'grab' : undefined,
+      }}
+      onMouseDown={e => {
+        if (spaceRef.current) {
+          e.preventDefault()
+          isPanningRef.current = true
+          panStartRef.current = { sx: e.clientX, sy: e.clientY, px: panRef.current.x, py: panRef.current.y }
+          setPanning(true)
+        }
+      }}
+    >
       {!widgetMode && <div className="dot-grid" />}
 
       {/* Zoom toolbar — focus mode only */}
@@ -320,9 +491,25 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
           </div>
         </div>
       ) : (!widgetMode && group?.label) ? (
-        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6, background: '#fff', border: '1px solid #e4e4e4', borderRadius: 20, padding: '4px 10px', fontSize: 11 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: group.color }} />
-          <span style={{ color: '#555' }}>{group.label}</span>
+        <div style={{
+          position: 'absolute', top: 10, left: 10, zIndex: 10,
+          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 8,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '5px 10px 4px', fontSize: 9, fontWeight: 600, color: '#888', letterSpacing: '0.07em', textTransform: 'uppercase', borderBottom: '1px solid #f0f0f0' }}>
+            Overlays
+          </div>
+          <div style={{ padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: group.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 11, color: '#444', flex: 1, whiteSpace: 'nowrap' }}>{group.label}</span>
+            <button
+              onClick={() => setOverlayOn(v => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: overlayOn ? '#555' : '#bbb', padding: '1px 0', display: 'flex', flexShrink: 0, transition: 'color 0.15s' }}
+              title={overlayOn ? 'Hide overlay' : 'Show overlay'}
+            >
+              {overlayOn ? <EyeIcon /> : <EyeOffIcon />}
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -332,8 +519,9 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
         onMouseDown={() => setContextMenu(null)}
         style={{
           position: 'absolute', inset: 0,
-          transform: `scale(${zoom})`, transformOrigin: 'center center',
-          transition: 'transform 0.25s ease',
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: 'center center',
+          transition: panning ? 'none' : 'transform 0.25s ease',
         }}
       >
         {/* SVG edges */}
@@ -389,9 +577,9 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
             return (
               <line key={line.id}
                 x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
-                stroke={group && hl ? group.color : '#ccc'}
-                strokeWidth={group && hl ? 2 : 1}
-                opacity={group ? (hl ? 1 : 0.15) : 1}
+                stroke={effectiveGroup && hl ? effectiveGroup.color : '#ccc'}
+                strokeWidth={effectiveGroup && hl ? 2 : 1}
+                opacity={effectiveGroup ? (hl ? 1 : 0.15) : 1}
                 style={{ transition: 'all 0.4s ease' }}
               />
             )
@@ -403,6 +591,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
           const hl = isNodeHighlighted(node.id)
           const isHovered = hoveredNode === node.id
           const isSelected = selectedNodeId === node.id
+          const nodeChanges = (highlight === 'changes' && overlayOn && hl && group?.nodeChanges) ? group.nodeChanges[node.id] : null
 
           return (
             <div
@@ -412,9 +601,9 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
               style={{
                 left: `${node.px}%`, top: `${node.py}%`,
                 position: 'absolute',
-                opacity: isRoutingMode ? 1 : (group ? (hl ? 1 : 0.15) : 1),
-                borderColor: isSelected || isHovered ? '#2563eb' : (group && hl && !isRoutingMode ? group.color : '#d4d4d4'),
-                boxShadow: isSelected || isHovered ? '0 2px 8px rgba(37,99,235,0.18)' : (group && hl && !isRoutingMode ? `0 0 0 2px ${group.color}22` : 'none'),
+                opacity: isRoutingMode ? 1 : (effectiveGroup ? (hl ? 1 : 0.15) : 1),
+                borderColor: isSelected || isHovered ? '#2563eb' : (effectiveGroup && hl && !isRoutingMode ? effectiveGroup.color : '#d4d4d4'),
+                boxShadow: isSelected || isHovered ? '0 2px 8px rgba(37,99,235,0.18)' : (effectiveGroup && hl && !isRoutingMode ? `0 0 0 2px ${effectiveGroup.color}22` : 'none'),
                 transition: 'all 0.35s ease',
               }}
               onMouseEnter={() => setHoveredNode(node.id)}
@@ -426,6 +615,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
 
               <span className="ng-lbl">{node.label}</span>
               <span className="ng-ip">{node.ip}</span>
+              {nodeChanges && <NodeChangeTag changes={nodeChanges} />}
             </div>
           )
         })}
@@ -439,37 +629,94 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
             left: contextMenu.x,
             top: contextMenu.y,
             zIndex: 30,
-            width: 164,
+            width: 152,
             background: '#fff',
             border: '1px solid #dfdfdf',
             borderRadius: 9,
             boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)',
-            padding: 5,
+            padding: 4,
           }}
         >
-          {NODE_MENU_ITEMS.map(item => (
-            <button
-              key={item.id}
-              onClick={() => handleMenuAction(item.id)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '7px 9px',
-                border: 'none',
-                borderRadius: 7,
-                background: 'transparent',
-                color: '#2f2d29',
-                fontSize: 11.5,
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f3f0ea'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              {item.label}
-            </button>
-          ))}
+          {NODE_MENU_ITEMS.map(item => {
+            if (!item.hasSubmenu) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleMenuAction(item.id)}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f3f0ea'; setHoveredMenuItem(null) }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center',
+                    padding: '4px 8px', border: 'none', borderRadius: 5,
+                    background: 'transparent', color: '#2f2d29',
+                    fontSize: 11.5, textAlign: 'left', cursor: 'pointer',
+                  }}
+                >
+                  {item.label}
+                </button>
+              )
+            }
+            // Submenu trigger
+            return (
+              <div
+                key={item.id}
+                style={{ position: 'relative' }}
+                onMouseEnter={() => setHoveredMenuItem(item.id)}
+                onMouseLeave={() => setHoveredMenuItem(null)}
+              >
+                <button
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '4px 8px', border: 'none', borderRadius: 5,
+                    background: hoveredMenuItem === item.id ? '#f3f0ea' : 'transparent',
+                    color: '#2f2d29', fontSize: 11.5, textAlign: 'left', cursor: 'default',
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <span style={{ color: '#aaa', display: 'flex', alignItems: 'center' }}><ChevronRightIcon /></span>
+                </button>
+
+                {hoveredMenuItem === item.id && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      left: 'calc(100% + 3px)',
+                      zIndex: 40,
+                      width: 152,
+                      background: '#fff',
+                      border: '1px solid #dfdfdf',
+                      borderRadius: 9,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.07)',
+                      padding: 4,
+                    }}
+                  >
+                    {EXTEND_SUBMENU_ITEMS.map((sub, i) => {
+                      if (sub.separator) {
+                        return <div key={`sep-${i}`} style={{ height: 1, background: '#f0ede8', margin: '4px 5px' }} />
+                      }
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => handleMenuAction(sub.id)}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f3f0ea'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center',
+                            padding: '4px 8px', border: 'none', borderRadius: 5,
+                            background: 'transparent', color: sub.id === 'extend-advanced' ? '#666' : '#2f2d29',
+                            fontSize: 11.5, textAlign: 'left', cursor: 'pointer',
+                          }}
+                        >
+                          {sub.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

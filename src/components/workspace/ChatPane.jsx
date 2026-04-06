@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import MessageBubble from './MessageBubble'
 import SkeletonMessage from './SkeletonMessage'
 import InputArea from './InputArea'
@@ -40,9 +40,28 @@ function PlusIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false }) {
   const bottomRef = useRef(null)
-  const sessionName = deriveSessionName(messages, currentSessionName)
+  const inputRef = useRef(null)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const sessionName = nameOverride ?? deriveSessionName(messages, currentSessionName)
+
+  function startEdit() {
+    setEditValue(sessionName)
+    setIsEditingName(true)
+  }
+  function confirmEdit() {
+    const trimmed = editValue.trim()
+    if (trimmed) onRenameSession?.(trimmed)
+    setIsEditingName(false)
+  }
+  function cancelEdit() {
+    setIsEditingName(false)
+  }
+  useEffect(() => {
+    if (isEditingName) inputRef.current?.select()
+  }, [isEditingName])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -53,7 +72,30 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
 
       {/* Session header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-        <span style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{sessionName}</span>
+        {isEditingName ? (
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            onBlur={confirmEdit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); confirmEdit() }
+              if (e.key === 'Escape') { e.preventDefault(); cancelEdit() }
+            }}
+            style={{
+              flex: 1, minWidth: 0, fontSize: 13, fontWeight: 500, color: '#111',
+              letterSpacing: '-0.01em', border: 'none', outline: 'none',
+              background: '#f5f5f5', borderRadius: 5, padding: '2px 6px',
+              margin: '-2px -6px',
+            }}
+          />
+        ) : (
+          <span
+            onClick={startEdit}
+            title="Click to rename"
+            style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1, cursor: 'text' }}
+          >{sessionName}</span>
+        )}
         <button
           onClick={() => onNew?.()}
           style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
@@ -73,7 +115,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             onSaveArtifact={onSaveArtifact}
             onOpenArtifact={onOpenArtifact}
             onAddWidget={onAddWidget}
-
+            canAddToCanvas={canAddToCanvas}
           />
         ))}
         {isStreaming && <SkeletonMessage />}

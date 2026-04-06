@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import TrafficChart from '../artifacts/TrafficChart'
+import QoSTable from '../artifacts/QoSTable'
+import IOSVersionTable from '../artifacts/IOSVersionTable'
+import CRCTable from '../artifacts/CRCTable'
 
 function ThumbUpIcon() {
   return (
@@ -66,8 +69,57 @@ function TableIcon() {
   )
 }
 
+function TableWithControls({ artifactRef, onOpenArtifact, onAddWidget, canAddToCanvas, children }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      style={{ position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {children}
+      {hovered && (
+        <div style={{
+          position: 'absolute', top: 6, right: 6,
+          display: 'flex', gap: 2,
+          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          padding: 2, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', zIndex: 5,
+        }}>
+          <button
+            onClick={() => canAddToCanvas && onAddWidget?.(artifactRef)}
+            title={canAddToCanvas ? 'Add to canvas' : 'No canvas open'}
+            style={{
+              background: 'none', border: 'none', padding: 4, borderRadius: 4,
+              cursor: canAddToCanvas ? 'pointer' : 'not-allowed',
+              color: canAddToCanvas ? '#888' : '#ccc',
+              display: 'flex', alignItems: 'center', transition: 'background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { if (canAddToCanvas) { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' } }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = canAddToCanvas ? '#888' : '#ccc' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          </button>
+          <button
+            onClick={() => onOpenArtifact?.(artifactRef)}
+            title="Open in new tab"
+            style={{
+              background: 'none', border: 'none', padding: 4, borderRadius: 4,
+              cursor: 'pointer', color: '#888',
+              display: 'flex', alignItems: 'center', transition: 'background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#888' }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // Minimal markdown: bold, code, lists, headers, tables
-function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, saved, onSave, onAddWidget) {
+function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, saved, onSave, onAddWidget, canAddToCanvas) {
   const lines = text.split('\n')
   const out = []
   let i = 0
@@ -120,7 +172,8 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
           onMouseLeave={e => { if (isActive) e.currentTarget.style.textDecoration = 'none' }}
           onClick={() => {
             if (linkText === 'View Change Analysis' && onOpenArtifact) {
-              onOpenArtifact({ type: 'changeAnalysis', label: 'Recent Network Change' })
+              const dataKey = artifactRef?.dataKey ?? null
+              onOpenArtifact({ type: 'changeAnalysis', label: dataKey === 'last-24h' ? 'Recent Changes · Last 24h' : 'Recent Changes · Last 7 days', dataKey })
             }
           }}
         >→ {linkText}</div>
@@ -267,6 +320,33 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
     )
   }
 
+  // QoS expandable table — hover controls in top-right
+  if (artifactRef && artifactRef.type === 'qosTable') {
+    out.push(
+      <TableWithControls key="qos-table" artifactRef={artifactRef} onOpenArtifact={onOpenArtifact} onAddWidget={onAddWidget} canAddToCanvas={canAddToCanvas}>
+        <QoSTable />
+      </TableWithControls>
+    )
+  }
+
+  // CRC error table
+  if (artifactRef && artifactRef.type === 'crcTable') {
+    out.push(
+      <TableWithControls key="crc-table" artifactRef={artifactRef} onOpenArtifact={onOpenArtifact} onAddWidget={onAddWidget} canAddToCanvas={canAddToCanvas}>
+        <CRCTable />
+      </TableWithControls>
+    )
+  }
+
+  // IOS version table — hover controls in top-right
+  if (artifactRef && artifactRef.type === 'iosVersionTable') {
+    out.push(
+      <TableWithControls key="ios-table" artifactRef={artifactRef} onOpenArtifact={onOpenArtifact} onAddWidget={onAddWidget} canAddToCanvas={canAddToCanvas}>
+        <IOSVersionTable filter={artifactRef.dataKey} />
+      </TableWithControls>
+    )
+  }
+
   // Table artifact — small tile with Add to canvas button
   if (artifactRef && artifactRef.type === 'table') {
     out.push(
@@ -292,8 +372,8 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
     )
   }
 
-  // Topology artifact — wide tile: clickable label + Save button
-  if (!artifactPlaced && artifactRef && artifactRef.type === 'topology') {
+  // Topology / map artifact — wide tile: clickable label + Save button
+  if (!artifactPlaced && artifactRef && (artifactRef.type === 'topology' || artifactRef.type === 'changesMap')) {
     out.push(
       <div key="atile-map" style={{
         display: 'flex', alignItems: 'center',
@@ -312,13 +392,25 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
             {artifactRef.label}
           </span>
         </div>
-        <button style={{
-          background: 'none', border: 'none', borderLeft: '1px solid #e4e4e4', cursor: 'pointer',
-          fontSize: 13, fontWeight: 500, color: '#333', padding: '11px 16px', flexShrink: 0, transition: 'background 0.1s, color 0.1s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#f7f7f7'; e.currentTarget.style.color = '#111' }}
-        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#333' }}
-        >Save</button>
+        {!saved ? (
+          <button
+            onClick={onSave}
+            style={{
+              background: 'none', border: 'none', borderLeft: '1px solid #e4e4e4', cursor: 'pointer',
+              fontSize: 13, fontWeight: 500, color: '#333', padding: '11px 16px', flexShrink: 0, transition: 'background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f7f7f7'; e.currentTarget.style.color = '#111' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#333' }}
+          >Save</button>
+        ) : (
+          <button
+            onClick={() => onOpenArtifact && onOpenArtifact(artifactRef)}
+            style={{
+              background: 'none', border: 'none', borderLeft: '1px solid #e4e4e4', cursor: 'pointer',
+              fontSize: 13, fontWeight: 500, color: '#888', padding: '11px 16px', flexShrink: 0,
+            }}
+          >Saved ✓</button>
+        )}
       </div>
     )
   }
@@ -335,7 +427,7 @@ function inlineFormat(text) {
   })
 }
 
-export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget }) {
+export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget, canAddToCanvas = false }) {
   const [feedback, setFeedback] = useState(null)
   const [saved, setSaved] = useState(false)
   const [chartModal, setChartModal] = useState(false)
@@ -393,7 +485,7 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
       )}
       <div className="arow msg-fade-in">
         <div className="ai-text">
-          {renderAIContent(message.content, onOpenArtifact, message.artifactRef, onSaveArtifact, saved, handleSave, onAddWidget)}
+          {renderAIContent(message.content, onOpenArtifact, message.artifactRef, onSaveArtifact, saved, handleSave, onAddWidget, canAddToCanvas)}
         </div>
         {/* Feedback */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>

@@ -4,6 +4,10 @@ import TrafficChart from './TrafficChart'
 import DeviceTable from './DeviceTable'
 import VoicePath from './VoicePath'
 import ChangeAnalysis from './ChangeAnalysis'
+import ChangesMap from './ChangesMap'
+import IOSVersionTable from './IOSVersionTable'
+import QoSTable from './QoSTable'
+import CRCTable from './CRCTable'
 import ShareModal from '../modals/ShareModal'
 import { getDeviceConfig } from '../../data/deviceConfigs'
 
@@ -229,7 +233,7 @@ function ConfigWorkspacePane({ state, onClose, onEnterCompare, onSetDock, onSear
 
   const shellStyle = isBottomDock
     ? { height: state.height, borderTop: '1px solid #e8e6e1', borderLeft: 'none', width: '100%' }
-    : { width: state.width, borderLeft: '1px solid #e8e6e1', borderTop: 'none', height: '100%' }
+    : { width: state.width, borderLeft: 'none', borderTop: 'none', height: '100%' }
 
   return (
     <aside style={{ ...shellStyle, flexShrink: 0, background: '#fff', display: 'flex', flexDirection: 'column' }}>
@@ -462,7 +466,39 @@ function buildDeviceProperties(node) {
         { section: 'Alerts', label: 'Health Signal', value: node.badge || (node.status === 'down' ? 'Connectivity loss' : 'Within baseline') },
       ],
     },
+    width: 336,
   }
+}
+
+// Shared resize sash — vertical (col) or horizontal (row)
+function ResizeSash({ onMouseDown, orientation = 'col' }) {
+  const [hovered, setHovered] = useState(false)
+  const isCol = orientation === 'col'
+  const lineStyle = isCol
+    ? { position: 'absolute', top: 0, bottom: 0, left: 1, width: 1, background: hovered ? '#4f86e8' : '#e4e4e4', transition: 'background 0.12s' }
+    : { position: 'absolute', left: 0, right: 0, top: 1, height: 1, background: hovered ? '#4f86e8' : '#e4e4e4', transition: 'background 0.12s' }
+  const pillStyle = isCol
+    ? { position: 'absolute', width: 4, height: 32, borderRadius: 2, background: '#4f86e8', zIndex: 1 }
+    : { position: 'absolute', height: 4, width: 32, borderRadius: 2, background: '#4f86e8', zIndex: 1 }
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        flexShrink: 0,
+        width: isCol ? 4 : '100%',
+        height: isCol ? '100%' : 4,
+        cursor: isCol ? 'col-resize' : 'row-resize',
+        position: 'relative', zIndex: 10,
+        background: 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      <div style={lineStyle} />
+      {hovered && <div style={pillStyle} />}
+    </div>
+  )
 }
 
 function DevicePropertiesPane({ data, onClose }) {
@@ -473,11 +509,10 @@ function DevicePropertiesPane({ data, onClose }) {
 
   return (
     <aside style={{
-      width: 336,
+      width: data.width ?? 336,
       flexShrink: 0,
       height: '100%',
       background: '#fff',
-      borderLeft: '1px solid #e8e6e1',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -624,7 +659,7 @@ function computeSnap(candidate, others) {
   return { snapX, snapY, guides }
 }
 
-function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction }) {
+function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction, onClearOverlay, changesMapOverlay }) {
   if (!artifact) return null
 
   if (artifact.type === 'topology' && widgetMode) {
@@ -637,11 +672,15 @@ function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction
   }
 
   switch (artifact.type) {
-    case 'topology':      return <TopologyMap highlight={highlight} widgetMode={false} onNodeAction={onTopologyNodeAction} />
+    case 'topology':      return <TopologyMap highlight={highlight} widgetMode={false} onNodeAction={onTopologyNodeAction} onClearOverlay={onClearOverlay} />
     case 'chart':         return <TrafficChart />
     case 'table':         return <DeviceTable />
     case 'voicePath':     return <VoicePath widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
-    case 'changeAnalysis': return <ChangeAnalysis />
+    case 'changeAnalysis': return <ChangeAnalysis key={artifact.id} filter={artifact.dataKey} />
+    case 'changesMap':    return <ChangesMap filter={artifact.dataKey} externalOverlay={changesMapOverlay} widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
+    case 'iosVersionTable': return <div style={{ overflow: 'auto', height: '100%' }}><IOSVersionTable filter={artifact.dataKey} flushed={true} /></div>
+    case 'qosTable':        return <div style={{ overflow: 'auto', height: '100%' }}><QoSTable flushed={true} /></div>
+    case 'crcTable':        return <div style={{ overflow: 'auto', height: '100%' }}><CRCTable flushed={true} /></div>
     default: return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
         Unknown artifact
@@ -696,7 +735,7 @@ function ResizeHandle({ onMouseDown }) {
   )
 }
 
-function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete, onTopologyNodeAction }) {
+function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete, onTopologyNodeAction, onClearOverlay, changesMapOverlay }) {
   return (
     <div
       onMouseDown={() => onFocus(item.id)}
@@ -765,6 +804,8 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
           highlight={item.isMain ? highlight : null}
           widgetMode={true}
           onTopologyNodeAction={onTopologyNodeAction}
+          onClearOverlay={item.isMain ? onClearOverlay : undefined}
+          changesMapOverlay={changesMapOverlay}
         />
       </div>
 
@@ -773,7 +814,7 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
   )
 }
 
-export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, widgets = [], onTopologyNodeAction }) {
+export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction }) {
   const active = artifacts.find(a => a.id === activeArtifactId)
   const [modal, setModal] = useState(null)
   const [propertiesPane, setPropertiesPane] = useState(null)
@@ -788,6 +829,7 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const dragState = useRef(null)
   const resizeState = useRef(null)
   const configResizeState = useRef(null)
+  const propsResizeState = useRef(null)
 
   useEffect(() => { canvasItemsRef.current = canvasItems }, [canvasItems])
 
@@ -808,6 +850,7 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
         id: `${active.id}__main`,
         type: active.type,
         label: active.label,
+        dataKey: active.dataKey,
         isMain: true,
         x: 0, y: 0, w: cw, h: ch,
       }
@@ -900,6 +943,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
 
   useEffect(() => {
     function onMouseMove(e) {
+      if (e.buttons === 0) {
+        dragState.current = null
+        resizeState.current = null
+        configResizeState.current = null
+        document.body.style.cursor = ''
+        setSnapGuides([])
+        return
+      }
       if (dragState.current) {
         const { id, startX, startY, origX, origY } = dragState.current
         const rawX = Math.max(0, origX + (e.clientX - startX))
@@ -931,11 +982,17 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
           setConfigPane(prev => prev ? { ...prev, height } : prev)
         }
       }
+      if (propsResizeState.current) {
+        const { startX, startWidth } = propsResizeState.current
+        const width = Math.max(240, Math.min(600, startWidth + (startX - e.clientX)))
+        setPropertiesPane(prev => prev ? { ...prev, width } : prev)
+      }
     }
     function onMouseUp() {
       dragState.current = null
       resizeState.current = null
       configResizeState.current = null
+      propsResizeState.current = null
       document.body.style.cursor = ''
       setSnapGuides([])
     }
@@ -1006,6 +1063,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
       return
     }
     onTopologyNodeAction?.(action)
+  }
+
+  function handlePropertiesResizeStart(e) {
+    if (!propertiesPane) return
+    e.preventDefault()
+    e.stopPropagation()
+    propsResizeState.current = { startX: e.clientX, startWidth: propertiesPane.width ?? 336 }
+    document.body.style.cursor = 'col-resize'
   }
 
   function handleConfigResizeStart(e) {
@@ -1110,14 +1175,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
               </button>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} />
+              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={expandedItem.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} />
             </div>
           </div>
         ) : isFocusMode ? (
           /* Focus mode: single artifact fills the pane, no widget chrome */
           canvasItems.length === 1 ? (
             <div style={{ position: 'absolute', inset: 0 }}>
-              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} />
+              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={canvasItems[0]?.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} />
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
@@ -1157,6 +1222,8 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
                     onEnlarge={setExpandedItemId}
                     onDelete={id => setCanvasItems(prev => prev.filter(i => i.id !== id))}
                     onTopologyNodeAction={handleNodeAction}
+                    onClearOverlay={onClearTopologyOverlay}
+                    changesMapOverlay={changesMapOverlay}
                   />
                 ))}
               </div>
@@ -1165,27 +1232,10 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
         )}
       </div>
       {configPane && (
-        <div
+        <ResizeSash
           onMouseDown={handleConfigResizeStart}
-          aria-hidden="true"
-          style={{
-            flexShrink: 0,
-            width: configPane.dock === 'right' ? 4 : '100%',
-            height: configPane.dock === 'bottom' ? 4 : '100%',
-            cursor: configPane.dock === 'right' ? 'col-resize' : 'row-resize',
-            background: 'transparent',
-            position: 'relative',
-            zIndex: 10,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-        >
-          <div
-            style={configPane.dock === 'right'
-              ? { position: 'absolute', top: 0, bottom: 0, left: 1, width: 1, background: '#e4e4e4' }
-              : { position: 'absolute', left: 0, right: 0, top: 1, height: 1, background: '#e4e4e4' }}
-          />
-        </div>
+          orientation={configPane.dock === 'bottom' ? 'row' : 'col'}
+        />
       )}
       {configPane && (
         <ConfigWorkspacePane
@@ -1236,6 +1286,9 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
           })}
           onCloseCompareSide={handleCloseCompareSide}
         />
+      )}
+      {propertiesPane && (
+        <ResizeSash onMouseDown={handlePropertiesResizeStart} orientation="col" />
       )}
       {propertiesPane && (
         <DevicePropertiesPane
