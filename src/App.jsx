@@ -397,9 +397,7 @@ export default function App() {
           />
         ) : viewMode === 'network' ? (
           <NetworkView onStartAI={enterWorkspace} />
-        ) : (
-          <InventoryView onStartAI={enterWorkspace} />
-        )}
+        ) : null}
       </AppFrame>
 
       {modalOpen === 'share'    && <ShareModal    onClose={() => setModalOpen(null)} />}
