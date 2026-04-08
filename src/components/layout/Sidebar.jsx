@@ -65,6 +65,19 @@ function InventoryIcon() {
     </svg>
   )
 }
+function ChangeAnalysisIcon() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="17" width="8" height="2"/>
+      <circle cx="3" cy="18" r="1"/>
+      <circle cx="13" cy="14" r="1"/>
+      <rect x="2" y="13" width="8" height="2"/>
+      <rect x="6" y="9" width="8" height="2"/>
+      <circle cx="3" cy="10" r="1"/>
+      <path d="M30,28.6l-7.4-7.4c1.5-2,2.4-4.5,2.4-7.2c0-6.6-5.4-12-12-12C9.7,2,6.6,3.3,4.3,5.8l1.5,1.4C7.6,5.1,10.2,4,13,4c5.5,0,10,4.5,10,10s-4.5,10-10,10c-3,0-5.8-1.3-7.7-3.6l-1.5,1.3C6,24.4,9.4,26,13,26c3.2,0,6.1-1.3,8.3-3.3l7.3,7.3L30,28.6z"/>
+    </svg>
+  )
+}
 function DevicesIcon()   { return <svg {...IC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> }
 function MapsIcon()      { return <svg {...IC}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> }
 function NoteIcon()      { return <svg {...IC}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> }
@@ -75,6 +88,7 @@ function ArrowIcon()     { return <svg {...IC}><line x1="5" y1="19" x2="19" y2="
 
 const ICON_MAP = {
   home: HomeIcon, history: HistoryIcon, network: NetworkIcon,
+  'change-analysis': ChangeAnalysisIcon,
   inventory: InventoryIcon, devices: DevicesIcon, maps: MapsIcon,
   note: NoteIcon, rectangle: RectangleIcon, circle: CircleIcon,
   line: LineIcon, arrow: ArrowIcon,
@@ -91,11 +105,12 @@ const WORKSPACE_SLOTS = [
 ]
 
 const HOME_SLOTS = [
-  { type: 'icon', id: 'home',      tooltip: 'Home',      icon: 'home'      },
-  { type: 'icon', id: 'history',   tooltip: 'History',   icon: 'history'   },
+  { type: 'icon', id: 'home',            tooltip: 'Home',            icon: 'home'            },
+  { type: 'icon', id: 'history',         tooltip: 'History',         icon: 'history'         },
   { type: 'divider' },
-  { type: 'icon', id: 'network',   tooltip: 'Network',   icon: 'network'   },
-  { type: 'icon', id: 'inventory', tooltip: 'Inventory', icon: 'inventory' },
+  { type: 'icon', id: 'network',         tooltip: 'Network',         icon: 'network'         },
+  { type: 'icon', id: 'change-analysis', tooltip: 'Change Analysis', icon: 'change-analysis' },
+  { type: 'icon', id: 'inventory',       tooltip: 'Inventory',       icon: 'inventory'       },
 ]
 
 const NETWORK_SLOTS = [
@@ -147,7 +162,9 @@ export default function Sidebar({ variant = 'workspace', activePanel, activeView
           if (slot.type === 'icon') {
             const isActive = slot.id === 'home'
               ? activeView === 'home' && !activePanel
-              : activePanel === (slot.id || slot.tooltip)
+              : slot.id === 'inventory' || slot.id === 'change-analysis'
+                ? activeView === slot.id
+                : activePanel === (slot.id || slot.tooltip)
             return (
               <SidebarIcon
                 key={slot.id || slot.tooltip}

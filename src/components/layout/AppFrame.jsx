@@ -117,13 +117,14 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession }) {
   )
 }
 
-export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoInventory, currentSessionName, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning }) {
+export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoInventory, onGoChangeAnalysis, currentSessionName, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning }) {
   const [activePanel, setActivePanel] = useState(null)
 
   function handleIconClick(id) {
-    if (id === 'home')       { onGoHome();       return }
-    if (id === 'network')    { return }
-    if (id === 'inventory')  { onGoInventory();  return }
+    if (id === 'home')             { onGoHome();             return }
+    if (id === 'network')          { return }
+    if (id === 'inventory')        { onGoInventory();        return }
+    if (id === 'change-analysis')  { onGoChangeAnalysis();   return }
     setActivePanel(prev => prev === id ? null : id)
   }
 

@@ -288,9 +288,18 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
             <InputArea
               onSend={(text) => {
                 setHomeInput('')
-                const sent = text === NETWORK_TEMPLATE
+                const lower = text.trim().toLowerCase()
+                const isNetworkTemplate = text === NETWORK_TEMPLATE
+                const isRecentChanges = [
+                  'what changed', 'what has changed', 'recent change', 'recent update',
+                  'what changed in my network', 'what changed of my network',
+                  'network change', 'config change', 'configuration change',
+                ].some(kw => lower.includes(kw))
+                const sent = isNetworkTemplate
                   ? 'Help me understand my network. Scope: Boston data center. Focus on: topology and structure'
-                  : text
+                  : isRecentChanges
+                    ? 'Show recent configuration changes in my network'
+                    : text
                 onStartAI(sent)
               }}
               isStreaming={false}

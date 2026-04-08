@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import AppFrame from './components/layout/AppFrame'
 import HomePage from './components/home/HomePage'
 import InputArea from './components/workspace/InputArea'
+import ChangeAnalysisPage from './components/changeanalysis/ChangeAnalysisPage'
 import ShareModal from './components/modals/ShareModal'
 import DocumentModal from './components/modals/DocumentModal'
 import { useSessionManager } from './hooks/useSessionManager'
@@ -317,7 +318,7 @@ function NetworkView({ onStartAI }) {
 
 /* ── App ────────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'inventory'
+  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'inventory' | 'change-analysis'
   const [modalOpen, setModalOpen] = useState(null)
   const [homeSessionKey, setHomeSessionKey] = useState(0)
   const [initialPrompt, setInitialPrompt] = useState('')
@@ -355,6 +356,10 @@ export default function App() {
     setViewMode('inventory')
   }, [])
 
+  const enterChangeAnalysis = useCallback(() => {
+    setViewMode('change-analysis')
+  }, [])
+
   const handleSelectSession = useCallback((id) => {
     navigate(() => {
       selectSession(id)
@@ -378,6 +383,7 @@ export default function App() {
         onGoAI={() => enterWorkspace()}
         onGoNetwork={enterNetwork}
         onGoInventory={enterInventory}
+        onGoChangeAnalysis={enterChangeAnalysis}
         currentSessionName={currentSessionName}
         onOpenSession={handleSelectSession}
         networkPanel={networkPanel}
@@ -397,6 +403,8 @@ export default function App() {
           />
         ) : viewMode === 'network' ? (
           <NetworkView onStartAI={enterWorkspace} />
+        ) : viewMode === 'change-analysis' ? (
+          <ChangeAnalysisPage />
         ) : null}
       </AppFrame>
 
