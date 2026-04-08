@@ -509,17 +509,30 @@ function AISidePane({ onClose, width, timeRange, onDeviceClick }) {
     setMessages(prev => [...prev, { id: userId, role: 'user', content: text }])
     setIsStreaming(true)
     setTimeout(() => {
-      const result = queryChanges(text, timeRange)
       const assistantId = ++msgCounter.current
-      setMessages(prev => [...prev, {
-        id: assistantId,
-        role: 'assistant',
-        content: null,
-        structured: {
-          answer: result.answer,
-          matches: result.matches,
-        },
-      }])
+      const q = text.toLowerCase()
+      const isMapQuery = q.includes('map') || q.includes('show') && (q.includes('device') || q.includes('network') || q.includes('these'))
+
+      if (isMapQuery) {
+        const timeLabel = TIME_RANGE_LABELS[timeRange] || 'the selected time range'
+        setMessages(prev => [...prev, {
+          id: assistantId,
+          role: 'assistant',
+          content: `Here are the devices with recent changes plotted across the Boston network for ${timeLabel}.`,
+          artifactRef: { type: 'changesMap', label: 'Boston Network · Changed Devices' },
+        }])
+      } else {
+        const result = queryChanges(text, timeRange)
+        setMessages(prev => [...prev, {
+          id: assistantId,
+          role: 'assistant',
+          content: null,
+          structured: {
+            answer: result.answer,
+            matches: result.matches,
+          },
+        }])
+      }
       setIsStreaming(false)
     }, 700)
   }, [timeRange])
