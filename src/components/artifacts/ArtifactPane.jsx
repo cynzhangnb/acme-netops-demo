@@ -501,7 +501,7 @@ function ResizeSash({ onMouseDown, orientation = 'col' }) {
   )
 }
 
-function DevicePropertiesPane({ data, onClose }) {
+function DevicePropertiesPane({ data, onClose, embedded = false }) {
   if (!data) return null
   const [activeTab, setActiveTab] = useState('overview')
   const rows = data.tabs[activeTab] || []
@@ -509,13 +509,14 @@ function DevicePropertiesPane({ data, onClose }) {
 
   return (
     <aside style={{
-      width: data.width ?? 336,
+      width: embedded ? '100%' : (data.width ?? 336),
       flexShrink: 0,
       height: '100%',
       background: '#fff',
       display: 'flex',
       flexDirection: 'column',
     }}>
+      {!embedded && (
       <div style={{
         height: 48,
         padding: '0 14px 0 16px',
@@ -538,6 +539,7 @@ function DevicePropertiesPane({ data, onClose }) {
           <CloseIcon />
         </button>
       </div>
+      )}
 
       <div style={{
         height: 32,
@@ -551,7 +553,6 @@ function DevicePropertiesPane({ data, onClose }) {
         {[
           { id: 'overview', label: 'Device' },
           { id: 'interfaces', label: 'Interfaces' },
-          { id: 'alerts', label: 'Alerts' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -610,6 +611,50 @@ function DevicePropertiesPane({ data, onClose }) {
       </div>
     </aside>
   )
+}
+
+export { DevicePropertiesPane }
+
+export function buildUSBOSR1Properties() {
+  return {
+    title: 'US-BOS-R1',
+    subtitle: '10.8.1.51',
+    tabs: {
+      overview: [
+        { section: 'Identity', label: 'Hostname',         value: 'US-BOS-R1' },
+        { section: 'Identity', label: 'Mgmt IP',          value: '10.8.1.51' },
+        { section: 'Identity', label: 'Mgmt Interface',   value: 'GigabitEthernet0/0/0' },
+        { section: 'Identity', label: 'Device Type',      value: 'Cisco Router' },
+        { section: 'Identity', label: 'Vendor',           value: 'Cisco' },
+        { section: 'Identity', label: 'Model',            value: 'CGS-MGS-AGS' },
+        { section: 'Identity', label: 'Software Version', value: 'IOS 15.7(3)M2' },
+        { section: 'Identity', label: 'Serial Number',    value: '69230604' },
+        { section: 'Identity', label: 'Site',             value: 'My Network\\NetBrain DC\\Boston' },
+        { section: 'Identity', label: 'Location',         value: 'Boston' },
+        { section: 'System',   label: 'System Memory',    value: '883,975,308' },
+        { section: 'System',   label: 'Operating System', value: 'IOS' },
+        { section: 'System',   label: 'Last Discovery',   value: 'Apr 8, 2026' },
+        { section: 'Health',   label: 'Status',           value: 'Healthy' },
+        { section: 'Health',   label: 'BGP',              value: 'Enabled (5 neighbors)' },
+        { section: 'Health',   label: 'SD-WAN',           value: 'Disabled' },
+        { section: 'Health',   label: 'Cluster',          value: 'Disabled' },
+      ],
+      interfaces: [
+        { section: 'Interfaces', label: 'Total',          value: '30' },
+        { section: 'Interfaces', label: 'Types',          value: 'Ethernet, Loopback, Tunnel' },
+        { section: 'Interfaces', label: 'Active',         value: '28' },
+        { section: 'Interfaces', label: 'Down',           value: '2' },
+        { section: 'Interfaces', label: 'Primary Link',   value: 'GigabitEthernet0/0/0' },
+        { section: 'Interfaces', label: 'Neighbours',     value: '5 BGP peers' },
+      ],
+      alerts: [
+        { section: 'Alerts', label: 'Open Alerts',  value: '0' },
+        { section: 'Alerts', label: 'Last Change',  value: 'No recent changes' },
+        { section: 'Alerts', label: 'Health Signal','value': 'Within baseline' },
+      ],
+    },
+    width: 336,
+  }
 }
 
 // Natural size for topology map scaling (matches full-canvas render)
@@ -678,9 +723,10 @@ function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction
     case 'voicePath':     return <VoicePath widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
     case 'changeAnalysis': return <ChangeAnalysis key={artifact.id} filter={artifact.dataKey} />
     case 'changesMap':    return <ChangesMap filter={artifact.dataKey} externalOverlay={changesMapOverlay} widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} overlayCollapsedPref={overlayCollapsedPref} onOverlayToggle={onOverlayToggle} />
-    case 'iosVersionTable': return <div style={{ overflow: 'auto', height: '100%' }}><IOSVersionTable filter={artifact.dataKey} flushed={true} /></div>
-    case 'qosTable':        return <div style={{ overflow: 'auto', height: '100%' }}><QoSTable flushed={true} /></div>
-    case 'crcTable':        return <div style={{ overflow: 'auto', height: '100%' }}><CRCTable flushed={true} /></div>
+    case 'iosVersionTable':    return <div style={{ overflow: 'auto', height: '100%' }}><IOSVersionTable filter={artifact.dataKey} flushed={true} /></div>
+    case 'qosTable':           return <div style={{ overflow: 'auto', height: '100%' }}><QoSTable flushed={true} /></div>
+    case 'crcTable':           return <div style={{ overflow: 'auto', height: '100%' }}><CRCTable flushed={true} /></div>
+    case 'deviceProperties':   return <DevicePropertiesPane data={buildUSBOSR1Properties()} onClose={null} embedded={true} />
     default: return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
         Unknown artifact
@@ -1164,13 +1210,6 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
             )
           })}
           {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb' }}>No artifacts</span>}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-          <button onClick={() => setModal('share')}
-            style={{ padding: '4px 10px', border: '1px solid #d0d0d0', borderRadius: 5, fontSize: 12, fontWeight: 500, color: '#333', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'center', gap: 5 }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
-            onMouseLeave={e => e.currentTarget.style.background = '#fff'}
-          ><ShareIcon /> Share</button>
         </div>
       </div>
 

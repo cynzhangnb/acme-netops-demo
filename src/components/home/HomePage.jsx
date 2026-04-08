@@ -163,8 +163,8 @@ function Section({ title, defaultOpen = true, children }) {
 const SHORTCUTS = [
   { label: 'Explore Network' },
   { label: 'Troubleshoot' },
-  { label: 'Recent Device Changes' },
-  { label: 'Assess Network' },
+  { label: 'Recent Changes' },
+  { label: 'Get Device Info' },
   { label: 'Discover Network' },
 ]
 
@@ -217,7 +217,8 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
   const handleShortcut = (label) => {
     if (label === 'Explore Network') setHomeInput(NETWORK_TEMPLATE)
     if (label === 'Troubleshoot') setHomeInput('I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?')
-    if (label === 'Recent Device Changes') setHomeInput('Show recent configuration changes in my network')
+    if (label === 'Recent Changes') setHomeInput('Show recent configuration changes in my network')
+    if (label === 'Get Device Info') setHomeInput('Show me device details for US-BOS-R1')
   }
 
   return (

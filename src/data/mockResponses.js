@@ -107,7 +107,40 @@ const OSPF_DESIGN_CONTENT = `Highlighting OSPF topology on the current map.
 - **DS-BOS-01** peers with **AS-BOS-01** via OSPF (Area 0)
 - Note: **DS-BOS-03** recently changed its OSPF hello interval from 10s → 5s on Ethernet0/1`
 
+const DEVICE_INFO_CONTENT = `**US-BOS-R1** · Cisco Router
+
+**Overview**
+- Management IP: 10.8.1.51
+- Model: CGS-MGS-AGS
+- OS: IOS 15.7(3)M2
+- Location: Boston
+
+**Network Status**
+- BGP: Enabled (5 neighbors)
+- SD-WAN: Disabled
+- Cluster: Disabled
+
+**System**
+- Serial Number: 69230604
+- Memory: 883,975,308
+- Last Discovery: Apr 8, 2026
+
+**Interfaces**
+- 30 interfaces (Ethernet, Loopback, Tunnel)`
+
 export const responseRegistry = [
+  {
+    id: 'device-info',
+    keywords: ['device details', 'us-bos-r1'],
+    priority: 20,
+    response: {
+      content: DEVICE_INFO_CONTENT,
+      artifactType: 'deviceInfo',
+      artifactLabel: 'US-BOS-R1 Properties',
+      artifactDataKey: 'us-bos-r1',
+    },
+    sideEffects: [],
+  },
   {
     id: 'draw-changes-map',
     keywords: [],

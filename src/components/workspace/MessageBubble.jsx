@@ -69,6 +69,7 @@ function TableIcon() {
   )
 }
 
+
 function TableWithControls({ artifactRef, onOpenArtifact, onAddWidget, canAddToCanvas, children }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -344,6 +345,26 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
       <TableWithControls key="ios-table" artifactRef={artifactRef} onOpenArtifact={onOpenArtifact} onAddWidget={onAddWidget} canAddToCanvas={canAddToCanvas}>
         <IOSVersionTable filter={artifactRef.dataKey} />
       </TableWithControls>
+    )
+  }
+
+  // Device info CTA
+  if (artifactRef && artifactRef.type === 'deviceInfo') {
+    out.push(
+      <div key="device-info-cta" style={{ marginTop: 10 }}>
+        <button
+          onClick={() => onOpenArtifact?.({ type: 'deviceProperties', label: 'US-BOS-R1', dataKey: 'us-bos-r1' })}
+          style={{
+            background: 'none', border: 'none', padding: 0,
+            cursor: 'pointer', fontSize: 13, fontWeight: 500,
+            color: '#1a4fba', display: 'inline-block',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
+          onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
+        >
+          → View full properties
+        </button>
+      </div>
     )
   }
 
