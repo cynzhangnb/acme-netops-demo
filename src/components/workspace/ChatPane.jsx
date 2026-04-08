@@ -40,7 +40,7 @@ function PlusIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false, commandSet = 'default' }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, onClose, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false, commandSet = 'default', onMessageAction, onDeviceClick }) {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const [isEditingName, setIsEditingName] = useState(false)
@@ -96,14 +96,28 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1, cursor: 'text' }}
           >{sessionName}</span>
         )}
-        <button
-          onClick={() => onNew?.()}
-          style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
-        >
-          <PlusIcon />
-        </button>
+        {onClose ? (
+          <button
+            onClick={onClose}
+            style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 4px', marginRight: -4, border: 'none', borderRadius: 6, background: 'transparent', color: '#555', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#222' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#555' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+              <polygon points="4 18 4 20 10.586 20 2 28.582 3.414 30 12 21.414 12 28 14 28 14 18 4 18"/>
+              <polygon points="30 3.416 28.592 2 20 10.586 20 4 18 4 18 14 28 14 28 12 21.414 12 30 3.416"/>
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={() => onNew?.()}
+            style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
+          >
+            <PlusIcon />
+          </button>
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}
@@ -116,6 +130,8 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             onOpenArtifact={onOpenArtifact}
             onAddWidget={onAddWidget}
             canAddToCanvas={canAddToCanvas}
+            onAction={onMessageAction}
+            onDeviceClick={onDeviceClick}
           />
         ))}
         {isStreaming && <SkeletonMessage />}

@@ -1,4 +1,6 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import ChatPane from '../workspace/ChatPane'
+import { CHANGES_COMMANDS } from '../workspace/SlashCommandMenu'
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,173 @@ function tsToMs(ts) {
   return new Date(ts.replace(' ', 'T') + ':00Z').getTime()
 }
 const NOW_MS = new Date('2026-04-06T09:00:00Z').getTime()
+
+// ── AI Query Engine ──────────────────────────────────────────────────────────
+
+const QUERY_PATTERNS = [
+  {
+    match: q => q.includes('bgp'),
+    filter: c => c.type.toLowerCase().includes('bgp') || c.description.toLowerCase().includes('bgp'),
+    label: 'BGP changes', tag: 'BGP',
+    reasoning: 'Searched Configuration and Route Table categories for changes with type or description matching "BGP".',
+  },
+  {
+    match: q => q.includes('ospf'),
+    filter: c => c.type.toLowerCase().includes('ospf') || c.description.toLowerCase().includes('ospf'),
+    label: 'OSPF changes', tag: 'OSPF',
+    reasoning: 'Searched Configuration and Route Table categories for changes matching "OSPF".',
+  },
+  {
+    match: q => q.includes('qos'),
+    filter: c => c.type.toLowerCase().includes('qos') || c.description.toLowerCase().includes('qos'),
+    label: 'QoS changes', tag: 'QoS',
+    reasoning: 'Searched Configuration category for changes matching "QoS policy".',
+  },
+  {
+    match: q => q.includes('acl') || q.includes('access list') || q.includes('access-list'),
+    filter: c => c.type.toLowerCase().includes('acl') || c.description.toLowerCase().includes('acl'),
+    label: 'ACL changes', tag: 'ACL',
+    reasoning: 'Searched Configuration category for changes with type or description matching "ACL".',
+  },
+  {
+    match: q => q.includes('vlan'),
+    filter: c => c.type.toLowerCase().includes('vlan') || c.description.toLowerCase().includes('vlan'),
+    label: 'VLAN changes', tag: 'VLAN',
+    reasoning: 'Searched Configuration and MAC Table categories for changes matching "VLAN".',
+  },
+  {
+    match: q => q.includes('ntp'),
+    filter: c => c.type.toLowerCase().includes('ntp') || c.description.toLowerCase().includes('ntp'),
+    label: 'NTP changes', tag: 'NTP',
+    reasoning: 'Searched Configuration category for changes matching "NTP".',
+  },
+  {
+    match: q => q.includes('static route') || q.includes('static-route'),
+    filter: c => c.type.toLowerCase().includes('static route'),
+    label: 'Static route changes', tag: 'Static Route',
+    reasoning: 'Searched Configuration and Route Table categories for changes with type "Static Route".',
+  },
+  {
+    match: q => q.includes('stp') || q.includes('spanning tree'),
+    filter: c => c.category === 'STP Table',
+    label: 'STP topology changes', tag: 'STP',
+    reasoning: 'Filtered by Change Category = "STP Table".',
+  },
+  {
+    match: q => q.includes('mac table') || q.includes('mac address') || (q.includes('mac') && !q.includes('mac entry')),
+    filter: c => c.category === 'MAC Table',
+    label: 'MAC table changes', tag: 'MAC',
+    reasoning: 'Filtered by Change Category = "MAC Table".',
+  },
+  {
+    match: q => q.includes('arp'),
+    filter: c => c.category === 'ARP Table',
+    label: 'ARP table changes', tag: 'ARP',
+    reasoning: 'Filtered by Change Category = "ARP Table".',
+  },
+  {
+    match: q => q.includes('ndp') || q.includes('ipv6'),
+    filter: c => c.category === 'NDP Table',
+    label: 'NDP/IPv6 changes', tag: 'NDP',
+    reasoning: 'Filtered by Change Category = "NDP Table".',
+  },
+  {
+    match: q => q.includes('route table') || q.includes('routing table'),
+    filter: c => c.category === 'Route Table',
+    label: 'Route table changes', tag: null,
+    reasoning: 'Filtered by Change Category = "Route Table".',
+  },
+  {
+    match: q => q.includes('config'),
+    filter: c => c.category === 'Configuration',
+    label: 'Configuration changes', tag: null,
+    reasoning: 'Filtered by Change Category = "Configuration".',
+  },
+  {
+    match: q => q.includes('edge router') || q.includes('er-bos'),
+    filter: c => c.deviceType === 'edge-router',
+    label: 'Edge router changes', tag: null,
+    reasoning: 'Filtered by Device Type = "Edge Router".',
+  },
+  {
+    match: q => q.includes('core router') || q.includes('cr-bos'),
+    filter: c => c.deviceType === 'core-router',
+    label: 'Core router changes', tag: null,
+    reasoning: 'Filtered by Device Type = "Core Router".',
+  },
+  {
+    match: q => q.includes('distribution switch') || q.includes('dist switch') || q.includes('ds-bos'),
+    filter: c => c.deviceType === 'dist-switch',
+    label: 'Distribution switch changes', tag: null,
+    reasoning: 'Filtered by Device Type = "Distribution Switch".',
+  },
+  {
+    match: q => q.includes('access switch') || q.includes('as-bos'),
+    filter: c => c.deviceType === 'access-switch',
+    label: 'Access switch changes', tag: null,
+    reasoning: 'Filtered by Device Type = "Access Switch".',
+  },
+]
+
+const TIME_RANGE_LABELS = { '1h': 'the last hour', '24h': 'the last 24 hours', '7d': 'the last 7 days', '30d': 'the last 30 days' }
+
+function queryChanges(queryText, timeRange = '24h') {
+  const q = queryText.toLowerCase()
+  let pattern = QUERY_PATTERNS.find(p => p.match(q))
+
+  let matched, label, tag, reasoning
+
+  if (pattern) {
+    matched = ALL_CHANGES.filter(pattern.filter)
+    label = pattern.label
+    tag = pattern.tag
+    reasoning = pattern.reasoning
+  } else {
+    // Full-text fallback
+    matched = ALL_CHANGES.filter(c =>
+      c.device.toLowerCase().includes(q) ||
+      c.type.toLowerCase().includes(q) ||
+      c.description.toLowerCase().includes(q) ||
+      c.category.toLowerCase().includes(q)
+    )
+    label = queryText
+    tag = null
+    reasoning = `Full-text search across all fields for "${queryText}".`
+  }
+
+  if (matched.length === 0) {
+    return {
+      answer: `No changes found for "${queryText}". Try searching by protocol (BGP, OSPF, VLAN), change category, or device name.`,
+      matches: [],
+      namedIds: [],
+      reasoning,
+      label,
+      tag: null,
+      filterPayload: null,
+    }
+  }
+
+  const namedIds = matched.slice(0, 3).map(c => c.id)
+  return {
+    answer: `**${matched.length} ${label}** detected in ${TIME_RANGE_LABELS[timeRange] || 'the selected time range'}.`,
+    matches: matched.slice(0, 5).map(c => ({
+      id: c.id,
+      device: c.device,
+      detail: c.description.length > 65 ? c.description.slice(0, 63) + '…' : c.description,
+      timestamp: c.timestamp,
+    })),
+    namedIds,
+    reasoning,
+    label,
+    tag,
+    filterPayload: {
+      matchedIds: matched.map(c => c.id),
+      namedIds,
+      label,
+      tag,
+    },
+  }
+}
 
 function filterByTime(changes, range) {
   const cutoffs = { '1h': 60*60*1000, '24h': 24*60*60*1000, '7d': 7*24*60*60*1000, '30d': 30*24*60*60*1000 }
@@ -306,6 +475,122 @@ function DiffPanel({ change, onClose }) {
   )
 }
 
+// ── AI Side Pane ─────────────────────────────────────────────────────────────
+
+function OrbitIcon({ size = 22 }) {
+  const cx = 22, cy = 22, r = 14
+  const nodes = [270, 330, 30, 90, 150, 210].map(deg => {
+    const rad = (deg * Math.PI) / 180
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+  })
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" fill="none" aria-hidden="true">
+      <circle cx={cx} cy={cy} r={r} stroke="#999" strokeWidth="1" strokeDasharray="2.5 3"/>
+      {nodes.map((n, i) => (
+        <line key={`s${i}`} x1={cx} y1={cy} x2={n.x} y2={n.y} stroke="#aaa" strokeWidth="1.1" strokeLinecap="round"/>
+      ))}
+      {nodes.map((n, i) => (
+        <circle key={`n${i}`} cx={n.x} cy={n.y} r="2.6" fill="#fff" stroke="#777" strokeWidth="1.3"/>
+      ))}
+      <circle cx={cx} cy={cy} r="5" fill="#fff" stroke="#444" strokeWidth="1.6"/>
+      <circle cx={cx} cy={cy} r="2" fill="#555"/>
+    </svg>
+  )
+}
+
+function AISidePane({ onClose, width, timeRange, onDeviceClick }) {
+  const [messages,    setMessages]    = useState([])
+  const [isStreaming, setIsStreaming]  = useState(false)
+  const msgCounter = useRef(0)
+
+  const handleSend = useCallback((text) => {
+    if (!text.trim()) return
+    const userId = ++msgCounter.current
+    setMessages(prev => [...prev, { id: userId, role: 'user', content: text }])
+    setIsStreaming(true)
+    setTimeout(() => {
+      const result = queryChanges(text, timeRange)
+      const assistantId = ++msgCounter.current
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        content: null,
+        structured: {
+          answer: result.answer,
+          matches: result.matches,
+        },
+      }])
+      setIsStreaming(false)
+    }, 700)
+  }, [timeRange])
+
+  return (
+    <div style={{
+      width, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      height: '100%', overflow: 'hidden',
+    }}>
+      <ChatPane
+        messages={messages}
+        isStreaming={isStreaming}
+        onSend={handleSend}
+        onClose={onClose}
+        currentSessionName="New AI Session"
+        commandSet="changes"
+        canAddToCanvas={false}
+        onDeviceClick={onDeviceClick}
+      />
+    </div>
+  )
+}
+
+// ── AI Filter Banner ──────────────────────────────────────────────────────────
+
+function SparkleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M6 1L6.9 4.5H10.5L7.6 6.6L8.5 10.1L6 8L3.5 10.1L4.4 6.6L1.5 4.5H5.1L6 1Z" fill="#3b82f6" stroke="#3b82f6" strokeWidth="0.5" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function AiFilterBanner({ aiFilter, onClear, onSaveAsFilter }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '7px 24px',
+      background: '#eff6ff',
+      borderBottom: '1px solid #dbeafe',
+      flexShrink: 0,
+    }}>
+      <SparkleIcon />
+      <span style={{ fontSize: 12, color: '#1d4ed8', fontWeight: 500 }}>
+        AI filter active:
+      </span>
+      <span style={{ fontSize: 12, color: '#1e40af' }}>"{aiFilter.label}"</span>
+      <span style={{ fontSize: 12, color: '#6b9fd4' }}>·</span>
+      <span style={{ fontSize: 12, color: '#3b82f6' }}>{aiFilter.matchedIds.length} result{aiFilter.matchedIds.length !== 1 ? 's' : ''}</span>
+      <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+        <button
+          onClick={onSaveAsFilter}
+          style={{ fontSize: 11.5, color: '#3b82f6', background: 'none', border: '1px solid #bfdbfe', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#dbeafe' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        >
+          Save as filter
+        </button>
+        <button
+          onClick={onClear}
+          style={{ fontSize: 11.5, color: '#6b7280', background: 'none', border: '1px solid #e0e0e0', borderRadius: 5, padding: '3px 9px', cursor: 'pointer', fontWeight: 500 }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+        >
+          ✕ Clear
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 // Columns: Device Name | Device Type | Change Category | Timestamp
@@ -320,9 +605,14 @@ export default function ChangeAnalysisPage() {
   const [sortDir,       setSortDir]       = useState('desc')
   const [selected,      setSelected]      = useState(null)
   const [diffH,         setDiffH]         = useState(null)
-  const containerRef  = useRef(null)
-  const isResizing    = useRef(false)
-  const startData     = useRef({})
+  const [aiOpen,        setAiOpen]        = useState(false)
+  const [aiPaneW,       setAiPaneW]       = useState(340)
+  const containerRef    = useRef(null)
+  const searchRef       = useRef(null)
+  const isResizing      = useRef(false)   // vertical (diff)
+  const startData       = useRef({})
+  const isPaneResizing  = useRef(false)   // horizontal (AI pane)
+  const paneStartData   = useRef({})
 
   // Set default diffH
   useEffect(() => {
@@ -361,6 +651,34 @@ export default function ChangeAnalysisPage() {
     e.preventDefault()
   }
 
+  // Horizontal resize (AI pane)
+  useEffect(() => {
+    function onMouseMove(e) {
+      if (!isPaneResizing.current) return
+      const { startX, startW } = paneStartData.current
+      const dx = e.clientX - startX
+      setAiPaneW(Math.max(240, Math.min(560, startW + dx)))
+    }
+    function onMouseUp() {
+      if (isPaneResizing.current) {
+        isPaneResizing.current = false
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+      }
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) }
+  }, [])
+
+  function startPaneResize(e) {
+    isPaneResizing.current = true
+    paneStartData.current = { startX: e.clientX, startW: aiPaneW }
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    e.preventDefault()
+  }
+
   function handleSort(key) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(key); setSortDir(key === 'timestamp' ? 'desc' : 'asc') }
@@ -394,24 +712,62 @@ export default function ChangeAnalysisPage() {
   const timeLabel = TIME_RANGES.find(t => t.value === timeRange)?.label || ''
 
   return (
-    <div data-resizable="true" style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
+    <div style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden' }}>
+
+      {/* ── AI Side Pane + vertical sash ── */}
+      {aiOpen && <>
+        <AISidePane
+          onClose={() => setAiOpen(false)}
+          width={aiPaneW}
+          timeRange={timeRange}
+          onDeviceClick={name => { setSearch(name); setTimeout(() => searchRef.current?.focus(), 0) }}
+        />
+        <div
+          onMouseDown={startPaneResize}
+          style={{ width: 4, flexShrink: 0, cursor: 'col-resize', background: 'transparent', position: 'relative', zIndex: 10 }}
+          onMouseEnter={e => e.currentTarget.style.background = '#e0e0e0'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+          <div style={{ position: 'absolute', top: 0, bottom: 0, left: 1, width: 1, background: '#e8e8e8' }} />
+        </div>
+      </>}
+
+      {/* ── Floating AI button — only when pane is closed ── */}
+      {!aiOpen && <button
+        onClick={() => setAiOpen(o => !o)}
+        title="Toggle AI Assistant"
+        style={{
+          position: 'absolute', bottom: 20, left: 12, zIndex: 50,
+          width: 42, height: 42, borderRadius: '50%', border: '1px solid #e0e0e0',
+          background: '#fff',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          color: '#111',
+          transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.14)'; e.currentTarget.style.transform = 'scale(1.15)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1)' }}
+      >
+        <OrbitIcon size={26} />
+      </button>}
+
+    <div data-resizable="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
 
       {/* ── Header ── */}
       <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #eeeeee', flexShrink: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 650, color: '#111', marginBottom: 12, letterSpacing: '-0.01em' }}>
-          Change Analysis
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
+            Change Analysis
+          </div>
+          <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
+          <div style={{ fontSize: 11.5, color: '#444' }}>
+            9 changed devices · 243 total devices
+          </div>
         </div>
 
         {/* Filter bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Summary — left */}
-          <div style={{ fontSize: 11.5, color: '#111', whiteSpace: 'nowrap' }}>
-            Total Changed Devices: <strong>119</strong> out of 2243 Devices
-          </div>
-
-          <div style={{ flex: 1 }} />
-
-          {/* Time range */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+          {/* Filters — left */}
           <Dropdown
             label="Last 24 hours"
             value={timeLabel}
@@ -419,7 +775,6 @@ export default function ChangeAnalysisPage() {
             onChange={setTimeRange}
           />
 
-          {/* Device type */}
           <Dropdown
             label="All device types"
             multi={true}
@@ -428,7 +783,6 @@ export default function ChangeAnalysisPage() {
             onChange={setDeviceTypes}
           />
 
-          {/* Category */}
           <Dropdown
             label="All change categories"
             multi={true}
@@ -437,14 +791,22 @@ export default function ChangeAnalysisPage() {
             onChange={setCategories}
           />
 
+          <div style={{ flex: 1 }} />
+
           {/* Search — far right */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px',
-            background: '#fff', width: 200,
-          }}>
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px',
+              background: '#fff', width: 200, minWidth: 120, flexShrink: 1,
+              transition: 'border-color 0.15s, box-shadow 0.15s',
+            }}
+            onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
+          >
             <SearchIcon />
             <input
+              ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search…"
@@ -464,6 +826,7 @@ export default function ChangeAnalysisPage() {
 
       {/* ── Table ── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }} ref={containerRef}>
+
         {/* Column headers */}
         <div style={{
           display: 'grid', gridTemplateColumns: COLS,
@@ -536,6 +899,7 @@ export default function ChangeAnalysisPage() {
           </div>
         </>
       )}
+    </div>
     </div>
   )
 }

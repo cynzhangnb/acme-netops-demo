@@ -427,7 +427,51 @@ function inlineFormat(text) {
   })
 }
 
-export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget, canAddToCanvas = false }) {
+function DeviceChip({ name, onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <span
+      onClick={() => onClick(name)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-block',
+        fontFamily: 'Menlo, monospace', fontSize: 12, fontWeight: 400,
+        color: hovered ? '#1e3a8a' : '#1d4ed8',
+        background: hovered ? '#dbeafe' : '#eff6ff',
+        border: `1px solid ${hovered ? '#93c5fd' : '#bfdbfe'}`,
+        borderRadius: 5, padding: '1px 6px',
+        cursor: 'pointer',
+        transition: 'background 0.12s, color 0.12s, border-color 0.12s',
+        userSelect: 'none',
+      }}
+      title={`Filter table by ${name}`}
+    >
+      {name}
+    </span>
+  )
+}
+
+function QueryResultCard({ structured, onDeviceClick }) {
+  const { answer, matches } = structured
+
+  return (
+    <div>
+      <div className="ai-text" style={{ marginBottom: 6, fontSize: 12, color: '#222' }}>{inlineFormat(answer)}</div>
+      {matches.length > 0 && (
+        <ul style={{ paddingLeft: 18, margin: '4px 0 8px', listStyleType: 'disc' }}>
+          {matches.map((m, i) => (
+            <li key={i} style={{ margin: '4px 0', fontSize: 12, color: '#222', lineHeight: 1.5, display: 'list-item' }}>
+              <DeviceChip name={m.device} onClick={onDeviceClick} /> — {m.detail}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget, canAddToCanvas = false, onAction, onDeviceClick }) {
   const [feedback, setFeedback] = useState(null)
   const [saved, setSaved] = useState(false)
   const [chartModal, setChartModal] = useState(false)
@@ -439,10 +483,29 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
     onSaveArtifact?.(message.artifactRef)
   }
 
+  function handleAction(action) {
+    onAction?.({ ...action, messageId: message.id })
+  }
+
   if (isUser) {
     return (
       <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'flex-end' }}>
         <div className="u-bubble">{message.content}</div>
+      </div>
+    )
+  }
+
+  // Structured response (e.g. query result card)
+  if (message.structured) {
+    return (
+      <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '0 24px' }}>
+        <div className="arow msg-fade-in">
+          <QueryResultCard structured={message.structured} onAction={handleAction} onDeviceClick={onDeviceClick} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+            <button onClick={() => setFeedback(f => f === 'up' ? null : 'up')} style={{ color: feedback === 'up' ? '#378ADD' : '#ccc', background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}><ThumbUpIcon /></button>
+            <button onClick={() => setFeedback(f => f === 'down' ? null : 'down')} style={{ color: feedback === 'down' ? '#ef4444' : '#ccc', background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}><ThumbDownIcon /></button>
+          </div>
+        </div>
       </div>
     )
   }

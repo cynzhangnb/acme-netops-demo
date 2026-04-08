@@ -272,13 +272,13 @@
     border: 1px solid #e8e8e8;
     border-radius: 8px 8px 2px 8px;
     padding: 8px 13px;
-    font-size: 13px; color: #222;
+    font-size: 12px; color: #222;
     max-width: 72%;
   }
 
   /* AI message text */
   .ai-text {
-    font-size: 13px; color: #222; line-height: 1.7;
+    font-size: 12px; color: #222; line-height: 1.7;
   }
   .ai-text strong { font-weight: 600; color: #111; }
   /* Extra top spacing before each bold section title */
