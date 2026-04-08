@@ -457,11 +457,11 @@ function QueryResultCard({ structured, onDeviceClick }) {
 
   return (
     <div>
-      <div className="ai-text" style={{ marginBottom: 6, fontSize: 12, color: '#222' }}>{inlineFormat(answer)}</div>
+      <div className="ai-text" style={{ marginBottom: 6, fontSize: 13, color: '#222' }}>{inlineFormat(answer)}</div>
       {matches.length > 0 && (
         <ul style={{ paddingLeft: 18, margin: '4px 0 8px', listStyleType: 'disc' }}>
           {matches.map((m, i) => (
-            <li key={i} style={{ margin: '4px 0', fontSize: 12, color: '#222', lineHeight: 1.5, display: 'list-item' }}>
+            <li key={i} style={{ margin: '4px 0', fontSize: 13, color: '#222', lineHeight: 1.5, display: 'list-item' }}>
               <DeviceChip name={m.device} onClick={onDeviceClick} /> — {m.detail}
             </li>
           ))}
