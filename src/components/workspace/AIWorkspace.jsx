@@ -6,9 +6,18 @@ import ChatView from './ChatView'
 import SplitView from './SplitView'
 import { deriveSessionName } from './ChatPane'
 
+const CHANGES_PROMPT_KEYWORDS = ['recent configuration changes', 'recent device changes']
+const NETWORK_PROMPT_KEYWORDS = ['boston data center', 'help me understand my network']
+
 export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, onNew, restoredSession, currentSessionName = 'New Session' }) {
+  const promptLower = initialPrompt.toLowerCase()
+  const commandSet =
+    CHANGES_PROMPT_KEYWORDS.some(kw => promptLower.includes(kw)) ? 'changes' :
+    NETWORK_PROMPT_KEYWORDS.some(kw => promptLower.includes(kw)) ? 'network' :
+    'default'
   const [localViewMode, setLocalViewMode] = useState(restoredSession ? 'split' : 'entry')
   const didAutoSend = useRef(false)
+
   const [topologyHighlight, setTopologyHighlight] = useState(null)
   const [changesMapOverlay, setChangesMapOverlay] = useState(null)
   const [inputPrefill, setInputPrefill] = useState('')
@@ -22,21 +31,16 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
     restoredSession?.activeArtifactId || null,
   )
 
-  const [widgets, setWidgets] = useState([])
-
-  // Clear widgets when active artifact changes
-  const prevActiveRef = useRef(null)
-  useEffect(() => {
-    if (prevActiveRef.current !== null && prevActiveRef.current !== activeArtifactId) {
-      setWidgets([])
-    }
-    prevActiveRef.current = activeArtifactId
-  }, [activeArtifactId])
+  // Widgets stored per-artifact so switching tabs preserves each tab's widget layout
+  const [widgetsByArtifact, setWidgetsByArtifact] = useState({})
 
   const handleAddWidget = useCallback((artifactRef) => {
-    setWidgets(prev => [...prev, artifactRef])
+    setWidgetsByArtifact(prev => ({
+      ...prev,
+      [activeArtifactId]: [...(prev[activeArtifactId] || []), artifactRef],
+    }))
     setLocalViewMode('split')
-  }, [])
+  }, [activeArtifactId])
 
   const handleTriggerSplit = useCallback(() => {
     setLocalViewMode('split')
@@ -128,6 +132,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
     currentSessionName,
     nameOverride: sessionNameOverride,
     onRenameSession: handleRenameSession,
+    commandSet,
   }
 
   if (localViewMode === 'entry') {
@@ -145,7 +150,7 @@ export default function AIWorkspace({ initialPrompt = '', onSessionNameChange, o
         topologyHighlight={topologyHighlight}
         onClearTopologyOverlay={() => setTopologyHighlight(null)}
         changesMapOverlay={changesMapOverlay}
-        widgets={widgets}
+        widgets={widgetsByArtifact[activeArtifactId] || []}
         inputPrefill={inputPrefill}
         onTopologyNodeAction={handleTopologyNodeAction}
       />

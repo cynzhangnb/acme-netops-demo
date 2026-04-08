@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import InputArea from '../workspace/InputArea'
+import { NETWORK_TEMPLATE } from '../workspace/SlashCommandMenu'
 import AIWorkspace from '../workspace/AIWorkspace'
 
 /* ── Chevron ──────────────────────────────────────────────────────────────── */
@@ -213,8 +214,6 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
     )
   }
 
-  const NETWORK_TEMPLATE = `Help me explore my network.\nScope: [e.g. a site, a specific device]\nFocus on:\n- routing design and path selection\n- network segmentation\n- policies and access control\n- logical connectivity between devices`
-
   const handleShortcut = (label) => {
     if (label === 'Explore Network') setHomeInput(NETWORK_TEMPLATE)
     if (label === 'Troubleshoot') setHomeInput('I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?')
@@ -299,6 +298,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               initialValue={homeInput}
               onValueChange={setHomeInput}
               maxExpandHeight={120}
+              commandSet="home"
             />
           </div>
 

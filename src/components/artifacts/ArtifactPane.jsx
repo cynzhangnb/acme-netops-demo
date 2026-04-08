@@ -659,7 +659,7 @@ function computeSnap(candidate, others) {
   return { snapX, snapY, guides }
 }
 
-function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction, onClearOverlay, changesMapOverlay }) {
+function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction, onClearOverlay, changesMapOverlay, overlayCollapsedPref, onOverlayToggle }) {
   if (!artifact) return null
 
   if (artifact.type === 'topology' && widgetMode) {
@@ -677,7 +677,7 @@ function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction
     case 'table':         return <DeviceTable />
     case 'voicePath':     return <VoicePath widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
     case 'changeAnalysis': return <ChangeAnalysis key={artifact.id} filter={artifact.dataKey} />
-    case 'changesMap':    return <ChangesMap filter={artifact.dataKey} externalOverlay={changesMapOverlay} widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />
+    case 'changesMap':    return <ChangesMap filter={artifact.dataKey} externalOverlay={changesMapOverlay} widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} overlayCollapsedPref={overlayCollapsedPref} onOverlayToggle={onOverlayToggle} />
     case 'iosVersionTable': return <div style={{ overflow: 'auto', height: '100%' }}><IOSVersionTable filter={artifact.dataKey} flushed={true} /></div>
     case 'qosTable':        return <div style={{ overflow: 'auto', height: '100%' }}><QoSTable flushed={true} /></div>
     case 'crcTable':        return <div style={{ overflow: 'auto', height: '100%' }}><CRCTable flushed={true} /></div>
@@ -735,7 +735,7 @@ function ResizeHandle({ onMouseDown }) {
   )
 }
 
-function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete, onTopologyNodeAction, onClearOverlay, changesMapOverlay }) {
+function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, onFocus, isNew, onEnlarge, onDelete, onTopologyNodeAction, onClearOverlay, changesMapOverlay, overlayCollapsedPref, onOverlayToggle }) {
   return (
     <div
       onMouseDown={() => onFocus(item.id)}
@@ -806,6 +806,8 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
           onTopologyNodeAction={onTopologyNodeAction}
           onClearOverlay={item.isMain ? onClearOverlay : undefined}
           changesMapOverlay={changesMapOverlay}
+          overlayCollapsedPref={overlayCollapsedPref}
+          onOverlayToggle={onOverlayToggle}
         />
       </div>
 
@@ -819,6 +821,9 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const [modal, setModal] = useState(null)
   const [propertiesPane, setPropertiesPane] = useState(null)
   const [configPane, setConfigPane] = useState(null)
+  // Persists user's manual overlay collapsed preference across widget↔focus mode switches
+  // null = no override (use mode default), true/false = user's explicit choice
+  const [overlayUserPref, setOverlayUserPref] = useState(null)
   const canvasRef = useRef(null)
   const [canvasItems, setCanvasItems] = useState([])
   const [focusedId, setFocusedId] = useState(null)
@@ -826,6 +831,8 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const [expandedItemId, setExpandedItemId] = useState(null) // widget in focus view
   const [snapGuides, setSnapGuides] = useState([])
   const canvasItemsRef = useRef([])
+  const savedCanvasLayouts = useRef({}) // persists widget layouts per artifact across tab switches
+  const prevArtifactIdRef = useRef(null)
   const dragState = useRef(null)
   const resizeState = useRef(null)
   const configResizeState = useRef(null)
@@ -838,8 +845,25 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
     setConfigPane(null)
   }, [activeArtifactId])
 
-  // Reset canvas when active artifact changes
+  // Save/restore canvas layout when switching artifact tabs
   useEffect(() => {
+    const prevId = prevArtifactIdRef.current
+
+    // Save the outgoing artifact's layout (canvasItemsRef is up-to-date from the effect above)
+    if (prevId) {
+      savedCanvasLayouts.current[prevId] = canvasItemsRef.current
+    }
+    prevArtifactIdRef.current = activeArtifactId
+
+    // Restore a previously saved layout for this artifact (e.g. switching back to a widget tab)
+    const saved = savedCanvasLayouts.current[activeArtifactId]
+    if (saved?.length > 0) {
+      setCanvasItems(saved)
+      setExpandedItemId(null)
+      return
+    }
+
+    // First visit — fresh initialization
     if (!active) { setCanvasItems([]); return }
     const init = () => {
       const el = canvasRef.current
@@ -1175,14 +1199,14 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
               </button>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={expandedItem.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} />
+              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={expandedItem.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
             </div>
           </div>
         ) : isFocusMode ? (
           /* Focus mode: single artifact fills the pane, no widget chrome */
           canvasItems.length === 1 ? (
             <div style={{ position: 'absolute', inset: 0 }}>
-              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={canvasItems[0]?.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} />
+              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={canvasItems[0]?.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
@@ -1224,6 +1248,8 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
                     onTopologyNodeAction={handleNodeAction}
                     onClearOverlay={onClearTopologyOverlay}
                     changesMapOverlay={changesMapOverlay}
+                    overlayCollapsedPref={overlayUserPref}
+                    onOverlayToggle={setOverlayUserPref}
                   />
                 ))}
               </div>

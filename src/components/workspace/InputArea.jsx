@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import SlashCommandMenu, { SLASH_COMMANDS } from './SlashCommandMenu'
+import SlashCommandMenu, { SLASH_COMMANDS, CHANGES_COMMANDS, HOME_COMMANDS, NETWORK_COMMANDS } from './SlashCommandMenu'
 
 // Return / Enter key icon
 function SendIcon() {
@@ -41,12 +41,28 @@ function ThinkingDots() {
   )
 }
 
-export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anything about your network, or type / for commands…', initialValue = '', onValueChange, maxExpandHeight = 140 }) {
+export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anything about your network, or type / for commands…', initialValue = '', onValueChange, maxExpandHeight = 140, commandSet = 'default' }) {
+  const activeCommands =
+    commandSet === 'home'    ? HOME_COMMANDS :
+    commandSet === 'changes' ? CHANGES_COMMANDS :
+    commandSet === 'network' ? NETWORK_COMMANDS :
+    SLASH_COMMANDS
   const [value, setValue] = useState(initialValue)
   const [slashOpen, setSlashOpen] = useState(false)
   const [slashQuery, setSlashQuery] = useState('')
   const [slashIndex, setSlashIndex] = useState(0)
   const textareaRef = useRef(null)
+  const wrapperRef = useRef(null)
+
+  useEffect(() => {
+    function handleOutsideClick(e) {
+      if (slashOpen && wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setSlashOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [slashOpen])
 
   useEffect(() => {
     if (initialValue !== undefined) setValue(initialValue)
@@ -91,7 +107,7 @@ export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anyt
 
   function handleKeyDown(e) {
     if (slashOpen) {
-      const filtered = SLASH_COMMANDS.filter(cmd =>
+      const filtered = activeCommands.filter(cmd =>
         !slashQuery || cmd.name.includes(slashQuery) || cmd.label.toLowerCase().includes(slashQuery)
       )
       if (e.key === 'ArrowDown') { e.preventDefault(); setSlashIndex(i => Math.min(i + 1, filtered.length - 1)); return; }
@@ -110,12 +126,13 @@ export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anyt
   }
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
       {slashOpen && (
         <SlashCommandMenu
           query={slashQuery}
           activeIndex={slashIndex}
           onSelect={handleSelect}
+          commands={activeCommands}
         />
       )}
       <div className="ai-input-box">

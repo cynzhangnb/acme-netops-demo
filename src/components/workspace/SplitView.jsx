@@ -4,7 +4,7 @@ import ArtifactPane from '../artifacts/ArtifactPane'
 
 export default function SplitView({
   messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill,
-  artifacts, activeArtifactId, onSetActiveArtifact, onRemoveArtifact, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets, onNew, currentSessionName, nameOverride, onRenameSession, onTopologyNodeAction,
+  artifacts, activeArtifactId, onSetActiveArtifact, onRemoveArtifact, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets, onNew, currentSessionName, nameOverride, onRenameSession, onTopologyNodeAction, commandSet,
 }) {
   const artifactRef = useRef(null)
   const isResizing = useRef(false)
@@ -63,6 +63,7 @@ export default function SplitView({
           nameOverride={nameOverride}
           onRenameSession={onRenameSession}
           canAddToCanvas={true}
+          commandSet={commandSet}
         />
       </div>
 

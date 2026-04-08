@@ -1,6 +1,6 @@
 import ChatPane from './ChatPane'
 
-export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession }) {
+export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession, commandSet }) {
   return (
     <div style={{ height: '100%' }}>
       <ChatPane
@@ -14,6 +14,7 @@ export default function ChatView({ messages, isStreaming, onSend, onSaveArtifact
         currentSessionName={currentSessionName}
         nameOverride={nameOverride}
         onRenameSession={onRenameSession}
+        commandSet={commandSet}
       />
     </div>
   )

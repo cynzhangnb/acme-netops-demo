@@ -229,6 +229,23 @@ function EyeOffIcon() {
   )
 }
 
+function LayersIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M1.5 4.5L6.5 2L11.5 4.5L6.5 7L1.5 4.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/>
+      <path d="M1.5 7L6.5 9.5L11.5 7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M1.5 9.5L6.5 12L11.5 9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+function CollapseIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+      <path d="M2 4L5.5 7.5L9 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
 const CONTEXT_MENU_ITEMS = [
   { id: 'view-config',       label: 'View Configuration' },
   { id: 'view-properties',   label: 'View Properties' },
@@ -287,7 +304,11 @@ const OVERLAY_DEFS = [
   },
 ]
 
-export default function ChangesMap({ filter, externalOverlay, widgetMode = false, onNodeAction }) {
+// Fixed canvas size used in widget mode so resizing the widget doesn't reflow the map contents
+const WIDGET_NATURAL_W = 680
+const WIDGET_NATURAL_H = 520
+
+export default function ChangesMap({ filter, externalOverlay, widgetMode = false, onNodeAction, overlayCollapsedPref, onOverlayToggle }) {
   const is24h  = filter === 'last-24h'
   const NODES  = is24h ? NODES_24H  : NODES_7D
   const EDGES  = is24h ? EDGES_24H  : EDGES_7D
@@ -313,6 +334,10 @@ export default function ChangesMap({ filter, externalOverlay, widgetMode = false
   const [spaceDown, setSpaceDown] = useState(false)
   const [panning, setPanning] = useState(false)
 
+  // Scroll-wheel zoom (widget mode)
+  const [zoom, setZoom] = useState(1)
+  const zoomRef = useRef(1)
+
   const allNodes = useMemo(() =>
     [...NODES, ...extendedNodes].map(n => ({
       ...n,
@@ -325,6 +350,21 @@ export default function ChangesMap({ filter, externalOverlay, widgetMode = false
 
   // overlayState: { [overlayId]: boolean }
   const [overlayState, setOverlayState] = useState({ 'config-changes': true })
+
+  // Overlay panel collapsed state:
+  // - widget mode default: collapsed; focus/full mode default: expanded
+  // - overlayCollapsedPref (from parent) persists user's manual choice across mode switches
+  const defaultCollapsed = widgetMode
+  const [overlayCollapsed, setOverlayCollapsed] = useState(
+    overlayCollapsedPref !== null && overlayCollapsedPref !== undefined
+      ? overlayCollapsedPref
+      : defaultCollapsed
+  )
+  function toggleOverlayPanel() {
+    const next = !overlayCollapsed
+    setOverlayCollapsed(next)
+    onOverlayToggle?.(next)
+  }
 
   // When AI triggers a new overlay externally
   useEffect(() => {
@@ -457,6 +497,31 @@ export default function ChangesMap({ filter, externalOverlay, widgetMode = false
     }
   }, [])
 
+  // Wheel zoom — only active in widget mode
+  useEffect(() => {
+    if (!widgetMode) return
+    const el = outerRef.current
+    if (!el) return
+    function onWheel(e) {
+      e.preventDefault()
+      const factor = e.deltaY < 0 ? 1.1 : 0.9
+      const newZoom = Math.max(0.3, Math.min(4, zoomRef.current * factor))
+      const rect = el.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      const my = e.clientY - rect.top
+      const newPan = {
+        x: mx - (mx - panRef.current.x) * (newZoom / zoomRef.current),
+        y: my - (my - panRef.current.y) * (newZoom / zoomRef.current),
+      }
+      zoomRef.current = newZoom
+      panRef.current = newPan
+      setZoom(newZoom)
+      setPan(newPan)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [widgetMode])
+
   function handleNodeMouseDown(e, node) {
     if (spaceRef.current) return
     if (e.button !== 0) return
@@ -565,43 +630,88 @@ export default function ChangesMap({ filter, externalOverlay, widgetMode = false
     >
       {!widgetMode && <div className="dot-grid" />}
 
-      {/* Overlay control panel */}
-      <div style={{
-        position: 'absolute', top: 10, left: 10, zIndex: 10,
-        background: '#fff', border: '1px solid #e4e4e4', borderRadius: 8,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden',
-      }}>
-        <div style={{ padding: '5px 10px 4px', fontSize: 9, fontWeight: 600, color: '#888', letterSpacing: '0.07em', textTransform: 'uppercase', borderBottom: '1px solid #f0f0f0' }}>
-          Overlays
-        </div>
-        {visibleOverlays.map((ov, i) => (
-          <div
-            key={ov.id}
+      {/* Overlay control panel — minimized (icon only) or expanded */}
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
+        {overlayCollapsed ? (
+          // Minimized: single icon button
+          <button
+            onClick={toggleOverlayPanel}
+            title="Show overlays"
             style={{
-              padding: '5px 10px',
-              display: 'flex', alignItems: 'center', gap: 8,
-              borderTop: i > 0 ? '1px solid #f0f0f0' : undefined,
+              width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#fff', border: '1px solid #e4e4e4', borderRadius: 7,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.07)', cursor: 'pointer', color: '#888',
+              padding: 0,
             }}
           >
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: ov.dot, flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: '#444', flex: 1, whiteSpace: 'nowrap' }}>{ov.label}</span>
-            <button
-              onClick={() => toggleOverlay(ov.id)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: overlayState[ov.id] ? '#555' : '#bbb',
-                padding: '1px 0', display: 'flex', flexShrink: 0, transition: 'color 0.15s',
-              }}
-              title={overlayState[ov.id] ? 'Hide overlay' : 'Show overlay'}
-            >
-              {overlayState[ov.id] ? <EyeIcon /> : <EyeOffIcon />}
-            </button>
+            <LayersIcon />
+          </button>
+        ) : (
+          // Expanded: full panel
+          <div style={{
+            background: '#fff', border: '1px solid #e4e4e4', borderRadius: 8,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.07)', overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '5px 6px 4px 10px', fontSize: 9, fontWeight: 600, color: '#888',
+              letterSpacing: '0.07em', textTransform: 'uppercase',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}>
+              <span style={{ flex: 1 }}>Overlays</span>
+              <button
+                onClick={toggleOverlayPanel}
+                title="Minimize"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#bbb', display: 'flex', alignItems: 'center', padding: '1px 2px',
+                  borderRadius: 3, lineHeight: 1,
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#888'}
+                onMouseLeave={e => e.currentTarget.style.color = '#bbb'}
+              >
+                <CollapseIcon />
+              </button>
+            </div>
+            {visibleOverlays.map((ov, i) => (
+              <div
+                key={ov.id}
+                style={{
+                  padding: '5px 10px',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  borderTop: i > 0 ? '1px solid #f0f0f0' : undefined,
+                }}
+              >
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: ov.dot, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: '#444', flex: 1, whiteSpace: 'nowrap' }}>{ov.label}</span>
+                <button
+                  onClick={() => toggleOverlay(ov.id)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: overlayState[ov.id] ? '#555' : '#bbb',
+                    padding: '1px 0', display: 'flex', flexShrink: 0, transition: 'color 0.15s',
+                  }}
+                  title={overlayState[ov.id] ? 'Hide overlay' : 'Show overlay'}
+                >
+                  {overlayState[ov.id] ? <EyeIcon /> : <EyeOffIcon />}
+                </button>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Graph container */}
-      <div ref={containerRef} style={{ position: 'absolute', inset: 0, transform: `translate(${pan.x}px, ${pan.y}px)` }}>
+      {/* Graph container — fixed size in widget mode so resize doesn't reflow map contents */}
+      <div ref={containerRef} style={{
+        position: 'absolute',
+        ...(widgetMode
+          ? { width: WIDGET_NATURAL_W, height: WIDGET_NATURAL_H }
+          : { inset: 0 }),
+        transform: widgetMode
+          ? `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+          : `translate(${pan.x}px, ${pan.y}px)`,
+        transformOrigin: '0 0',
+      }}>
         {/* SVG edges */}
         <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', overflow: 'visible' }}>
           {lines.map(line => {

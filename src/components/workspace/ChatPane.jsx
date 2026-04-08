@@ -40,7 +40,7 @@ function PlusIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false, commandSet = 'default' }) {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const [isEditingName, setIsEditingName] = useState(false)
@@ -128,6 +128,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             onSend={onSend}
             isStreaming={isStreaming}
             initialValue={inputPrefill || ''}
+            commandSet={commandSet}
           />
         </div>
       </div>
