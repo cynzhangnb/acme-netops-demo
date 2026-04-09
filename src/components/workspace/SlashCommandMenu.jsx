@@ -60,46 +60,16 @@ export const SLASH_COMMANDS = [
 
 export const CHANGES_COMMANDS = [
   {
-    id: '24hr',
-    name: '/24hr',
-    label: 'Show last 24 hours',
-    prompt: 'show last 24 hours of change',
-  },
-  {
-    id: 'bgp',
-    name: '/bgp',
-    label: 'Show BGP design',
-    prompt: 'show bgp design',
+    id: 'inquiry',
+    name: '/inquiry',
+    label: 'show bgp related change',
+    prompt: 'which devices have BGP policy change',
   },
   {
     id: 'map',
     name: '/map',
-    label: 'Show devices on map',
+    label: 'show devices on map',
     prompt: 'show devices on map',
-  },
-  {
-    id: 'ios',
-    name: '/ios',
-    label: 'Show IOS version',
-    prompt: 'what are the ios versions of these devices',
-  },
-  {
-    id: 'serial',
-    name: '/serial',
-    label: 'Show serial numbers',
-    prompt: 'what are the serial number?',
-  },
-  {
-    id: 'ospf',
-    name: '/ospf',
-    label: 'Show OSPF design',
-    prompt: 'show ospf design',
-  },
-  {
-    id: 'crc',
-    name: '/crc',
-    label: 'Show CRC errors',
-    prompt: 'any crc errors?',
   },
 ]
 

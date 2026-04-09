@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import ChatPane from '../workspace/ChatPane'
 import { CHANGES_COMMANDS } from '../workspace/SlashCommandMenu'
+import ChangesMap from '../artifacts/ChangesMap'
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
@@ -498,7 +499,7 @@ function OrbitIcon({ size = 22 }) {
   )
 }
 
-function AISidePane({ onClose, width, timeRange, onDeviceClick }) {
+function AISidePane({ onClose, width, timeRange, onDeviceClick, onOpenArtifact }) {
   const [messages,    setMessages]    = useState([])
   const [isStreaming, setIsStreaming]  = useState(false)
   const msgCounter = useRef(0)
@@ -519,7 +520,7 @@ function AISidePane({ onClose, width, timeRange, onDeviceClick }) {
           id: assistantId,
           role: 'assistant',
           content: `Here are the devices with recent changes plotted across the Boston network for ${timeLabel}.`,
-          artifactRef: { type: 'changesMap', label: 'Boston Network · Changed Devices' },
+          artifactRef: { type: 'changesMap', label: 'Changed Devices' },
         }])
       } else {
         const result = queryChanges(text, timeRange)
@@ -551,6 +552,7 @@ function AISidePane({ onClose, width, timeRange, onDeviceClick }) {
         commandSet="changes"
         canAddToCanvas={false}
         onDeviceClick={onDeviceClick}
+        onOpenArtifact={onOpenArtifact}
       />
     </div>
   )
@@ -604,6 +606,45 @@ function AiFilterBanner({ aiFilter, onClear, onSaveAsFilter }) {
   )
 }
 
+// ── Enter Workspace Modal ─────────────────────────────────────────────────────
+
+function EnterWorkspaceModal({ onConfirm, onCancel }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onCancel() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
+      <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e4e4e4', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', width: 440, padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>Enter AI Workspace</div>
+        <div style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>
+          The layout will switch to workspace tab view, opening the <strong>Changed Devices</strong> map in a new tab alongside the Change Analysis table.
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+          <button
+            onClick={onCancel}
+            style={{ fontSize: 13, color: '#555', background: 'none', border: '1px solid #e0e0e0', borderRadius: 6, padding: '7px 16px', cursor: 'pointer', fontWeight: 500 }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{ fontSize: 13, color: '#fff', background: '#3b82f6', border: 'none', borderRadius: 6, padding: '7px 16px', cursor: 'pointer', fontWeight: 500 }}
+            onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
+            onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
+          >
+            Enter Workspace
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 // Columns: Device Name | Device Type | Change Category | Timestamp
@@ -620,6 +661,9 @@ export default function ChangeAnalysisPage() {
   const [diffH,         setDiffH]         = useState(null)
   const [aiOpen,        setAiOpen]        = useState(false)
   const [aiPaneW,       setAiPaneW]       = useState(340)
+  const [tabMode,       setTabMode]       = useState(false)
+  const [activeTab,     setActiveTab]     = useState('table')
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
   const containerRef    = useRef(null)
   const searchRef       = useRef(null)
   const isResizing      = useRef(false)   // vertical (diff)
@@ -724,6 +768,12 @@ export default function ChangeAnalysisPage() {
 
   const timeLabel = TIME_RANGES.find(t => t.value === timeRange)?.label || ''
 
+  function handleOpenArtifact(artifactRef) {
+    if (artifactRef.type === 'changesMap') {
+      setShowWorkspaceModal(true)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden' }}>
 
@@ -734,6 +784,7 @@ export default function ChangeAnalysisPage() {
           width={aiPaneW}
           timeRange={timeRange}
           onDeviceClick={name => { setSearch(name); setTimeout(() => searchRef.current?.focus(), 0) }}
+          onOpenArtifact={handleOpenArtifact}
         />
         <div
           onMouseDown={startPaneResize}
@@ -766,153 +817,217 @@ export default function ChangeAnalysisPage() {
 
     <div data-resizable="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
 
-      {/* ── Header ── */}
-      <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #eeeeee', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
-            Change Analysis
-          </div>
-          <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
-          <div style={{ fontSize: 11.5, color: '#444' }}>
-            9 changed devices · 243 total devices
-          </div>
-        </div>
-
-        {/* Filter bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
-          {/* Filters — left */}
-          <Dropdown
-            label="Last 24 hours"
-            value={timeLabel}
-            options={TIME_RANGES}
-            onChange={setTimeRange}
-          />
-
-          <Dropdown
-            label="All device types"
-            multi={true}
-            selected={deviceTypes}
-            options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
-            onChange={setDeviceTypes}
-          />
-
-          <Dropdown
-            label="All change categories"
-            multi={true}
-            selected={categories}
-            options={CATEGORY_OPTIONS}
-            onChange={setCategories}
-          />
-
-          <div style={{ flex: 1 }} />
-
-          {/* Search — far right */}
+      {/* ── Tab bar (workspace mode) or Page header ── */}
+      {tabMode ? (
+        <div style={{ height: 44, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', paddingLeft: 8, flexShrink: 0, gap: 2 }}>
+          {/* Tab 1: Change Analysis */}
           <div
+            onClick={() => setActiveTab('table')}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px',
-              background: '#fff', width: 200, minWidth: 120, flexShrink: 1,
-              transition: 'border-color 0.15s, box-shadow 0.15s',
+              padding: '0 14px', height: 32, borderRadius: 6, cursor: 'pointer',
+              background: activeTab === 'table' ? '#f5f5f5' : 'transparent',
+              fontSize: 12.5, fontWeight: activeTab === 'table' ? 600 : 400, color: activeTab === 'table' ? '#111' : '#666',
+              userSelect: 'none',
             }}
-            onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
-            onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
           >
-            <SearchIcon />
-            <input
-              ref={searchRef}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search…"
-              style={{
-                border: 'none', outline: 'none', fontSize: 11.5, color: '#333',
-                background: 'transparent', flex: 1, minWidth: 0,
-              }}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}>
-                <CloseIcon />
-              </button>
-            )}
+            Change Analysis
           </div>
-        </div>
-      </div>
-
-      {/* ── Table ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }} ref={containerRef}>
-
-        {/* Column headers */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: COLS,
-          padding: '6px 24px', borderBottom: '1px solid #eeeeee',
-          background: '#fafafa', flexShrink: 0,
-        }}>
-          {[
-            { key: 'device',     label: 'DEVICE NAME'     },
-            { key: 'deviceType', label: 'DEVICE TYPE'     },
-            { key: 'category',   label: 'CHANGE CATEGORY' },
-            { key: 'timestamp',  label: 'TIMESTAMP'       },
-          ].map(col => (
-            <div
-              key={col.key}
-              onClick={() => handleSort(col.key)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', userSelect: 'none' }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 600, color: sortKey === col.key ? '#111' : '#555', letterSpacing: '0.04em' }}>{col.label}</span>
-              <SortIcon active={sortKey === col.key} dir={sortDir} />
-            </div>
-          ))}
-        </div>
-
-        {/* Flat chronological rows */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {sorted.length === 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: '#bbb', fontSize: 13 }}>
-              No change events match the current filters
-            </div>
-          ) : sorted.map(change => {
-            const isActive = selected?.id === change.id
-            return (
-              <div
-                key={change.id}
-                onClick={() => setSelected(isActive ? null : change)}
-                style={{
-                  display: 'grid', gridTemplateColumns: COLS,
-                  alignItems: 'center', padding: '8px 24px',
-                  borderBottom: '1px solid #f4f4f4', cursor: 'pointer',
-                  background: isActive ? '#eff6ff' : 'transparent',
-                  boxShadow: isActive ? 'inset 3px 0 0 #3b82f6' : 'none',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>{change.device}</div>
-                <div style={{ fontSize: 12, color: '#111' }}>{DEVICE_TYPE_LABELS[change.deviceType]}</div>
-                <div style={{ fontSize: 12, color: '#111' }}>{change.category}</div>
-                <div style={{ fontSize: 12, color: '#111' }}>{change.timestamp}</div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── Diff pane ── */}
-      {selected && diffH !== null && (
-        <>
+          {/* Tab 2: Changed Devices */}
           <div
-            onMouseDown={startResize}
-            style={{ height: 4, flexShrink: 0, cursor: 'row-resize', background: 'transparent', position: 'relative', zIndex: 10 }}
-            onMouseEnter={e => e.currentTarget.style.background = '#e0e0e0'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            onClick={() => setActiveTab('map')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '0 10px 0 14px', height: 32, borderRadius: 6, cursor: 'pointer',
+              background: activeTab === 'map' ? '#f5f5f5' : 'transparent',
+              fontSize: 12.5, fontWeight: activeTab === 'map' ? 600 : 400, color: activeTab === 'map' ? '#111' : '#666',
+              userSelect: 'none',
+            }}
           >
-            <div style={{ position: 'absolute', left: 0, right: 0, top: 1, height: 1, background: '#e4e4e4' }} />
+            Changed Devices
+            <button
+              onClick={e => { e.stopPropagation(); setTabMode(false); setActiveTab('table') }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', padding: '2px 2px', borderRadius: 4, marginLeft: 2, lineHeight: 1 }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#aaa' }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="2" y1="2" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="10" y1="2" x2="2" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
           </div>
-          <div style={{ height: diffH, flexShrink: 0, overflow: 'hidden' }}>
-            <DiffPanel change={selected} onClose={() => setSelected(null)} />
+        </div>
+      ) : (
+        <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #eeeeee', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
+              Change Analysis
+            </div>
+            <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
+            <div style={{ fontSize: 11.5, color: '#444' }}>
+              9 changed devices · 243 total devices
+            </div>
           </div>
-        </>
+
+          {/* Filter bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+            <Dropdown
+              label="Last 24 hours"
+              value={timeLabel}
+              options={TIME_RANGES}
+              onChange={setTimeRange}
+            />
+            <Dropdown
+              label="All device types"
+              multi={true}
+              selected={deviceTypes}
+              options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+              onChange={setDeviceTypes}
+            />
+            <Dropdown
+              label="All change categories"
+              multi={true}
+              selected={categories}
+              options={CATEGORY_OPTIONS}
+              onChange={setCategories}
+            />
+            <div style={{ flex: 1 }} />
+            <div
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px',
+                background: '#fff', width: 200, minWidth: 120, flexShrink: 1,
+                transition: 'border-color 0.15s, box-shadow 0.15s',
+              }}
+              onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
+              onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
+            >
+              <SearchIcon />
+              <input
+                ref={searchRef}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search…"
+                style={{ border: 'none', outline: 'none', fontSize: 11.5, color: '#333', background: 'transparent', flex: 1, minWidth: 0 }}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}>
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* ── Map tab content ── */}
+      {tabMode && activeTab === 'map' && (
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ChangesMap filter={timeRange} />
+        </div>
+      )}
+
+      {/* ── Table tab content ── */}
+      {(!tabMode || activeTab === 'table') && (<>
+
+        {/* Filter bar in tab mode */}
+        {tabMode && (
+          <div style={{ padding: '10px 24px', borderBottom: '1px solid #eeeeee', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <Dropdown label="Last 24 hours" value={timeLabel} options={TIME_RANGES} onChange={setTimeRange} />
+            <Dropdown label="All device types" multi={true} selected={deviceTypes} options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))} onChange={setDeviceTypes} />
+            <Dropdown label="All change categories" multi={true} selected={categories} options={CATEGORY_OPTIONS} onChange={setCategories} />
+            <div style={{ flex: 1 }} />
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px', background: '#fff', width: 200, minWidth: 120, flexShrink: 1, transition: 'border-color 0.15s, box-shadow 0.15s' }}
+              onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
+              onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
+            >
+              <SearchIcon />
+              <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" style={{ border: 'none', outline: 'none', fontSize: 11.5, color: '#333', background: 'transparent', flex: 1, minWidth: 0 }} />
+              {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}><CloseIcon /></button>}
+            </div>
+          </div>
+        )}
+
+        {/* ── Table ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }} ref={containerRef}>
+          {/* Column headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: COLS, padding: '6px 24px', borderBottom: '1px solid #eeeeee', background: '#fafafa', flexShrink: 0 }}>
+            {[
+              { key: 'device',     label: 'DEVICE NAME'     },
+              { key: 'deviceType', label: 'DEVICE TYPE'     },
+              { key: 'category',   label: 'CHANGE CATEGORY' },
+              { key: 'timestamp',  label: 'TIMESTAMP'       },
+            ].map(col => (
+              <div
+                key={col.key}
+                onClick={() => handleSort(col.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', userSelect: 'none' }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 600, color: sortKey === col.key ? '#111' : '#555', letterSpacing: '0.04em' }}>{col.label}</span>
+                <SortIcon active={sortKey === col.key} dir={sortDir} />
+              </div>
+            ))}
+          </div>
+
+          {/* Flat chronological rows */}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {sorted.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: '#bbb', fontSize: 13 }}>
+                No change events match the current filters
+              </div>
+            ) : sorted.map(change => {
+              const isActive = selected?.id === change.id
+              return (
+                <div
+                  key={change.id}
+                  onClick={() => setSelected(isActive ? null : change)}
+                  style={{
+                    display: 'grid', gridTemplateColumns: COLS,
+                    alignItems: 'center', padding: '8px 24px',
+                    borderBottom: '1px solid #f4f4f4', cursor: 'pointer',
+                    background: isActive ? '#eff6ff' : 'transparent',
+                    boxShadow: isActive ? 'inset 3px 0 0 #3b82f6' : 'none',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
+                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 500, color: '#111' }}>{change.device}</div>
+                  <div style={{ fontSize: 12, color: '#111' }}>{DEVICE_TYPE_LABELS[change.deviceType]}</div>
+                  <div style={{ fontSize: 12, color: '#111' }}>{change.category}</div>
+                  <div style={{ fontSize: 12, color: '#111' }}>{change.timestamp}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Diff pane ── */}
+        {selected && diffH !== null && (
+          <>
+            <div
+              onMouseDown={startResize}
+              style={{ height: 4, flexShrink: 0, cursor: 'row-resize', background: 'transparent', position: 'relative', zIndex: 10 }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e0e0e0'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <div style={{ position: 'absolute', left: 0, right: 0, top: 1, height: 1, background: '#e4e4e4' }} />
+            </div>
+            <div style={{ height: diffH, flexShrink: 0, overflow: 'hidden' }}>
+              <DiffPanel change={selected} onClose={() => setSelected(null)} />
+            </div>
+          </>
+        )}
+      </>)}
+
     </div>
+
+    {/* ── Enter Workspace confirmation modal ── */}
+    {showWorkspaceModal && (
+      <EnterWorkspaceModal
+        onConfirm={() => { setTabMode(true); setActiveTab('map'); setShowWorkspaceModal(false) }}
+        onCancel={() => setShowWorkspaceModal(false)}
+      />
+    )}
     </div>
   )
 }
