@@ -93,6 +93,13 @@ const IOS_VERSION_24H_CONTENT = `Showing OS versions for the **4 devices** with 
 - 1 device is running an outdated OS version — **DS-BOS-03** (17.06.03)
 - Recommend scheduling an upgrade during the next maintenance window`
 
+const TORONTO_BGP_CONTENT = `**2 BGP policy changes detected** in Toronto in the last 7 days.
+
+- **TR-TOR-CR-01** — BGP route-policy updated; local-preference lowered from 200 → 150 on peer 172.16.4.2
+- **TR-TOR-CR-02** — BGP neighbor policy modified; inbound route filter updated for AS65001
+
+→ View Change Analysis`
+
 const BGP_DESIGN_CONTENT = `Displaying BGP topology for the current network
 
 - 3 devices are participating in BGP
@@ -246,6 +253,18 @@ export const responseRegistry = [
       artifactType: 'iosVersionTable',
       artifactLabel: 'IOS Versions',
       artifactDataKey: 'last-24h',
+    },
+    sideEffects: [],
+  },
+  {
+    id: 'toronto-bgp',
+    keywords: ['toronto', 'bgp'],
+    priority: 18,
+    response: {
+      content: TORONTO_BGP_CONTENT,
+      artifactType: 'changeAnalysis',
+      artifactLabel: 'Toronto BGP Changes',
+      artifactDataKey: null,
     },
     sideEffects: [],
   },

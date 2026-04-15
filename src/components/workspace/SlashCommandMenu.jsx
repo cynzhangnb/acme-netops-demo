@@ -25,6 +25,12 @@ export const HOME_COMMANDS = [
     label: 'Troubleshoot a voice issue',
     prompt: 'I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?',
   },
+  {
+    id: 'device',
+    name: '/device',
+    label: 'Get device info',
+    prompt: 'Show me device details for US-BOS-R1',
+  },
 ]
 
 export const NETWORK_COMMANDS = [
@@ -60,10 +66,61 @@ export const SLASH_COMMANDS = [
 
 export const CHANGES_COMMANDS = [
   {
+    id: '24hr',
+    name: '/24hr',
+    label: 'Show last 24 hours',
+    prompt: 'show last 24 hours of change',
+  },
+  {
+    id: 'map',
+    name: '/map',
+    label: 'Show devices on map',
+    prompt: 'show devices on map',
+  },
+  {
+    id: 'bgp',
+    name: '/bgp',
+    label: 'Show BGP design',
+    prompt: 'show bgp design',
+  },
+  {
+    id: 'ios',
+    name: '/ios',
+    label: 'Show IOS version',
+    prompt: 'what are the ios versions of these devices',
+  },
+  {
+    id: 'serial',
+    name: '/serial',
+    label: 'Show serial numbers',
+    prompt: 'what are the serial number?',
+  },
+  {
+    id: 'ospf',
+    name: '/ospf',
+    label: 'Show OSPF design',
+    prompt: 'show ospf design',
+  },
+  {
+    id: 'crc',
+    name: '/crc',
+    label: 'Show CRC errors',
+    prompt: 'any crc errors?',
+  },
+]
+
+export const CHANGE_ANALYSIS_COMMANDS = [
+  {
     id: 'inquiry',
     name: '/inquiry',
     label: 'show bgp related change',
     prompt: 'which devices have BGP policy change',
+  },
+  {
+    id: 'inquiry-2',
+    name: '/inquiry 2',
+    label: 'BGP changes in Toronto',
+    prompt: 'Which devices in Toronto have BGP policy change',
   },
   {
     id: 'map',

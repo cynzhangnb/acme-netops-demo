@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import SlashCommandMenu, { SLASH_COMMANDS, CHANGES_COMMANDS, HOME_COMMANDS, NETWORK_COMMANDS } from './SlashCommandMenu'
+import SlashCommandMenu, { SLASH_COMMANDS, CHANGES_COMMANDS, CHANGE_ANALYSIS_COMMANDS, HOME_COMMANDS, NETWORK_COMMANDS } from './SlashCommandMenu'
 
 // Return / Enter key icon
 function SendIcon() {
@@ -41,11 +41,12 @@ function ThinkingDots() {
   )
 }
 
-export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anything about your network, or type / for commands…', initialValue = '', onValueChange, maxExpandHeight = 140, commandSet = 'default' }) {
+export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anything about your network, or type / for commands…', initialValue = '', onValueChange, maxExpandHeight = 140, commandSet = 'default', disableAutoResize = false }) {
   const activeCommands =
-    commandSet === 'home'    ? HOME_COMMANDS :
-    commandSet === 'changes' ? CHANGES_COMMANDS :
-    commandSet === 'network' ? NETWORK_COMMANDS :
+    commandSet === 'home'           ? HOME_COMMANDS :
+    commandSet === 'changes'        ? CHANGES_COMMANDS :
+    commandSet === 'changeAnalysis' ? CHANGE_ANALYSIS_COMMANDS :
+    commandSet === 'network'        ? NETWORK_COMMANDS :
     SLASH_COMMANDS
   const [value, setValue] = useState(initialValue)
   const [slashOpen, setSlashOpen] = useState(false)
@@ -69,11 +70,12 @@ export default function InputArea({ onSend, isStreaming, placeholder = 'Ask anyt
   }, [initialValue])
 
   useEffect(() => {
+    if (disableAutoResize) return
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, maxExpandHeight) + 'px'
     }
-  }, [value])
+  }, [value, disableAutoResize])
 
   function handleChange(e) {
     const v = e.target.value

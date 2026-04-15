@@ -162,14 +162,25 @@ function Section({ title, defaultOpen = true, children }) {
 /* ══════════════════════════════════════════════════════════════════════════ */
 const SHORTCUTS = [
   { label: 'Explore Network' },
-  { label: 'Troubleshoot' },
-  { label: 'Recent Changes' },
-  { label: 'Get Device Info' },
-  { label: 'Discover Network' },
+  { label: 'Diagnose Issues' },
+  { label: 'Review Changes' },
+  // { label: 'Get Device Info' },   // reserved for future use
+  // { label: 'Discover Network' },  // removed
 ]
+
+const SECOND_LAYER = {
+  'Explore Network': [
+    { label: 'Show me the network topology',  prompt: NETWORK_TEMPLATE },
+    { label: 'Give me an overview of a site', prompt: 'Give me an overview of the Boston site, including its devices, layout, and key connections.' },
+    { label: 'Get device info',               prompt: 'Show me device details for US-BOS-R1' },
+    { label: 'Show recent device health',     prompt: 'Show me the recent health status of devices in my network' },
+  ],
+}
 
 export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0, onSessionNameChange, restoredSession, currentSessionName }) {
   const [homeInput, setHomeInput] = useState('')
+  const [activeShortcut, setActiveShortcut] = useState(null)
+  const [hoverPrompt, setHoverPrompt] = useState(null)
   const [insightWidth, setInsightWidth] = useState(380)
   const isDragging = useRef(false)
 
@@ -215,10 +226,22 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
   }
 
   const handleShortcut = (label) => {
-    if (label === 'Explore Network') setHomeInput(NETWORK_TEMPLATE)
-    if (label === 'Troubleshoot') setHomeInput('I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?')
-    if (label === 'Recent Changes') setHomeInput('Show recent configuration changes in my network')
-    if (label === 'Get Device Info') setHomeInput('Show me device details for US-BOS-R1')
+    if (SECOND_LAYER[label]) {
+      // has a second layer — drill in
+      setActiveShortcut(label)
+    } else {
+      // no second layer — pre-fill directly
+      if (label === 'Diagnose Issues') setHomeInput('I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?')
+      if (label === 'Review Changes')  setHomeInput('Show recent configuration changes in my network')
+      // preserved for future use:
+      if (label === 'Get Device Info') setHomeInput('Show me device details for US-BOS-R1')
+    }
+  }
+
+  const handleSecondLayer = (prompt) => {
+    setHoverPrompt(null)
+    setHomeInput(prompt)
+    setActiveShortcut(null)
   }
 
   return (
@@ -304,43 +327,77 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                 onStartAI(sent)
               }}
               isStreaming={false}
-              placeholder="Ask anything about your network, or type / for commands…"
-              initialValue={homeInput}
-              onValueChange={setHomeInput}
+              placeholder="Ask about your network, or choose a topic below"
+              initialValue={hoverPrompt ?? homeInput}
+              onValueChange={v => { setHoverPrompt(null); setHomeInput(v) }}
               maxExpandHeight={120}
               commandSet="home"
+              disableAutoResize={hoverPrompt !== null}
             />
           </div>
 
-          {/* Shortcut chips */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 7 }}>
-            {SHORTCUTS.map(({ label }) => (
-              <button
-                key={label}
-                onClick={() => handleShortcut(label)}
-                style={{
-                  padding: '7px 10px',
-                  border: '1px solid #ddd',
-                  borderRadius: 7,
-                  fontSize: 11, fontWeight: 400, color: '#444',
-                  cursor: 'pointer', background: '#fff',
-                  textAlign: 'center', whiteSpace: 'normal',
-                  lineHeight: 1.35,
-                  transition: 'border-color 0.1s, background 0.1s, color 0.1s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = '#f5f5f5'
-                  e.currentTarget.style.borderColor = '#c8c8c8'
-                  e.currentTarget.style.color = '#111'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = '#fff'
-                  e.currentTarget.style.borderColor = '#ddd'
-                  e.currentTarget.style.color = '#444'
-                }}
-              >{label}</button>
-            ))}
-          </div>
+          {/* Shortcut area — layer 1 or layer 2 */}
+          {activeShortcut ? (
+            /* ── Second layer: drill-down prompts ── */
+            <div style={{ border: '1px solid #e2e2e2', borderRadius: 12, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              {/* Header — click anywhere to go back */}
+              <div
+                onClick={() => { setActiveShortcut(null); setHoverPrompt(null) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#767676" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <span style={{ fontSize: 12, fontWeight: 400, color: '#767676', lineHeight: 1 }}>{activeShortcut}</span>
+              </div>
+              {/* Prompt rows */}
+              {SECOND_LAYER[activeShortcut].map(({ label, prompt }, i) => {
+                const isLast = i === SECOND_LAYER[activeShortcut].length - 1
+                return (
+                  <button
+                    key={label}
+                    onClick={() => handleSecondLayer(prompt)}
+                    onMouseEnter={() => setHoverPrompt(prompt)}
+                    onMouseLeave={() => setHoverPrompt(null)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%', padding: '11px 16px',
+                      border: 'none', borderBottom: isLast ? 'none' : '1px solid #f5f5f5',
+                      background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                      fontSize: 13, color: '#222', lineHeight: 1.4,
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseDown={e => e.currentTarget.style.background = '#efefef'}
+                    onMouseUp={e => e.currentTarget.style.background = '#f5f5f5'}
+                  >
+                    <span>{label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            /* ── First layer: 3 shortcut chips ── */
+            <div style={{ display: 'flex', gap: 7 }}>
+              {SHORTCUTS.map(({ label }) => (
+                <button
+                  key={label}
+                  onClick={() => handleShortcut(label)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #e0e0e0', borderRadius: 7,
+                    fontSize: 12, fontWeight: 400, color: '#555',
+                    cursor: 'pointer', background: '#fff', whiteSpace: 'nowrap',
+                    transition: 'border-color 0.12s, background 0.12s, color 0.12s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#efefef'; e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#111' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
 
         </div>
       </div>

@@ -33,23 +33,58 @@ export function deriveSessionName(messages, currentName = 'New Session') {
 
 function PlusIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-      <line x1="5.5" y1="1" x2="5.5" y2="10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-      <line x1="1" y1="5.5" x2="10" y2="5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <line x1="7" y1="1.5" x2="7" y2="12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="1.5" y1="7" x2="12.5" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, onClose, currentSessionName, nameOverride, onRenameSession, canAddToCanvas = false, commandSet = 'default', onMessageAction, onDeviceClick }) {
+function ChevronIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <polyline points="2,4 6,8 10,4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function RenameIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  )
+}
+
+function ArchiveIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="21 8 21 21 3 21 3 8"/>
+      <rect x="1" y="3" width="22" height="5"/>
+      <line x1="10" y1="12" x2="14" y2="12"/>
+    </svg>
+  )
+}
+
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, onClose, currentSessionName, nameOverride, onRenameSession, onArchive, sessions, onSwitchSession, canAddToCanvas = false, commandSet = 'default', onMessageAction, onDeviceClick }) {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const headerRef = useRef(null)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editValue, setEditValue] = useState('')
+  const [nameHovered, setNameHovered] = useState(false)
+  const [showSessions, setShowSessions] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const sessionName = nameOverride ?? deriveSessionName(messages, currentSessionName)
+
+  // Use new sessions-based header when sessions prop is provided
+  const useSessioHeader = sessions !== undefined
 
   function startEdit() {
     setEditValue(sessionName)
     setIsEditingName(true)
+    setShowMenu(false)
   }
   function confirmEdit() {
     const trimmed = editValue.trim()
@@ -67,11 +102,26 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length, isStreaming])
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    if (!showSessions && !showMenu) return
+    const handler = e => {
+      if (!headerRef.current?.contains(e.target)) {
+        setShowSessions(false)
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showSessions, showMenu])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
 
       {/* Session header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+      <div ref={headerRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+
+        {/* Left: session name */}
         {isEditingName ? (
           <input
             ref={inputRef}
@@ -89,35 +139,129 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
               margin: '-2px -6px',
             }}
           />
+        ) : useSessioHeader ? (
+          /* Sessions-aware name area: click name = sessions list, click chevron = menu */
+          <div
+            style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 3, cursor: 'default' }}
+            onMouseEnter={() => setNameHovered(true)}
+            onMouseLeave={() => setNameHovered(false)}
+          >
+            <span
+              onClick={() => { setShowSessions(s => !s); setShowMenu(false) }}
+              style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, cursor: 'pointer', userSelect: 'none' }}
+            >{sessionName}</span>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', padding: '2px 3px',
+                  border: 'none', borderRadius: 4, background: 'transparent',
+                  color: nameHovered ? '#666' : 'transparent',
+                  cursor: 'pointer', transition: 'color 0.1s, background 0.1s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <ChevronIcon />
+              </button>
+              {/* Rename / Delete context menu — aligned to chevron */}
+              {showMenu && (
+                <div style={{
+                  position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 200,
+                  background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 140,
+                }}>
+                  <div
+                    onMouseDown={e => { e.preventDefault(); startEdit(); setShowMenu(false) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#222', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <RenameIcon /> Rename
+                  </div>
+                  <div
+                    onMouseDown={e => { e.preventDefault(); onArchive?.(); setShowMenu(false) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#d32f2f', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <ArchiveIcon /> Delete
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
+          /* Default: click name to rename inline */
           <span
             onClick={startEdit}
             title="Click to rename"
             style={{ fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1, cursor: 'text' }}
           >{sessionName}</span>
         )}
-        {onClose ? (
-          <button
-            onClick={onClose}
-            style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 4px', marginRight: -4, border: 'none', borderRadius: 6, background: 'transparent', color: '#555', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#222' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#555' }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
-              <polygon points="4 18 4 20 10.586 20 2 28.582 3.414 30 12 21.414 12 28 14 28 14 18 4 18"/>
-              <polygon points="30 3.416 28.592 2 20 10.586 20 4 18 4 18 14 28 14 28 12 21.414 12 30 3.416"/>
-            </svg>
-          </button>
-        ) : (
-          <button
-            onClick={() => onNew?.()}
-            style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s', flexShrink: 0 }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
-          >
-            <PlusIcon />
-          </button>
+
+        {/* Right: action buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+          {onNew && (
+            <button
+              onClick={() => onNew()}
+              title="New session"
+              style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
+            >
+              <PlusIcon />
+            </button>
+          )}
+          {onClose ? (
+            <button
+              onClick={onClose}
+              style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 4px', marginRight: -12, border: 'none', borderRadius: 6, background: 'transparent', color: '#555', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#222' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#555' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="currentColor">
+                <polygon points="4 18 4 20 10.586 20 2 28.582 3.414 30 12 21.414 12 28 14 28 14 18 4 18"/>
+                <polygon points="30 3.416 28.592 2 20 10.586 20 4 18 4 18 14 28 14 28 12 21.414 12 30 3.416"/>
+              </svg>
+            </button>
+          ) : (
+            !onNew && (
+              <button
+                onClick={() => onNew?.()}
+                style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 7px', border: 'none', borderRadius: 6, background: 'transparent', color: '#666', cursor: 'pointer', transition: 'background 0.1s, color 0.1s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#666' }}
+              >
+                <PlusIcon />
+              </button>
+            )
+          )}
+        </div>
+
+        {/* Sessions dropdown */}
+        {showSessions && (
+          <div style={{
+            position: 'absolute', top: 44, left: 0, right: 0, zIndex: 200,
+            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
+          }}>
+            {sessions && sessions.length > 0 ? sessions.map(s => (
+              <div
+                key={s.id}
+                onMouseDown={e => { e.preventDefault(); onSwitchSession?.(s.id); setShowSessions(false) }}
+                style={{ padding: '9px 14px', fontSize: 12.5, color: '#222', cursor: 'pointer', borderBottom: '1px solid #f5f5f5', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {s.name}
+              </div>
+            )) : (
+              <div style={{ padding: '10px 14px', fontSize: 12, color: '#999' }}>No previous sessions</div>
+            )}
+          </div>
         )}
+
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}

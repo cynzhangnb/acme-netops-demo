@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import ChatPane from '../workspace/ChatPane'
-import { CHANGES_COMMANDS } from '../workspace/SlashCommandMenu'
 import ChangesMap from '../artifacts/ChangesMap'
 
 // ── Data ────────────────────────────────────────────────────────────────────
@@ -35,6 +34,10 @@ const ALL_CHANGES = [
   { id: 16, device: 'AS-BOS-01', deviceType: 'access-switch',      category: 'Configuration',  type: 'VLAN',          timestamp: '2026-04-01 14:22', description: 'Interface Ethernet0/4 moved from VLAN 210 to VLAN 220', before: `interface Ethernet0/4\n switchport access vlan 210`, after: `interface Ethernet0/4\n switchport access vlan 220`, changedLines: { before: [2], after: [2] } },
   { id: 17, device: 'AS-BOS-01', deviceType: 'access-switch',      category: 'MAC Table',      type: 'MAC Entry',     timestamp: '2026-04-06 05:44', description: 'New MAC address 00:11:22:33:44:55 learned on port Gi0/3 (VLAN 220)', before: `(no entry for 00:11:22:33:44:55)`, after: `00:11:22:33:44:55  VLAN220  Gi0/3  Dynamic`, changedLines: { before: [], after: [1] } },
   { id: 18, device: 'AS-BOS-01', deviceType: 'access-switch',      category: 'STP Table',      type: 'STP Port',      timestamp: '2026-04-06 05:50', description: 'STP port Gi0/3 moved to Forwarding state after MAC learning on VLAN 220', before: `Gi0/3  VLAN220  Learning   128.3  P2p`, after: `Gi0/3  VLAN220  Forwarding 128.3  P2p`, changedLines: { before: [1], after: [1] } },
+
+  // TR-TOR — Toronto devices (BGP policy changes)
+  { id: 19, device: 'TR-TOR-CR-01', deviceType: 'core-router', category: 'Configuration', type: 'BGP Policy', timestamp: '2026-04-07 11:23', description: 'BGP route-policy updated; local-preference lowered from 200 → 150 on peer 172.16.4.2', before: `route-policy TOR-UPSTREAM-IN\n set local-preference 200\n set community 65010:100\n pass\nend-policy`, after: `route-policy TOR-UPSTREAM-IN\n set local-preference 150\n set community 65010:100\n pass\nend-policy`, changedLines: { before: [2], after: [2] } },
+  { id: 20, device: 'TR-TOR-CR-02', deviceType: 'core-router', category: 'Configuration', type: 'BGP Policy', timestamp: '2026-04-07 14:05', description: 'BGP neighbor policy modified; inbound route filter updated for AS65001', before: `neighbor 172.16.5.1\n remote-as 65001\n route-policy PERMIT-ALL in\n route-policy TOR-OUT out`, after: `neighbor 172.16.5.1\n remote-as 65001\n route-policy TOR-FILTER-IN in\n route-policy TOR-OUT out`, changedLines: { before: [3], after: [3] } },
 ]
 
 const DEVICE_TYPE_LABELS = {
@@ -68,6 +71,12 @@ const NOW_MS = new Date('2026-04-06T09:00:00Z').getTime()
 // ── AI Query Engine ──────────────────────────────────────────────────────────
 
 const QUERY_PATTERNS = [
+  {
+    match: q => q.includes('toronto') && q.includes('bgp'),
+    filter: c => c.device.startsWith('TR-TOR') && (c.type.toLowerCase().includes('bgp') || c.description.toLowerCase().includes('bgp')),
+    label: 'BGP policy changes in Toronto', tag: 'BGP',
+    reasoning: 'Filtered for BGP policy changes on Toronto devices.',
+  },
   {
     match: q => q.includes('bgp'),
     filter: c => c.type.toLowerCase().includes('bgp') || c.description.toLowerCase().includes('bgp'),
@@ -478,6 +487,42 @@ function DiffPanel({ change, onClose }) {
 
 // ── AI Side Pane ─────────────────────────────────────────────────────────────
 
+function AIFloatingButton({ onClick }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div style={{ position: 'absolute', bottom: 20, left: 12, zIndex: 50 }}>
+      <button
+        onClick={onClick}
+        style={{
+          width: 42, height: 42, borderRadius: '50%', border: '1px solid #e0e0e0',
+          background: hovered ? '#f5f5f5' : '#fff',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: hovered ? '0 6px 16px rgba(0,0,0,0.14)' : '0 2px 8px rgba(0,0,0,0.08)',
+          color: '#111',
+          transform: hovered ? 'scale(1.15)' : 'scale(1)',
+          transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <OrbitIcon size={26} />
+      </button>
+      {hovered && (
+        <div style={{
+          position: 'absolute', left: '50%', bottom: 'calc(100% + 8px)',
+          transform: 'translateX(-50%)',
+          background: 'rgba(30,30,30,0.88)', color: '#fff',
+          fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
+          padding: '4px 9px', borderRadius: 6,
+          pointerEvents: 'none',
+        }}>
+          Open AI
+        </div>
+      )}
+    </div>
+  )
+}
+
 function OrbitIcon({ size = 22 }) {
   const cx = 22, cy = 22, r = 14
   const nodes = [270, 330, 30, 90, 150, 210].map(deg => {
@@ -500,9 +545,50 @@ function OrbitIcon({ size = 22 }) {
 }
 
 function AISidePane({ onClose, width, timeRange, onDeviceClick, onOpenArtifact }) {
-  const [messages,    setMessages]    = useState([])
-  const [isStreaming, setIsStreaming]  = useState(false)
+  const [messages,         setMessages]         = useState([])
+  const [isStreaming,      setIsStreaming]       = useState(false)
+  const [sessionKey,       setSessionKey]        = useState(0)
+  const [sessions,         setSessions]          = useState([])
+  const [nameOverride,     setNameOverride]      = useState(null)
   const msgCounter = useRef(0)
+  const sessionIdCounter = useRef(0)
+
+  const saveCurrentSession = useCallback((msgs, name) => {
+    if (msgs.length === 0) return
+    setSessions(prev => [{ id: ++sessionIdCounter.current, name: name || 'AI Session', messages: msgs }, ...prev])
+  }, [])
+
+  const handleNewSession = useCallback((currentMsgs, currentName) => {
+    saveCurrentSession(currentMsgs, currentName)
+    setMessages([])
+    setIsStreaming(false)
+    setNameOverride(null)
+    msgCounter.current = 0
+    setSessionKey(k => k + 1)
+  }, [saveCurrentSession])
+
+  const handleSwitchSession = useCallback((id) => {
+    const target = sessions.find(s => s.id === id)
+    if (!target) return
+    setSessions(prev => prev.filter(s => s.id !== id))
+    setMessages(target.messages)
+    setNameOverride(target.name)
+    setIsStreaming(false)
+    msgCounter.current = target.messages.length
+    setSessionKey(k => k + 1)
+  }, [sessions])
+
+  const handleArchive = useCallback(() => {
+    setMessages([])
+    setIsStreaming(false)
+    setNameOverride(null)
+    msgCounter.current = 0
+    setSessionKey(k => k + 1)
+  }, [])
+
+  const handleRename = useCallback((name) => {
+    setNameOverride(name)
+  }, [])
 
   const handleSend = useCallback((text) => {
     if (!text.trim()) return
@@ -544,12 +630,19 @@ function AISidePane({ onClose, width, timeRange, onDeviceClick, onOpenArtifact }
       height: '100%', overflow: 'hidden',
     }}>
       <ChatPane
+        key={sessionKey}
         messages={messages}
         isStreaming={isStreaming}
         onSend={handleSend}
         onClose={onClose}
+        onNew={() => handleNewSession(messages, nameOverride)}
+        onRenameSession={handleRename}
+        onArchive={handleArchive}
+        sessions={sessions}
+        onSwitchSession={handleSwitchSession}
+        nameOverride={nameOverride}
         currentSessionName="New AI Session"
-        commandSet="changes"
+        commandSet="changeAnalysis"
         canAddToCanvas={false}
         onDeviceClick={onDeviceClick}
         onOpenArtifact={onOpenArtifact}
@@ -606,45 +699,6 @@ function AiFilterBanner({ aiFilter, onClear, onSaveAsFilter }) {
   )
 }
 
-// ── Enter Workspace Modal ─────────────────────────────────────────────────────
-
-function EnterWorkspaceModal({ onConfirm, onCancel }) {
-  useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onCancel() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onCancel])
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.25)' }}>
-      <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e4e4e4', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', width: 440, padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>Enter AI Workspace</div>
-        <div style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>
-          The layout will switch to workspace tab view, opening the <strong>Changed Devices</strong> map in a new tab alongside the Change Analysis table.
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
-          <button
-            onClick={onCancel}
-            style={{ fontSize: 13, color: '#555', background: 'none', border: '1px solid #e0e0e0', borderRadius: 6, padding: '7px 16px', cursor: 'pointer', fontWeight: 500 }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{ fontSize: 13, color: '#fff', background: '#3b82f6', border: 'none', borderRadius: 6, padding: '7px 16px', cursor: 'pointer', fontWeight: 500 }}
-            onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
-            onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
-          >
-            Enter Workspace
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 // Columns: Device Name | Device Type | Change Category | Timestamp
@@ -661,9 +715,8 @@ export default function ChangeAnalysisPage() {
   const [diffH,         setDiffH]         = useState(null)
   const [aiOpen,        setAiOpen]        = useState(false)
   const [aiPaneW,       setAiPaneW]       = useState(340)
-  const [tabMode,       setTabMode]       = useState(false)
+  const [mapTabOpen,    setMapTabOpen]    = useState(false)
   const [activeTab,     setActiveTab]     = useState('table')
-  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
   const containerRef    = useRef(null)
   const searchRef       = useRef(null)
   const isResizing      = useRef(false)   // vertical (diff)
@@ -770,7 +823,8 @@ export default function ChangeAnalysisPage() {
 
   function handleOpenArtifact(artifactRef) {
     if (artifactRef.type === 'changesMap') {
-      setShowWorkspaceModal(true)
+      setMapTabOpen(true)
+      setActiveTab('map')
     }
   }
 
@@ -797,30 +851,13 @@ export default function ChangeAnalysisPage() {
       </>}
 
       {/* ── Floating AI button — only when pane is closed ── */}
-      {!aiOpen && <button
-        onClick={() => setAiOpen(o => !o)}
-        title="Toggle AI Assistant"
-        style={{
-          position: 'absolute', bottom: 20, left: 12, zIndex: 50,
-          width: 42, height: 42, borderRadius: '50%', border: '1px solid #e0e0e0',
-          background: '#fff',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          color: '#111',
-          transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.14)'; e.currentTarget.style.transform = 'scale(1.15)' }}
-        onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'scale(1)' }}
-      >
-        <OrbitIcon size={26} />
-      </button>}
+      {!aiOpen && <AIFloatingButton onClick={() => setAiOpen(true)} />}
 
     <div data-resizable="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
 
-      {/* ── Tab bar (workspace mode) or Page header ── */}
-      {tabMode ? (
+      {/* ── Tab bar (map tab open) or Page header ── */}
+      {mapTabOpen ? (
         <div style={{ height: 44, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', paddingLeft: 8, flexShrink: 0, gap: 2 }}>
-          {/* Tab 1: Change Analysis */}
           <div
             onClick={() => setActiveTab('table')}
             style={{
@@ -833,7 +870,6 @@ export default function ChangeAnalysisPage() {
           >
             Change Analysis
           </div>
-          {/* Tab 2: Changed Devices */}
           <div
             onClick={() => setActiveTab('map')}
             style={{
@@ -846,7 +882,7 @@ export default function ChangeAnalysisPage() {
           >
             Changed Devices
             <button
-              onClick={e => { e.stopPropagation(); setTabMode(false); setActiveTab('table') }}
+              onClick={e => { e.stopPropagation(); setMapTabOpen(false); setActiveTab('table') }}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', padding: '2px 2px', borderRadius: 4, marginLeft: 2, lineHeight: 1 }}
               onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#aaa' }}
@@ -863,74 +899,10 @@ export default function ChangeAnalysisPage() {
             </div>
             <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
             <div style={{ fontSize: 11.5, color: '#444' }}>
-              9 changed devices · 243 total devices
+              {new Set(filtered.map(c => c.device)).size} changed devices · {filtered.length} change events
             </div>
           </div>
-
-          {/* Filter bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
-            <Dropdown
-              label="Last 24 hours"
-              value={timeLabel}
-              options={TIME_RANGES}
-              onChange={setTimeRange}
-            />
-            <Dropdown
-              label="All device types"
-              multi={true}
-              selected={deviceTypes}
-              options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))}
-              onChange={setDeviceTypes}
-            />
-            <Dropdown
-              label="All change categories"
-              multi={true}
-              selected={categories}
-              options={CATEGORY_OPTIONS}
-              onChange={setCategories}
-            />
-            <div style={{ flex: 1 }} />
-            <div
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px',
-                background: '#fff', width: 200, minWidth: 120, flexShrink: 1,
-                transition: 'border-color 0.15s, box-shadow 0.15s',
-              }}
-              onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
-              onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
-            >
-              <SearchIcon />
-              <input
-                ref={searchRef}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search…"
-                style={{ border: 'none', outline: 'none', fontSize: 11.5, color: '#333', background: 'transparent', flex: 1, minWidth: 0 }}
-              />
-              {search && (
-                <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}>
-                  <CloseIcon />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Map tab content ── */}
-      {tabMode && activeTab === 'map' && (
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <ChangesMap filter={timeRange} />
-        </div>
-      )}
-
-      {/* ── Table tab content ── */}
-      {(!tabMode || activeTab === 'table') && (<>
-
-        {/* Filter bar in tab mode */}
-        {tabMode && (
-          <div style={{ padding: '10px 24px', borderBottom: '1px solid #eeeeee', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Dropdown label="Last 24 hours" value={timeLabel} options={TIME_RANGES} onChange={setTimeRange} />
             <Dropdown label="All device types" multi={true} selected={deviceTypes} options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))} onChange={setDeviceTypes} />
             <Dropdown label="All change categories" multi={true} selected={categories} options={CATEGORY_OPTIONS} onChange={setCategories} />
@@ -945,6 +917,36 @@ export default function ChangeAnalysisPage() {
               {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}><CloseIcon /></button>}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Map tab content ── */}
+      {mapTabOpen && activeTab === 'map' && (
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ChangesMap filter={timeRange} />
+        </div>
+      )}
+
+      {/* ── Table tab content ── */}
+      {(!mapTabOpen || activeTab === 'table') && (<>
+
+        {/* Filter bar in tab mode */}
+        {mapTabOpen && (
+        <div style={{ padding: '10px 24px', borderBottom: '1px solid #eeeeee', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <Dropdown label="Last 24 hours" value={timeLabel} options={TIME_RANGES} onChange={setTimeRange} />
+          <Dropdown label="All device types" multi={true} selected={deviceTypes} options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))} onChange={setDeviceTypes} />
+          <Dropdown label="All change categories" multi={true} selected={categories} options={CATEGORY_OPTIONS} onChange={setCategories} />
+          <div style={{ flex: 1 }} />
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid #ddd', borderRadius: 6, padding: '5px 10px', background: '#fff', width: 200, minWidth: 120, flexShrink: 1, transition: 'border-color 0.15s, box-shadow 0.15s' }}
+            onFocusCapture={e => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59,130,246,0.15)' }}
+            onBlurCapture={e => { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.boxShadow = 'none' }}
+          >
+            <SearchIcon />
+            <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" style={{ border: 'none', outline: 'none', fontSize: 11.5, color: '#333', background: 'transparent', flex: 1, minWidth: 0 }} />
+            {search && <button onClick={() => setSearch('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', padding: 0 }}><CloseIcon /></button>}
+          </div>
+        </div>
         )}
 
         {/* ── Table ── */}
@@ -1020,14 +1022,6 @@ export default function ChangeAnalysisPage() {
       </>)}
 
     </div>
-
-    {/* ── Enter Workspace confirmation modal ── */}
-    {showWorkspaceModal && (
-      <EnterWorkspaceModal
-        onConfirm={() => { setTabMode(true); setActiveTab('map'); setShowWorkspaceModal(false) }}
-        onCancel={() => setShowWorkspaceModal(false)}
-      />
-    )}
     </div>
   )
 }

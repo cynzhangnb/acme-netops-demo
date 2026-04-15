@@ -317,7 +317,7 @@ export default function ChangeAnalysis({ filter }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Table header */}
         <div style={{ padding: '14px 20px 10px', borderBottom: '1px solid #e8e8e8', flexShrink: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{filteredChanges.length} Change Events · {timeLabel}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{filteredChanges.length} Change Events</div>
         </div>
 
         {/* Column headers */}

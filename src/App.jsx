@@ -325,6 +325,7 @@ export default function App() {
   const [restoredSession, setRestoredSession] = useState(null)
   const [currentSessionName, setCurrentSessionName] = useState('New Session')
   const [networkPanel, setNetworkPanel] = useState(null)
+  const [changeAnalysisMounted, setChangeAnalysisMounted] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const { sessions, activeSessionId, createSession, deleteSession, selectSession } = useSessionManager()
@@ -358,6 +359,7 @@ export default function App() {
 
   const enterChangeAnalysis = useCallback(() => {
     setViewMode('change-analysis')
+    setChangeAnalysisMounted(true)
   }, [])
 
   const handleSelectSession = useCallback((id) => {
@@ -403,9 +405,12 @@ export default function App() {
           />
         ) : viewMode === 'network' ? (
           <NetworkView onStartAI={enterWorkspace} />
-        ) : viewMode === 'change-analysis' ? (
-          <ChangeAnalysisPage />
         ) : null}
+        {changeAnalysisMounted && (
+          <div style={{ display: viewMode === 'change-analysis' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+            <ChangeAnalysisPage />
+          </div>
+        )}
       </AppFrame>
 
       {modalOpen === 'share'    && <ShareModal    onClose={() => setModalOpen(null)} />}

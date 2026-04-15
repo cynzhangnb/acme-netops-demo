@@ -1182,34 +1182,40 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
       {/* Header tabs */}
       <div style={{
         height: 44, background: '#fff', borderBottom: '1px solid #e8e8e8',
-        display: 'flex', alignItems: 'center', padding: '0 16px', gap: 8, flexShrink: 0,
+        display: 'flex', alignItems: 'flex-end', paddingLeft: 8, flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', flex: 1, overflow: 'visible' }}>
           {artifacts.map(artifact => {
             const isActive = artifact.id === activeArtifactId
             return (
               <div key={artifact.id} onClick={() => onSetActive(artifact.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '4px 10px', borderRadius: 5, cursor: 'pointer',
-                  fontSize: 12, fontWeight: isActive ? 500 : 400,
-                  color: isActive ? '#111' : '#555',
-                  background: isActive ? '#f5f5f5' : 'transparent',
-                  flexShrink: 0, whiteSpace: 'nowrap', transition: 'background 0.1s',
+                  padding: '0 10px 0 12px', height: 32, cursor: 'pointer',
+                  background: isActive ? '#fff' : 'transparent',
+                  border: isActive ? '1px solid #e8e8e8' : '1px solid transparent',
+                  borderBottom: isActive ? '2px solid #fff' : '1px solid transparent',
+                  borderRadius: '6px 6px 0 0',
+                  fontSize: 12, fontWeight: isActive ? 600 : 400,
+                  color: isActive ? '#111' : '#777',
+                  flexShrink: 0, whiteSpace: 'nowrap',
+                  marginBottom: -1,
+                  position: 'relative', zIndex: isActive ? 1 : 0,
+                  transition: 'color 0.1s',
                 }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#333' }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#777' }}
               >
                 {artifact.label}
                 <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 1, display: 'flex', alignItems: 'center', borderRadius: 3, lineHeight: 1 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 1, display: 'flex', alignItems: 'center', borderRadius: 3, lineHeight: 1, marginLeft: 2 }}
                   onMouseEnter={e => e.currentTarget.style.color = '#888'}
                   onMouseLeave={e => e.currentTarget.style.color = '#ccc'}
                 ><CloseIcon /></button>
               </div>
             )
           })}
-          {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb' }}>No artifacts</span>}
+          {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingBottom: 8, paddingLeft: 8 }}>No artifacts</span>}
         </div>
       </div>
 
