@@ -36,6 +36,15 @@ function BackArrowIcon() {
   )
 }
 
+function SplitScreenIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="18" rx="2"/>
+      <line x1="12" y1="3" x2="12" y2="21"/>
+    </svg>
+  )
+}
+
 function SearchIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -705,37 +714,63 @@ function computeSnap(candidate, others) {
 }
 
 /* ── Report artifact — renders a data table ──────────────────────────────── */
-const REPORT_COLS = ['Hostname', 'IP Address', 'Interface', 'Device Type', 'Vendor', 'Model', 'Software Version', 'Serial No', 'Site', 'Group']
+const REPORT_COLS = ['Hostname', 'IP Address', 'Device Type', 'Vendor', 'Model', 'OS Version', 'Serial No', 'Site', 'Group', 'Last Updated']
 const REPORT_ROWS = [
-  ['CR-BOS-01',  '10.1.1.1',  'GigE0/0',  'Core Router',         'Cisco',  'WS7K79',   'wmrd-18.2.11',   'HW-A3S5-2041', 'Boston Core',  'Core'],
-  ['CR-BOS-02',  '10.1.1.2',  'GigE0/1',  'Core Router',         'Cisco',  'WS7K79',   'wmrd-18.2.11',   'HW-A3S5-2042', 'Boston Core',  'Core'],
-  ['FW-BOS-01',  '10.0.1.1',  'eth0',     'Firewall',            'Cisco',  'ASA5525',  'asa-9.18.3',     'FCH2210V0TL',  'Boston Core',  'Core'],
-  ['DS-BOS-01',  '10.2.1.1',  'Te1/0/1',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
-  ['DS-BOS-02',  '10.2.1.2',  'Te1/0/2',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston Core',  'Core'],
-  ['DS-BOS-03',  '10.2.1.3',  'Te1/0/3',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston South', 'South'],
-  ['DS-BOS-04',  '10.2.1.4',  'Te1/0/4',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston East',  'East'],
-  ['AS-BOS-01',  '10.3.1.1',  'Fa0/1',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
-  ['AS-BOS-02',  '10.3.1.2',  'Fa0/2',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
-  ['AS-BOS-03',  '10.3.1.3',  'Fa0/3',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston Core',  'Core'],
-  ['AS-BOS-04',  '10.3.1.4',  'Fa0/4',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston South', 'South'],
-  ['AS-BOS-05',  '10.3.1.5',  'Fa0/5',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston East',  'East'],
+  ['CR-BOS-01',  '10.1.1.1',   'Core Router',         'Cisco',    'ASR 1002-X',     'IOS XE 17.9.3',   'FXS2211Q1KD', 'Boston Core',  'Core',         'Apr 10, 2026'],
+  ['CR-BOS-02',  '10.1.1.2',   'Core Router',         'Cisco',    'ASR 1002-X',     'IOS XE 17.9.3',   'FXS2211Q1KE', 'Boston Core',  'Core',         'Apr 10, 2026'],
+  ['FW-BOS-01',  '10.0.1.1',   'Firewall',            'Cisco',    'ASA 5525-X',     'ASA 9.18(4)',      'FCH2210V0TL', 'Boston Core',  'Security',     'Apr 9, 2026'],
+  ['FW-BOS-02',  '10.0.1.2',   'Firewall',            'Palo Alto','PA-3260',        'PAN-OS 11.1.2',    'PA3260-0042', 'Boston DMZ',   'Security',     'Apr 8, 2026'],
+  ['DS-BOS-01',  '10.2.1.1',   'Distribution Switch', 'Cisco',    'Catalyst 9300',  'IOS XE 17.6.5',   'FOC2248Y1AB', 'Boston North', 'North',        'Apr 11, 2026'],
+  ['DS-BOS-02',  '10.2.1.2',   'Distribution Switch', 'Cisco',    'Catalyst 9300',  'IOS XE 17.6.5',   'FOC2248Y1AC', 'Boston Core',  'Core',         'Apr 11, 2026'],
+  ['DS-BOS-03',  '10.2.1.3',   'Distribution Switch', 'Cisco',    'Catalyst 9500',  'IOS XE 17.9.1',   'FOC2301X0BD', 'Boston South', 'South',        'Apr 9, 2026'],
+  ['DS-BOS-04',  '10.2.1.4',   'Distribution Switch', 'Cisco',    'Catalyst 9500',  'IOS XE 17.9.1',   'FOC2301X0BE', 'Boston East',  'East',         'Apr 9, 2026'],
+  ['AS-BOS-01',  '10.3.1.1',   'Access Switch',       'Cisco',    'Catalyst 2960-X','IOS 15.2(7)E6',   'FOC2209Z3LL', 'Boston North', 'North',        'Apr 6, 2026'],
+  ['AS-BOS-02',  '10.3.1.2',   'Access Switch',       'Cisco',    'Catalyst 2960-X','IOS 15.2(7)E6',   'FOC2209Z3LM', 'Boston North', 'North',        'Apr 6, 2026'],
+  ['AS-BOS-03',  '10.3.1.3',   'Access Switch',       'Cisco',    'Catalyst 9200',  'IOS XE 17.6.5',   'FOC2251W2MN', 'Boston Core',  'Core',         'Apr 10, 2026'],
+  ['AS-BOS-04',  '10.3.1.4',   'Access Switch',       'Cisco',    'Catalyst 9200',  'IOS XE 17.6.5',   'FOC2251W2MP', 'Boston South', 'South',        'Apr 10, 2026'],
+  ['AS-BOS-05',  '10.3.1.5',   'Access Switch',       'Cisco',    'Catalyst 2960-X','IOS 15.2(7)E6',   'FOC2209Z3QR', 'Boston East',  'East',         'Apr 7, 2026'],
+  ['WLC-BOS-01', '10.4.1.1',   'Wireless Controller', 'Cisco',    'Catalyst 9800',  'IOS XE 17.12.1',  'FCW2318A0VX', 'Boston Core',  'Wireless',     'Apr 12, 2026'],
+  ['AP-BOS-01',  '10.4.2.1',   'Access Point',        'Cisco',    'Catalyst 9130',  'AP 17.12.1.0',    'KWC2304B1TZ', 'Boston North', 'Wireless',     'Apr 12, 2026'],
+  ['AP-BOS-02',  '10.4.2.2',   'Access Point',        'Cisco',    'Catalyst 9130',  'AP 17.12.1.0',    'KWC2304B1UA', 'Boston South', 'Wireless',     'Apr 12, 2026'],
+  ['VPN-BOS-01', '10.0.2.1',   'VPN Concentrator',    'Cisco',    'ISR 4451',       'IOS XE 17.9.3',   'FGL2219P0RC', 'Boston Core',  'Security',     'Apr 8, 2026'],
+  ['NMS-BOS-01', '10.5.1.1',   'Network Management',  'Dell',     'PowerEdge R750', 'Ubuntu 22.04 LTS', 'BNDV023',    'Boston Core',  'Management',   'Apr 3, 2026'],
 ]
 
 function ReportArtifact({ label }) {
+  const [query, setQuery] = useState('')
+  const filtered = query.trim()
+    ? REPORT_ROWS.filter(row => row.some(cell => cell.toLowerCase().includes(query.toLowerCase())))
+    : REPORT_ROWS
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
       {/* Toolbar */}
       <div style={{
-        height: 40, flexShrink: 0, borderBottom: '1px solid #e8e8e8',
+        height: 44, flexShrink: 0, borderBottom: '1px solid #e8e8e8',
         display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
       }}>
-        <span style={{ fontSize: 12, color: '#888' }}>
-          Total Count: <strong style={{ color: '#111' }}>{REPORT_ROWS.length}</strong>
-        </span>
-        <span style={{ fontSize: 12, color: '#888' }}>Filter by: <strong style={{ color: '#111' }}>My Network</strong></span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          <button style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid #e0e0e0', borderRadius: 5, background: '#fff', cursor: 'pointer', color: '#444' }}>Export</button>
-          <button style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid #e0e0e0', borderRadius: 5, background: '#fff', cursor: 'pointer', color: '#444' }}>Manage Report Page</button>
+        <span style={{ fontSize: 12, color: '#555' }}>{filtered.length} devices</span>
+        {/* Search bar */}
+        <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{ position: 'absolute', left: 8, pointerEvents: 'none' }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            style={{
+              paddingLeft: 28, paddingRight: 10, height: 28,
+              border: '1px solid #e0e0e0', borderRadius: 6,
+              fontSize: 12, color: '#222', background: '#fafafa',
+              outline: 'none', width: 200,
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = '#378ADD'; e.currentTarget.style.background = '#fff' }}
+            onBlur={e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.background = '#fafafa' }}
+          />
         </div>
       </div>
       {/* Table */}
@@ -746,14 +781,14 @@ function ReportArtifact({ label }) {
               {REPORT_COLS.map(col => (
                 <th key={col} style={{
                   padding: '8px 12px', textAlign: 'left',
-                  fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: '0.02em',
+                  fontSize: 11, fontWeight: 600, color: '#666', letterSpacing: '0.02em',
                   borderBottom: '1px solid #e8e8e8', whiteSpace: 'nowrap',
                 }}>{col}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {REPORT_ROWS.map((row, i) => (
+            {filtered.map((row, i) => (
               <tr key={i} style={{ borderBottom: '1px solid #f2f2f2' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -761,14 +796,20 @@ function ReportArtifact({ label }) {
                 {row.map((cell, j) => (
                   <td key={j} style={{
                     padding: '8px 12px', fontSize: 12.5,
-                    color: j === 0 ? '#111' : '#555',
+                    color: j === 0 ? '#111' : '#333',
                     fontWeight: j === 0 ? 500 : 400,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    fontFamily: j <= 1 ? 'ui-monospace, monospace' : 'inherit',
                   }}>{cell}</td>
                 ))}
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={REPORT_COLS.length} style={{ padding: '24px 16px', textAlign: 'center', color: '#999', fontSize: 12 }}>
+                  No devices match "{query}"
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1048,6 +1089,16 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const resizeState = useRef(null)
   const configResizeState = useRef(null)
   const propsResizeState = useRef(null)
+  const [splitMode, setSplitMode] = useState(false)
+  const [rightArtifactIds, setRightArtifactIds] = useState([])
+  const [activeRightId, setActiveRightId] = useState(null)
+  const [splitDragOver, setSplitDragOver] = useState(null) // 'left' | 'right' | 'right-content' | null
+  const [lastActivePane, setLastActivePane] = useState('left') // 'left' | 'right'
+  const [splitLeftWidth, setSplitLeftWidth] = useState(null) // null = 50/50, else px
+  const splitContainerRef = useRef(null)
+  const splitResizeState = useRef(null)
+  const dragTabId = useRef(null)
+  const prevArtifactIdsRef = useRef(new Set())
 
   useEffect(() => { canvasItemsRef.current = canvasItems }, [canvasItems])
 
@@ -1222,12 +1273,18 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
         const width = Math.max(240, Math.min(600, startWidth + (startX - e.clientX)))
         setPropertiesPane(prev => prev ? { ...prev, width } : prev)
       }
+      if (splitResizeState.current) {
+        const { startX, startWidth, containerWidth } = splitResizeState.current
+        const newW = Math.max(180, Math.min(containerWidth - 180, startWidth + (e.clientX - startX)))
+        setSplitLeftWidth(newW)
+      }
     }
     function onMouseUp() {
       dragState.current = null
       resizeState.current = null
       configResizeState.current = null
       propsResizeState.current = null
+      splitResizeState.current = null
       document.body.style.cursor = ''
       setSnapGuides([])
     }
@@ -1342,191 +1399,409 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
     })
   }
 
+  // Route newly opened tabs to the last active pane in split mode
+  useEffect(() => {
+    const currentIds = new Set(artifacts.map(a => a.id))
+    if (splitMode && lastActivePane === 'right') {
+      const newIds = artifacts.map(a => a.id).filter(id => !prevArtifactIdsRef.current.has(id))
+      if (newIds.length > 0) {
+        setRightArtifactIds(prev => [...prev, ...newIds.filter(id => !prev.includes(id))])
+        setActiveRightId(newIds[newIds.length - 1])
+      }
+    }
+    prevArtifactIdsRef.current = currentIds
+  }, [artifacts]) // eslint-disable-line
+
+  // Split screen computed values
+  const leftArtifacts = splitMode ? artifacts.filter(a => !rightArtifactIds.includes(a.id)) : artifacts
+  const rightArtifacts = splitMode ? artifacts.filter(a => rightArtifactIds.includes(a.id)) : []
+  const activeLeft = leftArtifacts.find(a => a.id === activeArtifactId) ?? leftArtifacts[0] ?? null
+  const activeRight = rightArtifacts.find(a => a.id === activeRightId) ?? rightArtifacts[0] ?? null
+
+  function enterSplitMode() {
+    setSplitMode(true)
+    setRightArtifactIds([])
+    setActiveRightId(null)
+  }
+
+  function exitSplitMode() {
+    setSplitMode(false)
+    setRightArtifactIds([])
+    setActiveRightId(null)
+    setSplitLeftWidth(null)
+  }
+
+  function moveTabToRight(tabId) {
+    if (rightArtifactIds.includes(tabId)) return
+    setRightArtifactIds(prev => [...prev, tabId])
+    setActiveRightId(tabId)
+    setLastActivePane('right')
+    if (tabId === activeArtifactId) {
+      const remaining = artifacts.filter(a => !rightArtifactIds.includes(a.id) && a.id !== tabId)
+      if (remaining.length > 0) onSetActive(remaining[0].id)
+    }
+  }
+
+  function moveTabToLeft(tabId) {
+    setRightArtifactIds(prev => prev.filter(id => id !== tabId))
+    onSetActive(tabId)
+    setLastActivePane('left')
+    if (tabId === activeRightId) {
+      const remaining = rightArtifactIds.filter(id => id !== tabId)
+      setActiveRightId(remaining.length > 0 ? remaining[0] : null)
+    }
+  }
+
+  function removeFromRight(tabId) {
+    const remaining = rightArtifactIds.filter(id => id !== tabId)
+    setRightArtifactIds(remaining)
+    if (remaining.length === 0) exitSplitMode()
+    if (tabId === activeRightId) setActiveRightId(remaining.length > 0 ? remaining[0] : null)
+    onRemove(tabId)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isFocusMode ? '#fff' : '#f0f0f0' }}>
-      {/* Header tabs */}
-      <div style={{
-        height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8',
-        display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0,
-      }}>
-        {artifacts.map(artifact => {
-          const isActive = artifact.id === activeArtifactId
-          return (
-            <div key={artifact.id} onClick={() => onSetActive(artifact.id)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '0 6px 0 10px', height: 28, borderRadius: 6,
-                background: isActive ? '#f0f0f0' : 'transparent',
-                cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap',
-                fontSize: 12, fontWeight: isActive ? 500 : 400,
-                color: isActive ? '#111' : '#767676',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+      {/* Header tabs — normal mode only; split mode has per-column tab bars below */}
+      {splitMode ? (
+        /* ── Split mode: two full-height columns, each owns its tab bar + content ── */
+        <div ref={splitContainerRef} style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          {/* Left column */}
+          <div style={{ width: splitLeftWidth ?? '50%', flexShrink: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            {/* Left tab bar */}
+            <div
+              style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0, overflow: 'hidden' }}
+              onDragOver={e => { e.preventDefault(); setSplitDragOver('left') }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSplitDragOver(null) }}
+              onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('tabId'); if (rightArtifactIds.includes(id)) moveTabToLeft(id); setSplitDragOver(null) }}
             >
-              <ArtifactTabIcon type={artifact.type} />
-              {artifact.label}
-              <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 4, lineHeight: 1 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
-              ><CloseIcon /></button>
+              {/* Tabs — clip so they never bleed past the sash */}
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 2 }}>
+                {leftArtifacts.map(artifact => {
+                  const isVisible = artifact.id === activeArtifactId
+                  const isGlobal = isVisible && lastActivePane === 'left'
+                  const bg = isGlobal ? '#f0f0f0' : isVisible ? '#f7f7f7' : 'transparent'
+                  const col = isGlobal ? '#111' : isVisible ? '#555' : '#767676'
+                  return (
+                    <div key={artifact.id} draggable
+                      onDragStart={e => { e.dataTransfer.setData('tabId', artifact.id); dragTabId.current = artifact.id }}
+                      onClick={() => { onSetActive(artifact.id); setLastActivePane('left') }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 6px 0 10px', height: 28, borderRadius: 6, background: bg, cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap', fontSize: 12, fontWeight: isGlobal ? 500 : 400, color: col, transition: 'background 0.1s' }}
+                      onMouseEnter={e => { if (!isVisible) e.currentTarget.style.background = '#f8f8f8' }}
+                      onMouseLeave={e => { if (!isVisible) e.currentTarget.style.background = bg }}
+                    >
+                      <ArtifactTabIcon type={artifact.type} />
+                      {artifact.label}
+                      <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 4, lineHeight: 1 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
+                      ><CloseIcon /></button>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          )
-        })}
-        {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingLeft: 4 }}>No artifacts</span>}
-      </div>
-
-      {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          minHeight: 0,
-          flexDirection: configPane?.dock === 'bottom' ? 'column' : 'row',
-        }}
-      >
-      <div ref={canvasRef} style={{ flex: 1, position: 'relative', overflow: (isFocusMode || expandedItem) ? 'hidden' : 'auto' }}>
-        {/* Expanded widget focus view */}
-        {expandedItem ? (
-          <div style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
-            {/* Mini toolbar */}
-            <div style={{ height: 36, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-              <button
-                onClick={() => setExpandedItemId(null)}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#555', fontSize: 11, fontWeight: 500, padding: '2px 6px', borderRadius: 4 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
-                onMouseLeave={e => e.currentTarget.style.background = 'none'}
-              >
-                <BackArrowIcon /> Back to canvas
-              </button>
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={expandedItem.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
+            {/* Left content */}
+            <div
+              style={{ flex: 1, position: 'relative', overflow: 'hidden', background: activeLeft ? '#fff' : '#fafafa' }}
+              onDragOver={e => { e.preventDefault(); setSplitDragOver('left-content') }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSplitDragOver(null) }}
+              onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('tabId'); if (rightArtifactIds.includes(id)) moveTabToLeft(id); setSplitDragOver(null) }}
+              onClick={() => setLastActivePane('left')}
+            >
+              {activeLeft ? (
+                <ArtifactContent artifact={{ id: `${activeLeft.id}__main`, type: activeLeft.type, label: activeLeft.label, dataKey: activeLeft.dataKey, isMain: true, x: 0, y: 0, w: 800, h: 600 }} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={onClearTopologyOverlay} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', userSelect: 'none' }}>
+                  <div style={{ fontSize: 13, color: '#aaa' }}>Move a tab to view side by side</div>
+                </div>
+              )}
             </div>
           </div>
-        ) : isFocusMode ? (
-          /* Focus mode: single artifact fills the pane, no widget chrome */
-          canvasItems.length === 1 ? (
-            <div style={{ position: 'absolute', inset: 0 }}>
-              <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={canvasItems[0]?.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
-              No artifact selected
-            </div>
-          )
-        ) : (
-          /* Canvas mode: dot grid + widget cards */
-          (() => {
-            const minW = canvasItems.length ? Math.max(...canvasItems.map(i => i.x + i.w + 32)) : 0
-            const minH = canvasItems.length ? Math.max(...canvasItems.map(i => i.y + i.h + 32)) : 0
-            return (
-              <div
-                style={{ position: 'relative', minWidth: minW, minHeight: minH, width: '100%', height: '100%' }}
-                onMouseDown={() => setFocusedId(null)}
+
+          {/* Resize sash — 1px visible line, wider invisible hit area via absolute overlay */}
+          <div
+            style={{ flexShrink: 0, width: 1, background: '#e8e8e8', position: 'relative', zIndex: 10, transition: 'background 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#c8c8c8' }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#e8e8e8' }}
+            onMouseDown={e => {
+              e.preventDefault()
+              document.body.style.cursor = 'col-resize'
+              splitResizeState.current = {
+                startX: e.clientX,
+                startWidth: splitContainerRef.current
+                  ? (splitLeftWidth ?? splitContainerRef.current.offsetWidth / 2)
+                  : splitLeftWidth ?? 400,
+                containerWidth: splitContainerRef.current?.offsetWidth ?? 800,
+              }
+            }}
+          >
+            {/* Wider invisible hit area centred on the line */}
+            <div style={{ position: 'absolute', top: 0, bottom: 0, left: -4, right: -4, cursor: 'col-resize', zIndex: 11 }}
+              onMouseEnter={e => { e.currentTarget.parentElement.style.background = '#c8c8c8' }}
+              onMouseLeave={e => { e.currentTarget.parentElement.style.background = '#e8e8e8' }}
+              onMouseDown={e => {
+                e.preventDefault()
+                document.body.style.cursor = 'col-resize'
+                splitResizeState.current = {
+                  startX: e.clientX,
+                  startWidth: splitContainerRef.current
+                    ? (splitLeftWidth ?? splitContainerRef.current.offsetWidth / 2)
+                    : splitLeftWidth ?? 400,
+                  containerWidth: splitContainerRef.current?.offsetWidth ?? 800,
+                }
+              }}
+            />
+          </div>
+
+          {/* Right column */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            {/* Right tab bar + split icon */}
+            <div
+              style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0, overflow: 'hidden' }}
+              onDragOver={e => { e.preventDefault(); setSplitDragOver('right') }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSplitDragOver(null) }}
+              onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('tabId'); if (!rightArtifactIds.includes(id)) moveTabToRight(id); setSplitDragOver(null) }}
+            >
+              {/* Tabs — clip here so they never bleed past the sash */}
+              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 2 }}>
+                {rightArtifacts.map(artifact => {
+                  const isVisible = artifact.id === activeRightId
+                  const isGlobal = isVisible && lastActivePane === 'right'
+                  const bg = isGlobal ? '#f0f0f0' : isVisible ? '#f7f7f7' : 'transparent'
+                  const col = isGlobal ? '#111' : isVisible ? '#555' : '#767676'
+                  return (
+                    <div key={artifact.id} draggable
+                      onDragStart={e => { e.dataTransfer.setData('tabId', artifact.id); dragTabId.current = artifact.id }}
+                      onClick={() => { setActiveRightId(artifact.id); setLastActivePane('right') }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 6px 0 10px', height: 28, borderRadius: 6, background: bg, cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap', fontSize: 12, fontWeight: isGlobal ? 500 : 400, color: col, transition: 'background 0.1s' }}
+                      onMouseEnter={e => { if (!isVisible) e.currentTarget.style.background = '#f8f8f8' }}
+                      onMouseLeave={e => { if (!isVisible) e.currentTarget.style.background = bg }}
+                    >
+                      <ArtifactTabIcon type={artifact.type} />
+                      {artifact.label}
+                      <button onClick={e => { e.stopPropagation(); removeFromRight(artifact.id) }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 4, lineHeight: 1 }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
+                      ><CloseIcon /></button>
+                    </div>
+                  )
+                })}
+              </div>
+              {/* Split icon — always visible at far right, outside the overflow clip */}
+              <button onClick={exitSplitMode} title="Exit split view"
+                style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 5, cursor: 'pointer', background: '#f0f0f0', color: '#111', flexShrink: 0 }}
               >
-                <div style={{
-                  position: 'absolute', inset: 0, pointerEvents: 'none',
-                  backgroundImage: 'radial-gradient(circle, #d0d0d0 1px, transparent 1px)',
-                  backgroundSize: '24px 24px',
-                }} />
-                {snapGuides.map((g, i) => g.axis === 'x' ? (
-                  <div key={i} style={{ position: 'absolute', left: g.pos, top: 0, bottom: 0, width: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
-                ) : (
-                  <div key={i} style={{ position: 'absolute', top: g.pos, left: 0, right: 0, height: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
-                ))}
-                {canvasItems.map(item => (
-                  <CanvasWidget
-                    key={item.id}
-                    item={item}
-                    onDragStart={handleDragStart}
-                    onResizeStart={handleResizeStart}
-                    highlight={topologyHighlight}
-                    isFocused={focusedId === item.id}
-                    onFocus={setFocusedId}
-                    isNew={newItemIds.has(item.id)}
-                    onEnlarge={setExpandedItemId}
-                    onDelete={id => setCanvasItems(prev => prev.filter(i => i.id !== id))}
-                    onTopologyNodeAction={handleNodeAction}
-                    onClearOverlay={onClearTopologyOverlay}
-                    changesMapOverlay={changesMapOverlay}
-                    overlayCollapsedPref={overlayUserPref}
-                    onOverlayToggle={setOverlayUserPref}
-                  />
-                ))}
+                <SplitScreenIcon />
+              </button>
+            </div>
+            {/* Right content */}
+            <div
+              style={{ flex: 1, position: 'relative', overflow: 'hidden', background: activeRight ? '#fff' : '#fafafa' }}
+              onDragOver={e => { e.preventDefault(); setSplitDragOver('right-content') }}
+              onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSplitDragOver(null) }}
+              onDrop={e => { e.preventDefault(); const id = e.dataTransfer.getData('tabId'); moveTabToRight(id); setSplitDragOver(null) }}
+              onClick={() => setLastActivePane('right')}
+            >
+              {activeRight ? (
+                <ArtifactContent artifact={{ id: `${activeRight.id}__main`, type: activeRight.type, label: activeRight.label, dataKey: activeRight.dataKey, isMain: true, x: 0, y: 0, w: 800, h: 600 }} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={onClearTopologyOverlay} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', userSelect: 'none' }}>
+                  <div style={{ fontSize: 13, color: '#aaa' }}>Move a tab to view side by side</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+        {/* Normal mode tab bar */}
+        <div style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0 }}>
+          {artifacts.map(artifact => {
+            const isActive = artifact.id === activeArtifactId
+            return (
+              <div key={artifact.id} draggable
+                onDragStart={e => { e.dataTransfer.setData('tabId', artifact.id); dragTabId.current = artifact.id }}
+                onClick={() => onSetActive(artifact.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 6px 0 10px', height: 28, borderRadius: 6, background: isActive ? '#f0f0f0' : 'transparent', cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap', fontSize: 12, fontWeight: isActive ? 500 : 400, color: isActive ? '#111' : '#767676', transition: 'background 0.1s' }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+              >
+                <ArtifactTabIcon type={artifact.type} />
+                {artifact.label}
+                <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 4, lineHeight: 1 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
+                ><CloseIcon /></button>
               </div>
             )
-          })()
+          })}
+          {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingLeft: 4 }}>No artifacts</span>}
+          <button onClick={enterSplitMode} title="Split view"
+            style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 5, cursor: 'pointer', background: 'transparent', color: '#767676', flexShrink: 0, marginLeft: 'auto' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#767676' }}
+          >
+            <SplitScreenIcon />
+          </button>
+        </div>
+        {/* Normal mode content */}
+        {(
+        /* ── Normal mode: original content area ── */
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            minHeight: 0,
+            flexDirection: configPane?.dock === 'bottom' ? 'column' : 'row',
+          }}
+        >
+        <div ref={canvasRef} style={{ flex: 1, position: 'relative', overflow: (isFocusMode || expandedItem) ? 'hidden' : 'auto' }}>
+          {/* Expanded widget focus view */}
+          {expandedItem ? (
+            <div style={{ position: 'absolute', inset: 0, background: '#fff', zIndex: 20, display: 'flex', flexDirection: 'column' }}>
+              {/* Mini toolbar */}
+              <div style={{ height: 36, display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+                <button
+                  onClick={() => setExpandedItemId(null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', color: '#555', fontSize: 11, fontWeight: 500, padding: '2px 6px', borderRadius: 4 }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <BackArrowIcon /> Back to canvas
+                </button>
+              </div>
+              <div style={{ flex: 1, overflow: 'hidden' }}>
+                <ArtifactContent artifact={expandedItem} highlight={expandedItem.isMain ? topologyHighlight : null} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={expandedItem.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
+              </div>
+            </div>
+          ) : isFocusMode ? (
+            /* Focus mode: single artifact fills the pane, no widget chrome */
+            canvasItems.length === 1 ? (
+              <div style={{ position: 'absolute', inset: 0 }}>
+                <ArtifactContent artifact={canvasItems[0]} highlight={topologyHighlight} widgetMode={false} onTopologyNodeAction={handleNodeAction} onClearOverlay={canvasItems[0]?.isMain ? onClearTopologyOverlay : undefined} changesMapOverlay={changesMapOverlay} overlayCollapsedPref={overlayUserPref} onOverlayToggle={setOverlayUserPref} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
+                No artifact selected
+              </div>
+            )
+          ) : (
+            /* Canvas mode: dot grid + widget cards */
+            (() => {
+              const minW = canvasItems.length ? Math.max(...canvasItems.map(i => i.x + i.w + 32)) : 0
+              const minH = canvasItems.length ? Math.max(...canvasItems.map(i => i.y + i.h + 32)) : 0
+              return (
+                <div
+                  style={{ position: 'relative', minWidth: minW, minHeight: minH, width: '100%', height: '100%' }}
+                  onMouseDown={() => setFocusedId(null)}
+                >
+                  <div style={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none',
+                    backgroundImage: 'radial-gradient(circle, #d0d0d0 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }} />
+                  {snapGuides.map((g, i) => g.axis === 'x' ? (
+                    <div key={i} style={{ position: 'absolute', left: g.pos, top: 0, bottom: 0, width: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
+                  ) : (
+                    <div key={i} style={{ position: 'absolute', top: g.pos, left: 0, right: 0, height: 1, background: '#5C9BFF', opacity: 0.6, pointerEvents: 'none', zIndex: 100 }} />
+                  ))}
+                  {canvasItems.map(item => (
+                    <CanvasWidget
+                      key={item.id}
+                      item={item}
+                      onDragStart={handleDragStart}
+                      onResizeStart={handleResizeStart}
+                      highlight={topologyHighlight}
+                      isFocused={focusedId === item.id}
+                      onFocus={setFocusedId}
+                      isNew={newItemIds.has(item.id)}
+                      onEnlarge={setExpandedItemId}
+                      onDelete={id => setCanvasItems(prev => prev.filter(i => i.id !== id))}
+                      onTopologyNodeAction={handleNodeAction}
+                      onClearOverlay={onClearTopologyOverlay}
+                      changesMapOverlay={changesMapOverlay}
+                      overlayCollapsedPref={overlayUserPref}
+                      onOverlayToggle={setOverlayUserPref}
+                    />
+                  ))}
+                </div>
+              )
+            })()
+          )}
+        </div>
+        {configPane && (
+          <ResizeSash
+            onMouseDown={handleConfigResizeStart}
+            orientation={configPane.dock === 'bottom' ? 'row' : 'col'}
+          />
         )}
-      </div>
-      {configPane && (
-        <ResizeSash
-          onMouseDown={handleConfigResizeStart}
-          orientation={configPane.dock === 'bottom' ? 'row' : 'col'}
-        />
-      )}
-      {configPane && (
-        <ConfigWorkspacePane
-          state={configPane}
-          onClose={() => setConfigPane(null)}
-          onEnterCompare={() => setConfigPane(prev => {
-            if (!prev?.leftDevice) return prev
-            return {
-              ...prev,
-              mode: 'compare',
-              rightDevice: null,
-              pendingSelection: 'second',
-              activeMatchIndex: 0,
-              statusMessage: null,
-              width: Math.max(prev.width, 680),
-              height: Math.max(prev.height, 320),
-            }
-          })}
-          onSetDock={(dock) => setConfigPane(prev => prev ? { ...prev, dock } : prev)}
-          onSearchChange={(searchQuery) => setConfigPane(prev => prev ? { ...prev, searchQuery, activeMatchIndex: 0 } : prev)}
-          onPrevMatch={() => setConfigPane(prev => {
-            if (!prev) return prev
-            const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
-            const matchCount = paneKeys.reduce((count, key) => {
-              const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
-              if (!prev.searchQuery.trim()) return count
-              return count + lines.reduce((lineCount, line) => {
-                const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
-                return lineCount + (matches ? matches.length : 0)
+        {configPane && (
+          <ConfigWorkspacePane
+            state={configPane}
+            onClose={() => setConfigPane(null)}
+            onEnterCompare={() => setConfigPane(prev => {
+              if (!prev?.leftDevice) return prev
+              return {
+                ...prev,
+                mode: 'compare',
+                rightDevice: null,
+                pendingSelection: 'second',
+                activeMatchIndex: 0,
+                statusMessage: null,
+                width: Math.max(prev.width, 680),
+                height: Math.max(prev.height, 320),
+              }
+            })}
+            onSetDock={(dock) => setConfigPane(prev => prev ? { ...prev, dock } : prev)}
+            onSearchChange={(searchQuery) => setConfigPane(prev => prev ? { ...prev, searchQuery, activeMatchIndex: 0 } : prev)}
+            onPrevMatch={() => setConfigPane(prev => {
+              if (!prev) return prev
+              const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
+              const matchCount = paneKeys.reduce((count, key) => {
+                const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
+                if (!prev.searchQuery.trim()) return count
+                return count + lines.reduce((lineCount, line) => {
+                  const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
+                  return lineCount + (matches ? matches.length : 0)
+                }, 0)
               }, 0)
-            }, 0)
-            if (!matchCount) return prev
-            return { ...prev, activeMatchIndex: (prev.activeMatchIndex - 1 + matchCount) % matchCount }
-          })}
-          onNextMatch={() => setConfigPane(prev => {
-            if (!prev) return prev
-            const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
-            const matchCount = paneKeys.reduce((count, key) => {
-              const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
-              if (!prev.searchQuery.trim()) return count
-              return count + lines.reduce((lineCount, line) => {
-                const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
-                return lineCount + (matches ? matches.length : 0)
+              if (!matchCount) return prev
+              return { ...prev, activeMatchIndex: (prev.activeMatchIndex - 1 + matchCount) % matchCount }
+            })}
+            onNextMatch={() => setConfigPane(prev => {
+              if (!prev) return prev
+              const paneKeys = prev.mode === 'compare' ? ['left', 'right'] : ['left']
+              const matchCount = paneKeys.reduce((count, key) => {
+                const lines = getDeviceConfig(key === 'left' ? prev.leftDevice?.label : prev.rightDevice?.label).split('\n')
+                if (!prev.searchQuery.trim()) return count
+                return count + lines.reduce((lineCount, line) => {
+                  const matches = line.match(new RegExp(escapeRegExp(prev.searchQuery.trim()), 'ig'))
+                  return lineCount + (matches ? matches.length : 0)
+                }, 0)
               }, 0)
-            }, 0)
-            if (!matchCount) return prev
-            return { ...prev, activeMatchIndex: (prev.activeMatchIndex + 1) % matchCount }
-          })}
-          onCloseCompareSide={handleCloseCompareSide}
-        />
+              if (!matchCount) return prev
+              return { ...prev, activeMatchIndex: (prev.activeMatchIndex + 1) % matchCount }
+            })}
+            onCloseCompareSide={handleCloseCompareSide}
+          />
+        )}
+        {propertiesPane && (
+          <ResizeSash onMouseDown={handlePropertiesResizeStart} orientation="col" />
+        )}
+        {propertiesPane && (
+          <DevicePropertiesPane
+            data={propertiesPane}
+            onClose={() => setPropertiesPane(null)}
+          />
+        )}
+        </div>
       )}
-      {propertiesPane && (
-        <ResizeSash onMouseDown={handlePropertiesResizeStart} orientation="col" />
+        </>
       )}
-      {propertiesPane && (
-        <DevicePropertiesPane
-          data={propertiesPane}
-          onClose={() => setPropertiesPane(null)}
-        />
-      )}
-      </div>
 
       {modal === 'share' && <ShareModal onClose={() => setModal(null)} />}
     </div>

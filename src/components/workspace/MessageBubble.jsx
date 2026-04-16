@@ -366,7 +366,7 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
           onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline' }}
           onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none' }}
         >
-          → View full properties
+          ← View full properties
         </button>
       </div>
     )

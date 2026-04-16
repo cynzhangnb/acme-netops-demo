@@ -253,6 +253,7 @@ export default function ChangeAnalysis({ filter }) {
   const [diffH, setDiffH] = useState(null)
   const [sortKey, setSortKey] = useState('timestamp')
   const [sortDir, setSortDir] = useState('asc')
+  const [query, setQuery] = useState('')
 
   const filteredChanges = filter === 'last-24h'
     ? CHANGES.filter(c => c.timestamp >= '2026-04-05')
@@ -282,7 +283,17 @@ export default function ChangeAnalysis({ filter }) {
     else { setSortKey(key); setSortDir('asc') }
   }
 
-  const sortedChanges = [...filteredChanges].sort((a, b) => {
+  const q = query.trim().toLowerCase()
+  const queriedChanges = q
+    ? filteredChanges.filter(c =>
+        c.device.toLowerCase().includes(q) ||
+        c.type.toLowerCase().includes(q) ||
+        c.description.toLowerCase().includes(q) ||
+        c.timestamp.toLowerCase().includes(q)
+      )
+    : filteredChanges
+
+  const sortedChanges = [...queriedChanges].sort((a, b) => {
     const va = a[sortKey] ?? '', vb = b[sortKey] ?? ''
     return sortDir === 'asc' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va))
   })
@@ -317,9 +328,31 @@ export default function ChangeAnalysis({ filter }) {
       {/* Table — fills remaining space */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Table header */}
-        <div style={{ padding: '14px 20px 10px', borderBottom: '1px solid #e8e8e8', flexShrink: 0 }}>
+        <div style={{ padding: '10px 16px 10px 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 400, color: '#111' }}>
-            {filteredChanges.length} change events across {deviceCount} devices
+            {queriedChanges.length} change event{queriedChanges.length !== 1 ? 's' : ''} across {new Set(queriedChanges.map(c => c.device)).size} device{new Set(queriedChanges.map(c => c.device)).size !== 1 ? 's' : ''}
+          </div>
+          {/* Search bar */}
+          <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+              style={{ position: 'absolute', left: 8, pointerEvents: 'none' }}>
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Search…"
+              value={query}
+              onChange={e => { setQuery(e.target.value); setSelected(null) }}
+              style={{
+                paddingLeft: 28, paddingRight: 10, height: 28,
+                border: '1px solid #e0e0e0', borderRadius: 6,
+                fontSize: 12, color: '#222', background: '#fafafa',
+                outline: 'none', width: 200,
+              }}
+              onFocus={e => { e.currentTarget.style.borderColor = '#378ADD'; e.currentTarget.style.background = '#fff' }}
+              onBlur={e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.background = '#fafafa' }}
+            />
           </div>
         </div>
 

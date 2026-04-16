@@ -151,11 +151,6 @@ export default function AIWorkspace({
     }, 380) // matches the CSS transition duration
   }, [artifacts, addArtifact, setActiveArtifactId])
 
-  const handleRemoveArtifact = useCallback((id) => {
-    removeArtifact(id)
-    if (artifacts.length <= 1) setLocalViewMode('chat')
-  }, [removeArtifact, artifacts.length])
-
   /* ── Open artifact from outside (e.g. drag-drop from network pane) ──────── */
   useEffect(() => {
     if (!externalArtifact) return
@@ -183,6 +178,19 @@ export default function AIWorkspace({
     onPrefillInput:         setInputPrefill,
     initialMessages:        restoredSession?.messages || [],
   })
+
+  // Declared after `messages` so the dependency array evaluates correctly
+  const handleRemoveArtifact = useCallback((id) => {
+    removeArtifact(id)
+    if (artifacts.length <= 1) {
+      // No AI conversation yet — go back to home instead of leaving an empty workspace
+      if (!messages?.length) {
+        onClose?.()
+        return
+      }
+      setLocalViewMode('chat')
+    }
+  }, [removeArtifact, artifacts.length, messages, onClose])
 
   /* ── Derived (needs messages from hook above) ───────────────────────────── */
   const sessionName = sessionNameOverride ?? deriveSessionName(messages ?? [], currentSessionName)
@@ -403,8 +411,8 @@ export default function AIWorkspace({
                         return (
                       <div
                         key={s.id}
-                        onMouseEnter={e => { setHoveredSessionId(s.id); e.currentTarget.style.background = isCurrent ? '#f5f8ff' : '#f5f5f5' }}
-                        onMouseLeave={e => { setHoveredSessionId(prev => prev === s.id ? null : prev); e.currentTarget.style.background = isCurrent ? '#f7f9ff' : 'transparent' }}
+                        onMouseEnter={e => { setHoveredSessionId(s.id); e.currentTarget.style.background = '#f5f5f5' }}
+                        onMouseLeave={e => { setHoveredSessionId(prev => prev === s.id ? null : prev); e.currentTarget.style.background = 'transparent' }}
                         onMouseDown={e => {
                           e.preventDefault()
                           if (isCurrent || !isInteractive) return
@@ -420,7 +428,7 @@ export default function AIWorkspace({
                           color: '#222',
                           cursor: isCurrent ? 'default' : (isInteractive ? 'pointer' : 'default'),
                           borderBottom: '1px solid #f5f5f5',
-                          background: isCurrent ? '#f7f9ff' : 'transparent',
+                          background: 'transparent',
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
@@ -431,7 +439,7 @@ export default function AIWorkspace({
                             background: isCurrent ? '#378ADD' : 'transparent',
                             flexShrink: 0,
                           }} />
-                          <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isCurrent ? 500 : 400 }}>
                             {s.name}
                           </span>
                         </div>
@@ -439,7 +447,7 @@ export default function AIWorkspace({
                           onMouseDown={e => {
                             e.preventDefault()
                             e.stopPropagation()
-                            if (isCurrent || !isInteractive) return
+                            if (!isInteractive) return
                             onDeleteSession?.(s.id)
                             setHoveredSessionId(null)
                           }}
@@ -447,8 +455,8 @@ export default function AIWorkspace({
                             flexShrink: 0,
                             fontSize: 11,
                             color: '#b42318',
-                            opacity: !isCurrent && hoveredSessionId === s.id ? 1 : 0,
-                            pointerEvents: !isCurrent && hoveredSessionId === s.id ? 'auto' : 'none',
+                            opacity: hoveredSessionId === s.id ? 1 : 0,
+                            pointerEvents: hoveredSessionId === s.id ? 'auto' : 'none',
                             transition: 'opacity 0.12s',
                             cursor: isInteractive ? 'pointer' : 'default',
                           }}
@@ -484,6 +492,27 @@ export default function AIWorkspace({
             + New
           </button>
 
+          {/* Share */}
+          <button
+            title="Share session"
+            style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 28, height: 28, border: 'none', borderRadius: 5,
+              background: 'transparent', color: '#444',
+              cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+
           {/* Show / hide chat pane — only when an artifact is open */}
           {isSplit && (
             <button
@@ -495,6 +524,7 @@ export default function AIWorkspace({
                 background: showChat ? '#f0f0f0' : 'transparent',
                 color: '#333',
                 cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
+                marginLeft: 6,
               }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
             onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#f0f0f0' : 'transparent'; e.currentTarget.style.color = '#333' }}

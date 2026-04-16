@@ -405,10 +405,16 @@ export default function App() {
   }, [])
 
   const openReportInSession = useCallback((id, label) => {
+    const artifactId = `report-${id}`
+    if (viewModeRef.current === 'workspace') {
+      /* Active AI session — inject report as a new artifact tab */
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
+      return
+    }
+    /* No active session — create one with the report pre-loaded */
     navigate(() => {
       setShowHomeInsights(true)
       setActiveSessionListId(null)
-      const artifactId = `report-${id}`
       setRestoredSession({
         messages: [],
         artifacts: [{ id: artifactId, type: 'report', label, dataKey: id }],

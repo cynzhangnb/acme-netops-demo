@@ -402,11 +402,10 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
             </svg>
           )
         ) : (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7a9cc4" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="8" y1="13" x2="16" y2="13"/>
-            <line x1="8" y1="17" x2="13" y2="17"/>
+          <svg width="14" height="14" viewBox="0 0 32 32" fill="#1a1a1a" style={{ flexShrink: 0 }}>
+            <path d="M25.7,9.3l-7-7C18.5,2.1,18.3,2,18,2H8C6.9,2,6,2.9,6,4v24c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V10C26,9.7,25.9,9.5,25.7,9.3z M18,4.4l5.6,5.6H18V4.4z M24,28H8V4h8v6c0,1.1,0.9,2,2,2h6V28z"/>
+            <rect x="10" y="22" width="12" height="2"/>
+            <rect x="10" y="16" width="12" height="2"/>
           </svg>
         )}
 
@@ -597,8 +596,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   function handleDropZoneDrop(e) {
     e.preventDefault()
     if (draggingMap)    { onOpenTab?.(draggingMap.id, draggingMap.name) }
-    // Report opening disabled (drag visual only for now)
-    // if (draggingReport) { onOpenReportTab?.(draggingReport.id, draggingReport.label) }
+    if (draggingReport?.id === 'device-report') { onOpenReportTab?.(draggingReport.id, draggingReport.label) }
     setDraggingMap(null)
     setDraggingReport(null)
     setIsDragOver(false)
@@ -651,7 +649,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
           onClose={handleInventoryClose}
           onPin={handleInventoryPin}
           pinned={true}
-          onOpen={node => { /* report opening disabled for now */ }}
+          onOpen={node => { if (node.id === 'device-report') onOpenReportTab?.(node.id, node.label) }}
           onDragStart={handleReportDragStart}
           onDragEnd={handleReportDragEnd}
         />
@@ -706,7 +704,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
                 onClose={handleInventoryClose}
                 onPin={handleInventoryPin}
                 pinned={false}
-                onOpen={node => { /* report opening disabled for now */ }}
+                onOpen={node => { if (node.id === 'device-report') onOpenReportTab?.(node.id, node.label) }}
                 onDragStart={handleReportDragStart}
                 onDragEnd={handleReportDragEnd}
               />
