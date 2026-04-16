@@ -291,10 +291,10 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
         overflow: 'hidden',
         boxSizing: 'border-box',
       }}>
-        <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column' }}>
 
           {/* Icon + Title */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center', marginBottom: 40 }}>
             <div style={{
               width: 72, height: 72, borderRadius: 16,
               background: '#fff', border: '1px solid #e4e4e4',
@@ -329,18 +329,11 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               <div style={{ fontSize: 20, fontWeight: 600, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
                 NB Workspace
               </div>
-              <div style={{ fontSize: 13, color: '#777', lineHeight: 1.5 }}>
-                Ask, explore and troubleshoot your network
-              </div>
             </div>
           </div>
-        </div>
-
-        {/* Input + Shortcuts */}
-        <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', gap: 24, marginTop: 32 }}>
 
           {/* Input */}
-          <div>
+          <div style={{ marginBottom: 24 }}>
             <InputArea
               onSend={(text) => {
                 setHomeInput('')
