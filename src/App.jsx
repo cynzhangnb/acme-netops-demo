@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import AppFrame from './components/layout/AppFrame'
 import HomePage from './components/home/HomePage'
 import InputArea from './components/workspace/InputArea'
 import ChangeAnalysisPage from './components/changeanalysis/ChangeAnalysisPage'
+import MapSessionWorkspace from './components/workspace/MapSessionWorkspace'
 import ShareModal from './components/modals/ShareModal'
 import DocumentModal from './components/modals/DocumentModal'
 import { useSessionManager } from './hooks/useSessionManager'
 
 /* ── Boston Network restored session snapshot ───────────────────────────── */
 const BOSTON_RESTORED_SESSION = {
+  id: 's1',
   messages: [
     {
       id: 'r-msg-1',
@@ -47,6 +49,56 @@ Traffic is aggregated at the distribution layer, making it a critical point for 
   ],
   activeArtifactId: 'r-artifact-1',
 }
+
+/* ── Recent Changes restored session snapshot ──────────────────────────── */
+const RECENT_CHANGES_RESTORED_SESSION = {
+  id: 's2',
+  messages: [
+    {
+      id: 'c-msg-1',
+      role: 'user',
+      content: 'Show recent configuration changes in my network',
+      timestamp: '2026-03-29T14:31:00.000Z',
+    },
+    {
+      id: 'c-msg-2',
+      role: 'assistant',
+      content: `**8 configuration changes detected** in the last 7 days across the Boston network.
+
+- **CR-BOS-01** — NTP server list updated; added 10.20.1.2 as secondary peer
+- **AS-BOS-01** — Interface Ethernet0/4 moved from VLAN 210 to VLAN 220
+- **DS-BOS-03** — Logging buffer size increased from 64000 to 128000
+- **CR-BOS-02** — BGP route-policy updated; voice traffic local-preference lowered from 150 → 100
+- **CR-BOS-02** — Static route for 10.8.3.0/24 next-hop changed to 10.0.2.1
+- **DS-BOS-01** — ACL \`MGMT-ACCESS\` modified; new permit entry added for 10.20.5.0/24
+- **DS-BOS-03** — OSPF hello interval changed from 10s → 5s on Ethernet0/1
+- **ER-BOS-07** — QoS policy \`WAN-QOS\` updated; voice class CIR reduced from 4096000 to 2048000
+
+← View Changes`,
+      timestamp: '2026-03-29T14:31:03.000Z',
+      artifactRef: { type: 'changeAnalysis', label: 'Recent Changes · Last 7 days', dataKey: null },
+    },
+  ],
+  artifacts: [
+    { id: 'c-artifact-1', type: 'changeAnalysis', label: 'Recent Changes · Last 7 days', dataKey: null, savedToWorkspace: true },
+  ],
+  activeArtifactId: 'c-artifact-1',
+}
+
+const DEMO_SESSION_NAMES = {
+  s1: 'Boston Network',
+  s2: 'Show recent configuration changes in my network',
+}
+
+const DEMO_SESSION_OPTIONS = [
+  { id: 's1', name: 'Boston Network' },
+  { id: 's2', name: 'Recent Configuration Changes' },
+  { id: 's3', name: 'Core Router Analysis' },
+  { id: 's4', name: 'Firewall Policy Review' },
+  { id: 's5', name: 'VLAN Segmentation' },
+  { id: 's6', name: 'Incident · Packet Loss' },
+  { id: 's7', name: 'BGP Peer Troubleshoot' },
+]
 
 /* ── Network topology illustration ─────────────────────────────────────── */
 function NetworkIllustration() {
@@ -90,6 +142,16 @@ function CloseIcon() {
       strokeWidth="2" strokeLinecap="round">
       <line x1="18" y1="6" x2="6" y2="18"/>
       <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  )
+}
+
+function AIPaneIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="0.75" y="0.75" width="14.5" height="14.5" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M9.59998 10.6667V9.6H10.1333V5.86667H9.59998V4.8H11.7333V5.86667H11.2V9.6H11.7333V10.6667H9.59998Z" fill="currentColor"/>
+      <path d="M7.73363 10.6667H8.80029L6.93336 4.8H5.33336L3.46851 10.6667H4.53453L4.85549 9.6H7.40381L7.73363 10.6667ZM5.17645 8.53333L6.04493 5.64741L6.18141 5.64613L7.074 8.53339L5.17645 8.53333Z" fill="currentColor"/>
     </svg>
   )
 }
@@ -150,7 +212,7 @@ function AIPane({ onClose, onAsk }) {
         <InputArea
           onSend={onAsk}
           isStreaming={false}
-          placeholder="Ask anything about your network…"
+          placeholder="Ask about your network, / for shortcuts, @ to reference"
           maxExpandHeight={100}
         />
       </div>
@@ -158,92 +220,56 @@ function AIPane({ onClose, onAsk }) {
   )
 }
 
-/* ── Inventory View ─────────────────────────────────────────────────────── */
-const INVENTORY_DEVICES = [
-  { hostname: 'core-sw-01',   type: 'Switch',   ip: '10.0.1.1' },
-  { hostname: 'core-sw-02',   type: 'Switch',   ip: '10.0.1.2' },
-  { hostname: 'edge-rtr-01',  type: 'Router',   ip: '10.0.2.1' },
-  { hostname: 'fw-01',        type: 'Firewall', ip: '10.0.3.1' },
-  { hostname: 'dist-sw-01',   type: 'Switch',   ip: '10.0.4.1' },
-  { hostname: 'dist-sw-02',   type: 'Switch',   ip: '10.0.4.2' },
-  { hostname: 'access-sw-03', type: 'Switch',   ip: '10.0.5.3' },
-  { hostname: 'vpn-gw-01',    type: 'VPN GW',  ip: '10.0.6.1' },
-]
 
-function InventoryView({ onStartAI }) {
-  const [aiPaneOpen, setAiPaneOpen] = useState(false)
-
-  function handleAsk(text) {
-    setAiPaneOpen(false)
-    onStartAI(text)
-  }
-
+/* ── Map Tab View ───────────────────────────────────────────────────────── */
+function MapTabView({ name, isLoading }) {
   return (
-    <div style={{ height: '100%', display: 'flex', overflow: 'hidden', position: 'relative' }}>
-      {/* Main content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '36px 48px' }} className="scrollbar-thin">
-        <h2 style={{ fontSize: 17, fontWeight: 600, color: '#111', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
-          Device Inventory
-        </h2>
-
-        {/* Table */}
-        <div style={{ border: '1px solid #e8e8e8', borderRadius: 8, overflow: 'hidden', background: '#fff' }}>
-          {/* Header */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr',
-            padding: '9px 20px', borderBottom: '1px solid #ebebeb',
-            background: '#fafafa',
-          }}>
-            {['Hostname', 'Type', 'IP Address'].map(col => (
-              <span key={col} style={{ fontSize: 11, fontWeight: 500, color: '#888', letterSpacing: '0.02em' }}>{col}</span>
-            ))}
-          </div>
-          {/* Rows */}
-          {INVENTORY_DEVICES.map((d, i) => (
-            <div
-              key={d.hostname}
-              style={{
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr',
-                padding: '11px 20px',
-                borderBottom: i < INVENTORY_DEVICES.length - 1 ? '1px solid #f2f2f2' : 'none',
-                cursor: 'default', transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#111', fontFamily: 'ui-monospace, monospace' }}>{d.hostname}</span>
-              <span style={{ fontSize: 13, color: '#555' }}>{d.type}</span>
-              <span style={{ fontSize: 13, color: '#555', fontFamily: 'ui-monospace, monospace' }}>{d.ip}</span>
-            </div>
-          ))}
+    <div style={{
+      flex: 1, height: '100%', position: 'relative', overflow: 'hidden',
+      background: '#fff',
+      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
+      backgroundSize: '22px 22px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexDirection: 'column', gap: 16,
+    }}>
+      {/* Indeterminate progress bar under the tab strip */}
+      {isLoading && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, overflow: 'hidden' }}>
+          <div style={{ height: '100%', background: '#378ADD', animation: 'progress-indeterminate 1.4s ease-in-out infinite' }} />
         </div>
-      </div>
-
-      {/* AI pane */}
-      {aiPaneOpen && (
-        <AIPane onClose={() => setAiPaneOpen(false)} onAsk={handleAsk} />
       )}
 
-      {/* Floating AI button */}
-      {!aiPaneOpen && (
-        <button
-          onClick={() => setAiPaneOpen(true)}
-          title="Open AI Assistant"
-          style={{
-            position: 'absolute', bottom: 24, right: 24,
-            width: 46, height: 46, borderRadius: '50%',
-            background: '#378ADD', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 12px rgba(55,138,221,0.35)',
-            transition: 'background 0.15s, transform 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#2b6fb5'; e.currentTarget.style.transform = 'scale(1.06)' }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#378ADD'; e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z"/>
+      {isLoading ? (
+        /* Spinner + label */
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none"
+            style={{ animation: 'spin 0.9s linear infinite' }}>
+            {/* Track */}
+            <circle cx="18" cy="18" r="15" stroke="#e8e8e8" strokeWidth="3"/>
+            {/* Arc */}
+            <circle cx="18" cy="18" r="15" stroke="#378ADD" strokeWidth="3"
+              strokeLinecap="round" strokeDasharray="28 66"/>
           </svg>
-        </button>
+          <span style={{ fontSize: 12, color: '#767676' }}>Loading {name}…</span>
+        </div>
+      ) : (
+        <>
+          <div style={{
+            width: 48, height: 48, borderRadius: 10,
+            background: '#fff', border: '1px solid #e4e4e4',
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888"
+              strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+              <line x1="8" y1="2" x2="8" y2="18"/>
+              <line x1="16" y1="6" x2="16" y2="22"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 500, color: '#333', letterSpacing: '-0.01em' }}>{name}</div>
+          <div style={{ fontSize: 12, color: '#aaa' }}>Map canvas coming soon</div>
+        </>
       )}
     </div>
   )
@@ -318,17 +344,21 @@ function NetworkView({ onStartAI }) {
 
 /* ── App ────────────────────────────────────────────────────────────────── */
 export default function App() {
-  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'inventory' | 'change-analysis'
+  const [viewMode, setViewMode] = useState('home') // 'home' | 'workspace' | 'network' | 'map-session'
+  const [showHomeInsights, setShowHomeInsights] = useState(true)
   const [modalOpen, setModalOpen] = useState(null)
   const [homeSessionKey, setHomeSessionKey] = useState(0)
   const [initialPrompt, setInitialPrompt] = useState('')
   const [restoredSession, setRestoredSession] = useState(null)
   const [currentSessionName, setCurrentSessionName] = useState('New Session')
+  const [activeSessionListId, setActiveSessionListId] = useState(null)
   const [networkPanel, setNetworkPanel] = useState(null)
   const [changeAnalysisMounted, setChangeAnalysisMounted] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [openTabs, setOpenTabs] = useState([])          // [{id, label}]
+  const [activeTabId, setActiveTabId] = useState(null)  // 'change-analysis' | 'inventory' | null
 
-  const { sessions, activeSessionId, createSession, deleteSession, selectSession } = useSessionManager()
+  const { sessions, activeSessionId, startSession, commitSession, deleteSession, selectSession, updateSession } = useSessionManager()
 
   // Fade-out → swap content → fade-in
   const navigate = useCallback((callback) => {
@@ -341,75 +371,354 @@ export default function App() {
 
   const enterWorkspace = useCallback((prompt = '') => {
     navigate(() => {
+      setShowHomeInsights(true)
       setInitialPrompt(prompt)
       setRestoredSession(null)
-      createSession('New Session')
+      setActiveSessionListId(null)
+      startSession()           // reserves an ID in memory — NOT saved to history yet
       setHomeSessionKey(k => k + 1)
       setViewMode('workspace')
     })
-  }, [createSession, navigate])
+  }, [startSession, navigate])
 
   const enterNetwork = useCallback(() => {
+    setShowHomeInsights(true)
     setViewMode('network')
   }, [])
 
-  const enterInventory = useCallback(() => {
-    setViewMode('inventory')
-  }, [])
+  const enterMapSession = useCallback(() => {
+    navigate(() => {
+      setShowHomeInsights(true)
+      setOpenTabs([])
+      setActiveTabId(null)
+      setCurrentSessionName('New Session')
+      setActiveSessionListId(null)
+      setViewMode('map-session')
+    })
+  }, [navigate])
 
   const enterChangeAnalysis = useCallback(() => {
-    setViewMode('change-analysis')
+    setOpenTabs(prev => prev.find(t => t.id === 'change-analysis') ? prev : [...prev, { id: 'change-analysis', label: 'Change Analysis' }])
+    setActiveTabId('change-analysis')
     setChangeAnalysisMounted(true)
   }, [])
 
+  const openReportInSession = useCallback((id, label) => {
+    navigate(() => {
+      setShowHomeInsights(true)
+      setActiveSessionListId(null)
+      const artifactId = `report-${id}`
+      setRestoredSession({
+        messages: [],
+        artifacts: [{ id: artifactId, type: 'report', label, dataKey: id }],
+        activeArtifactId: artifactId,
+      })
+      setInitialPrompt('')
+      startSession()
+      setHomeSessionKey(k => k + 1)
+      setViewMode('workspace')
+    })
+  }, [navigate, startSession])
+
+  const closeTab = useCallback((id) => {
+    setOpenTabs(prev => {
+      const next = prev.filter(t => t.id !== id)
+      setActiveTabId(curr => curr === id ? (next[next.length - 1]?.id ?? null) : curr)
+      return next
+    })
+  }, [])
+
+  const [loadingTabId, setLoadingTabId] = useState(null)
+
+  /* Track viewMode in a ref so openMapTab (stable callback) can read it */
+  const viewModeRef = useRef(viewMode)
+  useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
+  const openTabsRef = useRef(openTabs)
+  useEffect(() => { openTabsRef.current = openTabs }, [openTabs])
+
+  /* When in map-session mode, maps from the network pane open inside MapSessionWorkspace */
+  const [externalMapToOpen, setExternalMapToOpen] = useState(null)
+
+  /* Artifact to inject into active AIWorkspace (from drag-drop while in workspace mode) */
+  const [externalArtifactToOpen, setExternalArtifactToOpen] = useState(null)
+
+  /* Drag state forwarded from AppFrame so MapSessionWorkspace can block its AI pane */
+  const [isDraggingMap, setIsDraggingMap] = useState(false)
+
+  const openMapResourceTab = useCallback((id, label) => {
+    const tabId = `map-${id}`
+    setOpenTabs(prev => prev.some(t => t.id === tabId) ? prev : [...prev, { id: tabId, label }])
+    setActiveTabId(tabId)
+    setLoadingTabId(tabId)
+    window.setTimeout(() => {
+      setLoadingTabId(curr => curr === tabId ? null : curr)
+    }, 900)
+  }, [])
+
+  const openMapTab = useCallback((id, label) => {
+    if (viewModeRef.current === 'workspace') {
+      /* Active AI session — open map as a new artifact tab inside that session */
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'networkMap', label, mapId: id })
+      return
+    }
+    if (openTabsRef.current.length > 0) {
+      openMapResourceTab(id, label)
+      return
+    }
+    if (viewModeRef.current === 'map-session') {
+      /* Already in map-session — just open the map inside MapSessionWorkspace */
+      setExternalMapToOpen({ id, label })
+      return
+    }
+    /* Any other view → transition to map-session with the map pre-loaded */
+    navigate(() => {
+      setShowHomeInsights(true)
+      setOpenTabs([])
+      setActiveTabId(null)
+      setCurrentSessionName('New Session')
+      setActiveSessionListId(null)
+      setViewMode('map-session')
+      setExternalMapToOpen({ id, label })
+    })
+  }, [navigate, openMapResourceTab])
+
   const handleSelectSession = useCallback((id) => {
     navigate(() => {
+      setShowHomeInsights(true)
       selectSession(id)
       setInitialPrompt('')
-      setRestoredSession(id === 's1' ? BOSTON_RESTORED_SESSION : null)
+      setCurrentSessionName(DEMO_SESSION_NAMES[id] || 'New Session')
+      setActiveSessionListId(id)
       setHomeSessionKey(k => k + 1)
+
+      if (id === 's2') {
+        setRestoredSession(RECENT_CHANGES_RESTORED_SESSION)
+        setOpenTabs([])
+        setActiveTabId(null)
+        setViewMode('workspace')
+        return
+      }
+
+      setOpenTabs([])
+      setActiveTabId(null)
+      setRestoredSession(id === 's1' ? BOSTON_RESTORED_SESSION : null)
       setViewMode('workspace')
     })
   }, [selectSession, navigate])
 
   const handleDeleteSession = useCallback((id) => {
     deleteSession(id)
-    if (activeSessionId === id) setViewMode('home')
+    if (activeSessionId === id) {
+      setShowHomeInsights(true)
+      setViewMode('home')
+    }
   }, [deleteSession, activeSessionId])
+
+  // Called by AIWorkspace whenever the derived session name changes.
+  // Commits the session to history on the first real name (i.e. once the
+  // user has exchanged at least one message with the AI).
+  const handleSessionNameChange = useCallback((name) => {
+    setCurrentSessionName(name)
+    if (!activeSessionId || name === 'New Session') return
+    const isCommitted = sessions.some(s => s.id === activeSessionId)
+    if (isCommitted) {
+      updateSession(activeSessionId, { name })
+    } else {
+      commitSession(activeSessionId, name)
+    }
+  }, [activeSessionId, sessions, commitSession, updateSession])
 
   return (
     <>
       <AppFrame
-        activeView={viewMode}
-        onGoHome={() => { setViewMode('home'); setHomeSessionKey(0); setInitialPrompt('') }}
+        activeView={openTabs.length > 0 ? 'resource' : viewMode}
+        onGoHome={() => { setShowHomeInsights(true); setRestoredSession(null); setCurrentSessionName('New Session'); setActiveSessionListId(null); setViewMode('home'); setHomeSessionKey(0); setInitialPrompt(''); setOpenTabs([]); setActiveTabId(null) }}
         onGoAI={() => enterWorkspace()}
         onGoNetwork={enterNetwork}
-        onGoInventory={enterInventory}
         onGoChangeAnalysis={enterChangeAnalysis}
+        onOpenReportTab={openReportInSession}
         currentSessionName={currentSessionName}
+        activeSessionListId={activeSessionListId}
         onOpenSession={handleSelectSession}
         networkPanel={networkPanel}
         onNetworkPanelClick={(id) => setNetworkPanel(prev => prev === id ? null : id)}
         isTransitioning={isTransitioning}
+        onOpenTab={openMapTab}
+        onDragMapStateChange={setIsDraggingMap}
       >
-        {viewMode === 'home' || viewMode === 'workspace' ? (
-          <HomePage
-            sessions={sessions}
-            onStartAI={enterWorkspace}
-            onOpenSession={handleSelectSession}
-            initialPrompt={initialPrompt}
-            sessionKey={homeSessionKey}
-            onSessionNameChange={setCurrentSessionName}
-            restoredSession={restoredSession}
-            currentSessionName={currentSessionName}
-          />
-        ) : viewMode === 'network' ? (
-          <NetworkView onStartAI={enterWorkspace} />
-        ) : null}
-        {changeAnalysisMounted && (
-          <div style={{ display: viewMode === 'change-analysis' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-            <ChangeAnalysisPage />
+        {openTabs.length > 0 ? (
+          /* ── Resource tab workspace ── */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+            <div style={{
+              height: 40,
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 12px 0 8px',
+              borderBottom: '1px solid #e8e8e8',
+              background: '#fff',
+            }}>
+              <div style={{ maxWidth: '30%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#111',
+                    letterSpacing: '-0.01em',
+                    minWidth: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    height: 26,
+                    padding: '0 10px',
+                    borderRadius: 6,
+                    background: '#f5f5f5',
+                  }}
+                >
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                    {currentSessionName}
+                  </span>
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+                <button
+                  onClick={() => { setShowHomeInsights(true); setActiveSessionListId(null); setViewMode('home'); setHomeSessionKey(0); setInitialPrompt(''); setOpenTabs([]); setActiveTabId(null) }}
+                  title="New session"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    height: 28,
+                    padding: '0 9px',
+                    border: 'none',
+                    borderRadius: 5,
+                    background: 'transparent',
+                    color: '#444',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    transition: 'background 0.1s, color 0.1s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
+                >
+                  + New
+                </button>
+                <button
+                  title="AI pane unavailable in this view"
+                  disabled
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    border: 'none',
+                    borderRadius: 5,
+                    background: 'transparent',
+                    color: '#333',
+                    cursor: 'default',
+                  }}
+                >
+                  <AIPaneIcon />
+                </button>
+              </div>
+            </div>
+
+            {/* Tab bar */}
+            <div style={{
+              height: 40, display: 'flex', alignItems: 'center',
+              borderBottom: '1px solid #e8e8e8', background: '#fff',
+              padding: '0 8px', gap: 2, flexShrink: 0,
+            }}>
+              {openTabs.map(tab => {
+                const isActive = tab.id === activeTabId
+                return (
+                  <div
+                    key={tab.id}
+                    onClick={() => setActiveTabId(tab.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '0 6px 0 12px', height: 28, borderRadius: 6,
+                      cursor: 'pointer',
+                      background: isActive ? '#f5f5f5' : 'transparent',
+                      color: isActive ? '#111' : '#767676',
+                      fontSize: 12, fontWeight: isActive ? 500 : 400,
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span>{tab.label}</span>
+                    <button
+                      onClick={e => { e.stopPropagation(); closeTab(tab.id) }}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        padding: '2px 3px', borderRadius: 4,
+                        display: 'flex', alignItems: 'center', lineHeight: 1,
+                        color: '#bbb',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#444' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Tab content */}
+            {changeAnalysisMounted && (
+              <div style={{ display: activeTabId === 'change-analysis' ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+                <ChangeAnalysisPage />
+              </div>
+            )}
+            {openTabs.filter(t => t.id.startsWith('map-')).map(tab => (
+              <div key={tab.id} style={{ display: activeTabId === tab.id ? 'flex' : 'none', flex: 1, overflow: 'hidden' }}>
+                <MapTabView name={tab.label} isLoading={loadingTabId === tab.id} />
+              </div>
+            ))}
           </div>
+        ) : (
+          /* ── Normal view modes ── */
+          <>
+            {viewMode === 'home' || viewMode === 'workspace' ? (
+              <HomePage
+                sessions={DEMO_SESSION_OPTIONS}
+                onStartAI={enterWorkspace}
+                onOpenSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                onGoHome={(showInsights = true) => { navigate(() => { setShowHomeInsights(showInsights); setRestoredSession(null); setCurrentSessionName('New Session'); setActiveSessionListId(null); setViewMode('home'); setHomeSessionKey(0); setInitialPrompt('') }) }}
+                showQuickInsights={showHomeInsights}
+                initialPrompt={initialPrompt}
+                sessionKey={homeSessionKey}
+                onSessionNameChange={handleSessionNameChange}
+                restoredSession={restoredSession}
+                currentSessionName={currentSessionName}
+                currentSessionListId={activeSessionListId}
+                onEnterMapSession={enterMapSession}
+                onReviewChange={enterChangeAnalysis}
+                externalArtifact={externalArtifactToOpen}
+              />
+            ) : viewMode === 'network' ? (
+              <NetworkView onStartAI={enterWorkspace} />
+            ) : viewMode === 'map-session' ? (
+              <MapSessionWorkspace
+                onSessionNameChange={setCurrentSessionName}
+                onNew={() => navigate(() => { setShowHomeInsights(true); setViewMode('home'); setHomeSessionKey(0) })}
+                sessions={sessions}
+                onSwitchSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                externalMapToOpen={externalMapToOpen}
+                onExternalMapConsumed={() => setExternalMapToOpen(null)}
+                isDraggingMap={isDraggingMap}
+              />
+            ) : null}
+          </>
         )}
       </AppFrame>
 

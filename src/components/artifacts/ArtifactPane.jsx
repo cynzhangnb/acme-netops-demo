@@ -704,6 +704,78 @@ function computeSnap(candidate, others) {
   return { snapX, snapY, guides }
 }
 
+/* ── Report artifact — renders a data table ──────────────────────────────── */
+const REPORT_COLS = ['Hostname', 'IP Address', 'Interface', 'Device Type', 'Vendor', 'Model', 'Software Version', 'Serial No', 'Site', 'Group']
+const REPORT_ROWS = [
+  ['CR-BOS-01',  '10.1.1.1',  'GigE0/0',  'Core Router',         'Cisco',  'WS7K79',   'wmrd-18.2.11',   'HW-A3S5-2041', 'Boston Core',  'Core'],
+  ['CR-BOS-02',  '10.1.1.2',  'GigE0/1',  'Core Router',         'Cisco',  'WS7K79',   'wmrd-18.2.11',   'HW-A3S5-2042', 'Boston Core',  'Core'],
+  ['FW-BOS-01',  '10.0.1.1',  'eth0',     'Firewall',            'Cisco',  'ASA5525',  'asa-9.18.3',     'FCH2210V0TL',  'Boston Core',  'Core'],
+  ['DS-BOS-01',  '10.2.1.1',  'Te1/0/1',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
+  ['DS-BOS-02',  '10.2.1.2',  'Te1/0/2',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston Core',  'Core'],
+  ['DS-BOS-03',  '10.2.1.3',  'Te1/0/3',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston South', 'South'],
+  ['DS-BOS-04',  '10.2.1.4',  'Te1/0/4',  'Distribution Switch', 'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston East',  'East'],
+  ['AS-BOS-01',  '10.3.1.1',  'Fa0/1',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
+  ['AS-BOS-02',  '10.3.1.2',  'Fa0/2',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston North', 'North'],
+  ['AS-BOS-03',  '10.3.1.3',  'Fa0/3',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston Core',  'Core'],
+  ['AS-BOS-04',  '10.3.1.4',  'Fa0/4',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston South', 'South'],
+  ['AS-BOS-05',  '10.3.1.5',  'Fa0/5',    'Access Switch',       'Amazon', 'AWS-vnet', 'AWS-unattached', 'N/A',          'Boston East',  'East'],
+]
+
+function ReportArtifact({ label }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
+      {/* Toolbar */}
+      <div style={{
+        height: 40, flexShrink: 0, borderBottom: '1px solid #e8e8e8',
+        display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+      }}>
+        <span style={{ fontSize: 12, color: '#888' }}>
+          Total Count: <strong style={{ color: '#111' }}>{REPORT_ROWS.length}</strong>
+        </span>
+        <span style={{ fontSize: 12, color: '#888' }}>Filter by: <strong style={{ color: '#111' }}>My Network</strong></span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid #e0e0e0', borderRadius: 5, background: '#fff', cursor: 'pointer', color: '#444' }}>Export</button>
+          <button style={{ fontSize: 11.5, padding: '4px 10px', border: '1px solid #e0e0e0', borderRadius: 5, background: '#fff', cursor: 'pointer', color: '#444' }}>Manage Report Page</button>
+        </div>
+      </div>
+      {/* Table */}
+      <div style={{ flex: 1, overflow: 'auto' }} className="scrollbar-thin">
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 860 }}>
+          <thead>
+            <tr style={{ background: '#fafafa', position: 'sticky', top: 0, zIndex: 1 }}>
+              {REPORT_COLS.map(col => (
+                <th key={col} style={{
+                  padding: '8px 12px', textAlign: 'left',
+                  fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: '0.02em',
+                  borderBottom: '1px solid #e8e8e8', whiteSpace: 'nowrap',
+                }}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {REPORT_ROWS.map((row, i) => (
+              <tr key={i} style={{ borderBottom: '1px solid #f2f2f2' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {row.map((cell, j) => (
+                  <td key={j} style={{
+                    padding: '8px 12px', fontSize: 12.5,
+                    color: j === 0 ? '#111' : '#555',
+                    fontWeight: j === 0 ? 500 : 400,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    fontFamily: j <= 1 ? 'ui-monospace, monospace' : 'inherit',
+                  }}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction, onClearOverlay, changesMapOverlay, overlayCollapsedPref, onOverlayToggle }) {
   if (!artifact) return null
 
@@ -727,6 +799,8 @@ function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction
     case 'qosTable':           return <div style={{ overflow: 'auto', height: '100%' }}><QoSTable flushed={true} /></div>
     case 'crcTable':           return <div style={{ overflow: 'auto', height: '100%' }}><CRCTable flushed={true} /></div>
     case 'deviceProperties':   return <DevicePropertiesPane data={buildUSBOSR1Properties()} onClose={null} embedded={true} />
+    case 'report':             return <ReportArtifact label={artifact.label} />
+    case 'networkMap':         return <NetworkMapArtifact label={artifact.label} />
     default: return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#bbb', fontSize: 12 }}>
         Unknown artifact
@@ -860,6 +934,97 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
       <ResizeHandle onMouseDown={(e) => { e.stopPropagation(); onResizeStart(e, item.id) }} />
     </div>
   )
+}
+
+/* ── Network Map placeholder artifact ───────────────────────────────────── */
+function NetworkMapArtifact({ label }) {
+  return (
+    <div style={{
+      flex: 1, height: '100%', position: 'relative', overflow: 'hidden',
+      background: '#fff',
+      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
+      backgroundSize: '22px 22px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexDirection: 'column', gap: 16,
+    }}>
+      <div style={{
+        width: 48, height: 48, borderRadius: 10,
+        background: '#fff', border: '1px solid #e4e4e4',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888"
+          strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+          <line x1="8" y1="2" x2="8" y2="18"/>
+          <line x1="16" y1="6" x2="16" y2="22"/>
+        </svg>
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 500, color: '#333', letterSpacing: '-0.01em' }}>{label}</div>
+      <div style={{ fontSize: 12, color: '#aaa' }}>Map canvas coming soon</div>
+    </div>
+  )
+}
+
+/* ── Artifact type icons for tab labels ─────────────────────────────────── */
+function ArtifactTabIcon({ type }) {
+  const s = { width: 12, height: 12, flexShrink: 0, display: 'block' }
+  if (type === 'topology' || type === 'changesMap' || type === 'networkMap') {
+    return (
+      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+        <line x1="8" y1="2" x2="8" y2="18"/>
+        <line x1="16" y1="6" x2="16" y2="22"/>
+      </svg>
+    )
+  }
+  if (type === 'chart' || type === 'trafficChart') {
+    return (
+      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/>
+        <line x1="12" y1="20" x2="12" y2="4"/>
+        <line x1="6"  y1="20" x2="6"  y2="14"/>
+        <line x1="2"  y1="20" x2="22" y2="20"/>
+      </svg>
+    )
+  }
+  if (type === 'table' || type === 'qosTable' || type === 'crcTable' || type === 'iosTable') {
+    return (
+      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="3" y1="9"  x2="21" y2="9"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+        <line x1="9" y1="9"  x2="9"  y2="21"/>
+      </svg>
+    )
+  }
+  if (type === 'changeAnalysis' || type === 'compare') {
+    return (
+      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 19H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>
+        <path d="M13 5h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-5"/>
+        <line x1="12" y1="3" x2="12" y2="21"/>
+        <line x1="9"  y1="12" x2="3"  y2="12"/>
+        <line x1="15" y1="12" x2="21" y2="12"/>
+      </svg>
+    )
+  }
+  if (type === 'report') {
+    return (
+      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="13" y2="17"/>
+      </svg>
+    )
+  }
+  return null
 }
 
 export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction }) {
@@ -1181,42 +1346,36 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: isFocusMode ? '#fff' : '#f0f0f0' }}>
       {/* Header tabs */}
       <div style={{
-        height: 44, background: '#fff', borderBottom: '1px solid #e8e8e8',
-        display: 'flex', alignItems: 'flex-end', paddingLeft: 8, flexShrink: 0,
+        height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8',
+        display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'flex-end', flex: 1, overflow: 'visible' }}>
-          {artifacts.map(artifact => {
-            const isActive = artifact.id === activeArtifactId
-            return (
-              <div key={artifact.id} onClick={() => onSetActive(artifact.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '0 10px 0 12px', height: 32, cursor: 'pointer',
-                  background: isActive ? '#fff' : 'transparent',
-                  border: isActive ? '1px solid #e8e8e8' : '1px solid transparent',
-                  borderBottom: isActive ? '2px solid #fff' : '1px solid transparent',
-                  borderRadius: '6px 6px 0 0',
-                  fontSize: 12, fontWeight: isActive ? 600 : 400,
-                  color: isActive ? '#111' : '#777',
-                  flexShrink: 0, whiteSpace: 'nowrap',
-                  marginBottom: -1,
-                  position: 'relative', zIndex: isActive ? 1 : 0,
-                  transition: 'color 0.1s',
-                }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#333' }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#777' }}
-              >
-                {artifact.label}
-                <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', padding: 1, display: 'flex', alignItems: 'center', borderRadius: 3, lineHeight: 1, marginLeft: 2 }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#888'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#ccc'}
-                ><CloseIcon /></button>
-              </div>
-            )
-          })}
-          {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingBottom: 8, paddingLeft: 8 }}>No artifacts</span>}
-        </div>
+        {artifacts.map(artifact => {
+          const isActive = artifact.id === activeArtifactId
+          return (
+            <div key={artifact.id} onClick={() => onSetActive(artifact.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '0 6px 0 10px', height: 28, borderRadius: 6,
+                background: isActive ? '#f0f0f0' : 'transparent',
+                cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap',
+                fontSize: 12, fontWeight: isActive ? 500 : 400,
+                color: isActive ? '#111' : '#767676',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+            >
+              <ArtifactTabIcon type={artifact.type} />
+              {artifact.label}
+              <button onClick={e => { e.stopPropagation(); onRemove(artifact.id) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', padding: '2px 3px', display: 'flex', alignItems: 'center', borderRadius: 4, lineHeight: 1 }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
+              ><CloseIcon /></button>
+            </div>
+          )
+        })}
+        {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingLeft: 4 }}>No artifacts</span>}
       </div>
 
       {/* Content */}

@@ -100,7 +100,7 @@
     resize: none;
     font-family: inherit;
     background: transparent;
-    min-height: 80px;
+    min-height: 90px;
     overflow-y: auto;
   }
   .ai-input-box textarea::placeholder { color: #767676; }
@@ -228,7 +228,7 @@
     width: 28px; height: 28px; border-radius: 6px;
     flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    color: #514f49;
+    color: #2e2c28;
     transition: background 0.12s, color 0.12s;
   }
   .sbi-icon svg { display: block; }
@@ -322,6 +322,9 @@
   }
 
   /* Thinking dots */
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  @keyframes progress-indeterminate { 0%{transform:translateX(-100%) scaleX(0.3)} 50%{transform:translateX(30%) scaleX(0.6)} 100%{transform:translateX(100%) scaleX(0.3)} }
   @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
   .thinking-dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: #999; animation: blink 1.2s infinite; }
   .thinking-dot:nth-child(2) { animation-delay: 0.2s; }

@@ -257,6 +257,7 @@ export default function ChangeAnalysis({ filter }) {
   const filteredChanges = filter === 'last-24h'
     ? CHANGES.filter(c => c.timestamp >= '2026-04-05')
     : CHANGES
+  const deviceCount = new Set(filteredChanges.map(change => change.device)).size
   const timeLabel = filter === 'last-24h' ? 'Last 24 hours' : 'Last 7 days'
   const isResizing = useRef(false)
   const startData = useRef({})
@@ -317,14 +318,16 @@ export default function ChangeAnalysis({ filter }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Table header */}
         <div style={{ padding: '14px 20px 10px', borderBottom: '1px solid #e8e8e8', flexShrink: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>{filteredChanges.length} Change Events</div>
+          <div style={{ fontSize: 13, fontWeight: 400, color: '#111' }}>
+            {filteredChanges.length} change events across {deviceCount} devices
+          </div>
         </div>
 
         {/* Column headers */}
         <div style={{ display: 'grid', gridTemplateColumns: COLS, padding: '6px 20px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', flexShrink: 0 }}>
           {[
             { key: 'device', label: 'DEVICE' },
-            { key: 'type', label: 'TYPE' },
+            { key: 'type', label: 'CHANGE TYPE' },
             { key: 'description', label: 'DESCRIPTION' },
             { key: 'timestamp', label: 'TIMESTAMP' },
           ].map(col => (
@@ -333,7 +336,7 @@ export default function ChangeAnalysis({ filter }) {
               onClick={() => handleSort(col.key)}
               style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', userSelect: 'none', paddingRight: col.key === 'description' ? 24 : 0 }}
             >
-              <span style={{ fontSize: 11, fontWeight: 500, color: sortKey === col.key ? '#333' : '#888' }}>{col.label}</span>
+              <span style={{ fontSize: 11.5, fontWeight: 500, color: sortKey === col.key ? '#333' : '#888' }}>{col.label}</span>
               <SortIcon active={sortKey === col.key} dir={sortDir} />
             </div>
           ))}
@@ -363,10 +366,10 @@ export default function ChangeAnalysis({ filter }) {
                 onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
               >
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#111', paddingRight: 12 }}>{change.device}</div>
-                <div style={{ fontSize: 11, color: '#555', paddingRight: 12 }}>{change.type}</div>
+                <div style={{ fontSize: 12, fontWeight: 400, color: '#111', paddingRight: 12 }}>{change.device}</div>
+                <div style={{ fontSize: 12, color: '#555', paddingRight: 12 }}>{change.type}</div>
                 <div style={{ fontSize: 12, color: '#333', paddingRight: 24 }}>{change.description}</div>
-                <div style={{ fontSize: 11, color: '#666' }}>{change.timestamp}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>{change.timestamp}</div>
               </div>
             )
           })}

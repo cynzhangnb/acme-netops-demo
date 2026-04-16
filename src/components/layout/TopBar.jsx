@@ -130,10 +130,15 @@ export default function TopBar({ onGoHome, onGoNetwork, activeView }) {
         </div>
         <div
           style={{ fontSize: 13, fontWeight: 600, color: '#111', display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '3px 6px', borderRadius: 4 }}
-          onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          onMouseEnter={e => {
+            e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#4b5563'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#111'
+          }}
         >
-          ACME NetOps <ChevronDownIcon />
+          <span data-role="brand-name" style={{ transition: 'color 0.12s' }}>ACME NetOps</span>
+          <ChevronDownIcon />
         </div>
       </div>
 

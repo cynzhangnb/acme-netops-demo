@@ -11,7 +11,7 @@ Voice traffic degradation is most likely caused by a recent BGP policy change on
 - BGP policy updated on Core-Router-2 (~2 hours ago), modifying route preference for voice traffic
 - Static route updated for 10.8.3.0/24, changing next-hop selection
 
-→ View Change Analysis
+← View Changes
 
 ### Routing inconsistency
 - Route to 10.8.3.0/24 differs from baseline snapshot
@@ -65,7 +65,7 @@ const RECENT_CHANGES_CONTENT = `**8 configuration changes detected** in the last
 - **DS-BOS-03** — OSPF hello interval changed from 10s → 5s on Ethernet0/1
 - **ER-BOS-07** — QoS policy \`WAN-QOS\` updated; voice class CIR reduced from 4096000 to 2048000
 
-→ View Change Analysis`
+← View Changes`
 
 const CHANGES_24H_CONTENT = `Filtered to last 24 hours — **5 configuration changes** detected.
 
@@ -75,7 +75,7 @@ const CHANGES_24H_CONTENT = `Filtered to last 24 hours — **5 configuration cha
 - **DS-BOS-03** — OSPF hello interval changed from 10s → 5s on Ethernet0/1
 - **ER-BOS-07** — QoS policy \`WAN-QOS\` updated; voice class CIR reduced from 4096000 to 2048000
 
-→ View Change Analysis`
+← View Changes`
 
 const QOS_CIR_CONTENT = `**ER-BOS-07**, **DS-BOS-03**, and **AS-BOS-03** have voice CIR below 4,096,000. Expand any row to see the relevant configuration.`
 
@@ -98,7 +98,7 @@ const TORONTO_BGP_CONTENT = `**2 BGP policy changes detected** in Toronto in the
 - **TR-TOR-CR-01** — BGP route-policy updated; local-preference lowered from 200 → 150 on peer 172.16.4.2
 - **TR-TOR-CR-02** — BGP neighbor policy modified; inbound route filter updated for AS65001
 
-→ View Change Analysis`
+← View Changes`
 
 const BGP_DESIGN_CONTENT = `Displaying BGP topology for the current network
 
@@ -329,13 +329,9 @@ export const responseRegistry = [
     response: {
       content: EXPLORE_RESPONSE_CONTENT,
       artifactType: 'topology',
-      artifactLabel: 'Boston data center map',
+      artifactLabel: 'Boston Network',
       artifactDataKey: 'boston-full',
     },
-    sideEffects: [
-      { type: 'triggerSplitView' },
-      { type: 'setTopologyHighlight', value: null },
-    ],
   },
   {
     id: 'boston-topology',
@@ -344,13 +340,31 @@ export const responseRegistry = [
     response: {
       content: EXPLORE_RESPONSE_CONTENT,
       artifactType: 'topology',
-      artifactLabel: 'Boston data center map',
+      artifactLabel: 'Boston Network',
       artifactDataKey: 'boston-full',
     },
-    sideEffects: [
-      { type: 'triggerSplitView' },
-      { type: 'setTopologyHighlight', value: null },
-    ],
+  },
+  {
+    id: 'show-network-topology',
+    keywords: ['show network topology'],
+    priority: 10,
+    response: {
+      content: EXPLORE_RESPONSE_CONTENT,
+      artifactType: 'topology',
+      artifactLabel: 'Boston Network',
+      artifactDataKey: 'boston-full',
+    },
+  },
+  {
+    id: 'network-topology',
+    keywords: ['network topology'],
+    priority: 9,
+    response: {
+      content: EXPLORE_RESPONSE_CONTENT,
+      artifactType: 'topology',
+      artifactLabel: 'Boston Network',
+      artifactDataKey: 'boston-full',
+    },
   },
   {
     id: 'traffic-chart',
@@ -501,13 +515,9 @@ Running discovery scan across Boston IP ranges…
 **Missing since last scan:** 0 devices
 **State changes:** DS-BOS-04 moved to degraded (32 min ago)`,
       artifactType: 'topology',
-      artifactLabel: 'Boston data center map',
+      artifactLabel: 'Boston Network',
       artifactDataKey: 'boston-full',
     },
-    sideEffects: [
-      { type: 'triggerSplitView' },
-      { type: 'setTopologyHighlight', value: null },
-    ],
   },
   {
     id: 'intent',

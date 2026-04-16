@@ -44,10 +44,10 @@ export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHigh
           label: response.artifactLabel,
           dataKey: response.artifactDataKey,
         }
-        if (response.artifactType === 'topology' || response.artifactType === 'changesMap') {
+        if (response.artifactType === 'changesMap') {
           onAddArtifact(artifactRef)
         }
-        // chart/table stay inline until user saves them
+        // topology/chart/table stay inline as a tile — user clicks to open
       }
 
       const aiMsg = {

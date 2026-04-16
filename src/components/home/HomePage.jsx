@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import InputArea from '../workspace/InputArea'
 import { NETWORK_TEMPLATE } from '../workspace/SlashCommandMenu'
 import AIWorkspace from '../workspace/AIWorkspace'
@@ -175,14 +175,21 @@ const SECOND_LAYER = {
     { label: 'Get device info',               prompt: 'Show me device details for US-BOS-R1' },
     { label: 'Show recent device health',     prompt: 'Show me the recent health status of devices in my network' },
   ],
+  'Review Changes': [
+    { label: 'Changes in the last 24 hours',  prompt: 'What configuration changes happened in the last 24 hours?' },
+    { label: 'Changes since last baseline',   prompt: 'Show configuration changes since the last baseline snapshot' },
+    { label: 'Changes by protocol or type',   prompt: 'Show configuration changes for a specific protocol or configuration type (e.g. BGP, routing, ACL)' },
+  ],
 }
 
-export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0, onSessionNameChange, restoredSession, currentSessionName }) {
+export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0, onSessionNameChange, restoredSession, currentSessionName, currentSessionListId = null, onEnterMapSession, onShowInventory, onReviewChange, sessions = [], onOpenSession, onDeleteSession, onGoHome, showQuickInsights = true, externalArtifact = null }) {
   const [homeInput, setHomeInput] = useState('')
   const [activeShortcut, setActiveShortcut] = useState(null)
   const [hoverPrompt, setHoverPrompt] = useState(null)
   const [insightWidth, setInsightWidth] = useState(380)
+  const [insightPaneVisible, setInsightPaneVisible] = useState(true)
   const isDragging = useRef(false)
+  const shortcutMenuRef = useRef(null)
 
   const handleResizeStart = useCallback((e) => {
     e.preventDefault()
@@ -209,6 +216,19 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
     window.addEventListener('mouseup', onUp)
   }, [insightWidth])
 
+  useEffect(() => {
+    if (!activeShortcut) return
+
+    function handlePointerDown(event) {
+      if (shortcutMenuRef.current?.contains(event.target)) return
+      setActiveShortcut(null)
+      setHoverPrompt(null)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    return () => document.removeEventListener('mousedown', handlePointerDown)
+  }, [activeShortcut])
+
   // ── Active session: render AIWorkspace inline, full-height ──────────────
   if (sessionKey > 0) {
     return (
@@ -217,9 +237,15 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
           key={sessionKey}
           initialPrompt={initialPrompt}
           onSessionNameChange={onSessionNameChange}
-          onNew={() => onStartAI('')}
+          onNew={() => onGoHome?.()}
+          onClose={onGoHome}
           restoredSession={restoredSession}
           currentSessionName={currentSessionName}
+          currentSessionListId={currentSessionListId}
+          sessions={sessions}
+          onSwitchSession={onOpenSession}
+          onDeleteSession={onDeleteSession}
+          externalArtifact={externalArtifact}
         />
       </div>
     )
@@ -232,7 +258,6 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
     } else {
       // no second layer — pre-fill directly
       if (label === 'Diagnose Issues') setHomeInput('I have a voice issue from 10.8.1.4 to 10.8.3.134. Can you help?')
-      if (label === 'Review Changes')  setHomeInput('Show recent configuration changes in my network')
       // preserved for future use:
       if (label === 'Get Device Info') setHomeInput('Show me device details for US-BOS-R1')
     }
@@ -260,8 +285,11 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        padding: '7% 48px 40px',
+        position: 'relative',
+        padding: '12% 48px 40px',
         minWidth: 0,
+        overflow: 'hidden',
+        boxSizing: 'border-box',
       }}>
         <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
@@ -306,6 +334,10 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Input + Shortcuts */}
+        <div style={{ width: '100%', maxWidth: 660, display: 'flex', flexDirection: 'column', gap: 24, marginTop: 32 }}>
 
           {/* Input */}
           <div>
@@ -327,19 +359,25 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                 onStartAI(sent)
               }}
               isStreaming={false}
-              placeholder="Ask about your network, or choose a topic below"
+              placeholder="Ask about your network, / for shortcuts, @ to reference"
               initialValue={hoverPrompt ?? homeInput}
               onValueChange={v => { setHoverPrompt(null); setHomeInput(v) }}
-              maxExpandHeight={120}
+              maxExpandHeight={130}
               commandSet="home"
               disableAutoResize={hoverPrompt !== null}
+              onCommand={(id, text) => {
+                if (id === 'new-map')             onEnterMapSession?.()
+                else if (id === 'show-inventory') onShowInventory?.()
+                else if (id === 'review-change')  onReviewChange?.()
+                else                              onStartAI(text)
+              }}
             />
           </div>
 
           {/* Shortcut area — layer 1 or layer 2 */}
           {activeShortcut ? (
             /* ── Second layer: drill-down prompts ── */
-            <div style={{ border: '1px solid #e2e2e2', borderRadius: 12, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div ref={shortcutMenuRef} style={{ border: '1px solid #e2e2e2', borderRadius: 12, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               {/* Header — click anywhere to go back */}
               <div
                 onClick={() => { setActiveShortcut(null); setHoverPrompt(null) }}
@@ -347,8 +385,8 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                 onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#767676" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                <span style={{ fontSize: 12, fontWeight: 400, color: '#767676', lineHeight: 1 }}>{activeShortcut}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <span style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1 }}>{activeShortcut}</span>
               </div>
               {/* Prompt rows */}
               {SECOND_LAYER[activeShortcut].map(({ label, prompt }, i) => {
@@ -367,8 +405,10 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                       fontSize: 13, color: '#222', lineHeight: 1.4,
                       transition: 'background 0.12s',
                     }}
+                    onMouseOver={e => { e.currentTarget.style.background = '#f7f7f7' }}
+                    onMouseOut={e => { e.currentTarget.style.background = 'transparent' }}
                     onMouseDown={e => e.currentTarget.style.background = '#efefef'}
-                    onMouseUp={e => e.currentTarget.style.background = '#f5f5f5'}
+                    onMouseUp={e => e.currentTarget.style.background = '#f7f7f7'}
                   >
                     <span>{label}</span>
                   </button>
@@ -402,65 +442,117 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
         </div>
       </div>
 
-      {/* ── Resize handle ────────────────────────────────────────────────── */}
-      <div
-        onMouseDown={handleResizeStart}
-        style={{
-          width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
-          display: 'flex', alignItems: 'stretch', justifyContent: 'center',
-        }}
-        onMouseEnter={e => e.currentTarget.querySelector('span').style.background = '#c8c8c8'}
-        onMouseLeave={e => e.currentTarget.querySelector('span').style.background = '#e8e8e8'}
-      >
-        <span style={{
-          display: 'block', width: 1, background: '#e8e8e8',
-          transition: 'background 0.15s',
-        }} />
-      </div>
+      {showQuickInsights && insightPaneVisible && (
+        <>
+          {/* ── Resize handle ────────────────────────────────────────────────── */}
+          <div
+            onMouseDown={handleResizeStart}
+            style={{
+              width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
+              display: 'flex', alignItems: 'stretch', justifyContent: 'center',
+            }}
+            onMouseEnter={e => e.currentTarget.querySelector('span').style.background = '#c8c8c8'}
+            onMouseLeave={e => e.currentTarget.querySelector('span').style.background = '#e8e8e8'}
+          >
+            <span style={{
+              display: 'block', width: 1, background: '#e8e8e8',
+              transition: 'background 0.15s',
+            }} />
+          </div>
 
-      {/* ── RIGHT: Quick Insights panel ─────────────────────────────────── */}
-      <div style={{
-        width: insightWidth,
-        flexShrink: 0,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#f6f6f7',
-      }}>
-        {/* Panel header */}
+          {/* ── RIGHT: Quick Insights panel ─────────────────────────────────── */}
+          <div style={{
+            width: insightWidth,
+            flexShrink: 0,
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#f6f6f7',
+          }}>
+            {/* Panel header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 14px 8px',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Quick Insights
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* Gear icon */}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                {/* Hide panel button */}
+                <button
+                  onClick={() => setInsightPaneVisible(false)}
+                  title="Hide panel"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 3px', borderRadius: 4, display: 'flex', alignItems: 'center', color: '#6b7280' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#333' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+                >
+                  {/* Two-panel layout icon (□□) */}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="12" y1="3" x2="12" y2="21"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Sections */}
+            <div style={{ padding: '0 10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Section title="What's New" defaultOpen={false}>
+                <WhatsNewRows />
+              </Section>
+
+              <Section title="Device Summary" defaultOpen={true}>
+                <DeviceSummaryRows />
+              </Section>
+
+              <Section title="Recent Detected Change" defaultOpen={true}>
+                <RecentChangesRows />
+              </Section>
+
+              <Section title="Network Discovery" defaultOpen={true}>
+                <NetworkDiscoveryRows />
+              </Section>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Collapsed insight strip ── */}
+      {showQuickInsights && !insightPaneVisible && (
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '12px 14px 8px',
-          flexShrink: 0,
+          width: 28, flexShrink: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          borderLeft: '1px solid #e8e8e8',
+          background: '#f6f6f7',
+          paddingTop: 10,
         }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Quick Insights
-          </span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
+          <button
+            onClick={() => setInsightPaneVisible(true)}
+            title="Show Quick Insights"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '6px 4px', borderRadius: 4,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#6b7280',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#333' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            {/* Panel-right expand icon (chevron pointing right) */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="15" y1="3" x2="15" y2="21"/>
+              <polyline points="9 9 12 12 9 15"/>
+            </svg>
+          </button>
         </div>
-
-        {/* Sections */}
-        <div style={{ padding: '0 10px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Section title="What's New" defaultOpen={false}>
-            <WhatsNewRows />
-          </Section>
-
-          <Section title="Device Summary" defaultOpen={true}>
-            <DeviceSummaryRows />
-          </Section>
-
-          <Section title="Recent Detected Change" defaultOpen={true}>
-            <RecentChangesRows />
-          </Section>
-
-          <Section title="Network Discovery" defaultOpen={true}>
-            <NetworkDiscoveryRows />
-          </Section>
-        </div>
-      </div>
+      )}
 
     </div>
   )

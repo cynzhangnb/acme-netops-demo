@@ -67,7 +67,7 @@ function ArchiveIcon() {
   )
 }
 
-export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, onClose, currentSessionName, nameOverride, onRenameSession, onArchive, sessions, onSwitchSession, canAddToCanvas = false, commandSet = 'default', onMessageAction, onDeviceClick }) {
+export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact, onOpenArtifact, onAddWidget, inputPrefill, onNew, onClose, currentSessionName, nameOverride, onRenameSession, onArchive, sessions, onSwitchSession, canAddToCanvas = false, commandSet = 'default', onMessageAction, onDeviceClick, hideHeader = false, isNarrowLayout = false }) {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const headerRef = useRef(null)
@@ -116,10 +116,10 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
   }, [showSessions, showMenu])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'inherit' }}>
 
-      {/* Session header */}
-      <div ref={headerRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 44, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+      {/* Session header — hidden when parent renders its own full-width header */}
+      {!hideHeader && <div ref={headerRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', height: 40, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
 
         {/* Left: session name */}
         {isEditingName ? (
@@ -242,7 +242,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
         {/* Sessions dropdown */}
         {showSessions && (
           <div style={{
-            position: 'absolute', top: 44, left: 0, right: 0, zIndex: 200,
+            position: 'absolute', top: 40, left: 0, right: 0, zIndex: 200,
             background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
           }}>
@@ -262,7 +262,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
           </div>
         )}
 
-      </div>
+      </div>}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}
            className="scrollbar-thin">
@@ -276,6 +276,7 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
             canAddToCanvas={canAddToCanvas}
             onAction={onMessageAction}
             onDeviceClick={onDeviceClick}
+            isNarrowLayout={isNarrowLayout}
           />
         ))}
         {isStreaming && <SkeletonMessage />}

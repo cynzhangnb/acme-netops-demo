@@ -120,11 +120,12 @@ function TableWithControls({ artifactRef, onOpenArtifact, onAddWidget, canAddToC
 }
 
 // Minimal markdown: bold, code, lists, headers, tables
-function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, saved, onSave, onAddWidget, canAddToCanvas) {
+function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, saved, onSave, onAddWidget, canAddToCanvas, isNarrowLayout = false) {
   const lines = text.split('\n')
   const out = []
   let i = 0
   let artifactPlaced = false
+  const artifactTileWidth = isNarrowLayout ? '100%' : '50%'
 
   while (i < lines.length) {
     const line = lines[i]
@@ -139,6 +140,7 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
             border: '1px solid #e4e4e4', borderRadius: 8,
             background: '#fff', overflow: 'hidden',
             marginTop: 10, marginBottom: 10,
+            width: artifactTileWidth, maxWidth: '100%',
           }}
           >
             <div
@@ -162,22 +164,24 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
       i++; continue
     }
 
-    // Inline link: → Link text
-    if (line.startsWith('→ ')) {
-      const linkText = line.slice(2)
-      const IMPLEMENTED_LINKS = ['View Change Analysis']
+    // Inline link: → Link text  or  ← Link text
+    const linkMatch = line.match(/^([→←]) (.+)$/)
+    if (linkMatch) {
+      const arrow = linkMatch[1]
+      const linkText = linkMatch[2]
+      const IMPLEMENTED_LINKS = ['View Changes']
       const isActive = IMPLEMENTED_LINKS.includes(linkText)
       out.push(
         <div key={i} style={{ fontSize: 13, fontWeight: 500, color: '#1a4fba', marginTop: 6, marginBottom: 2, cursor: isActive ? 'pointer' : 'default', display: 'inline-block' }}
           onMouseEnter={e => { if (isActive) e.currentTarget.style.textDecoration = 'underline' }}
           onMouseLeave={e => { if (isActive) e.currentTarget.style.textDecoration = 'none' }}
           onClick={() => {
-            if (linkText === 'View Change Analysis' && onOpenArtifact) {
+            if (linkText === 'View Changes' && onOpenArtifact) {
               const dataKey = artifactRef?.dataKey ?? null
               onOpenArtifact({ type: 'changeAnalysis', label: dataKey === 'last-24h' ? 'Recent Changes · Last 24h' : 'Recent Changes · Last 7 days', dataKey })
             }
           }}
-        >→ {linkText}</div>
+        >{arrow} {linkText}</div>
       )
       i++; continue
     }
@@ -276,7 +280,7 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
   // Chart artifact — header with title + icon buttons top-right, chart below
   if (artifactRef && artifactRef.type === 'chart') {
     out.push(
-      <div key="atile-chart" className="atile-chart" style={{ marginTop: 10 }}>
+      <div key="atile-chart" className="atile-chart" style={{ marginTop: 10, width: artifactTileWidth, maxWidth: '100%' }}>
         {/* Header row */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -371,7 +375,7 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
   // Table artifact — small tile with Add to canvas button
   if (artifactRef && artifactRef.type === 'table') {
     out.push(
-      <div key="atile" className="atile">
+      <div key="atile" className="atile" style={{ width: artifactTileWidth, maxWidth: '100%' }}>
         <div className="atile-hdr">
           <span style={{ color: '#aaa' }}><TableIcon /></span>
           {artifactRef.label}
@@ -393,45 +397,63 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
     )
   }
 
-  // Topology / map artifact — wide tile: clickable label + Save button
+  // Topology / map artifact tile — flat chip, no icon box background, no dividers
   if (!artifactPlaced && artifactRef && (artifactRef.type === 'topology' || artifactRef.type === 'changesMap')) {
     out.push(
       <div key="atile-map" style={{
         display: 'flex', alignItems: 'center',
-        border: '1px solid #e4e4e4', borderRadius: 10,
-        marginTop: 10, background: '#fff',
-        width: '100%', maxWidth: 560, overflow: 'hidden',
+        border: '1px solid #e2e2e2', borderRadius: 8,
+        marginTop: 10, background: '#f5f5f5',
+        overflow: 'hidden', width: artifactTileWidth, maxWidth: '100%', minWidth: 0,
       }}>
+
+        {/* Main clickable area: icon + label */}
         <div
           onClick={() => onOpenArtifact && onOpenArtifact(artifactRef)}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, cursor: 'pointer', minWidth: 0, padding: '11px 16px' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f7f7f7' }}
+          style={{
+            flex: 1, minWidth: 0,
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '0 12px', height: 36,
+            cursor: 'pointer', transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
         >
-          <span style={{ color: '#888', flexShrink: 0 }}><MapIconLg /></span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {/* Folded map icon — matches the map list in the network panel */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4a7fc1"
+            strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+            <line x1="8" y1="2" x2="8" y2="18"/>
+            <line x1="16" y1="6" x2="16" y2="22"/>
+          </svg>
+
+          <span style={{
+            fontSize: 12.5, fontWeight: 500, color: '#1a1a1a',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
             {artifactRef.label}
           </span>
         </div>
-        {!saved ? (
-          <button
-            onClick={onSave}
-            style={{
-              background: 'none', border: 'none', borderLeft: '1px solid #e4e4e4', cursor: 'pointer',
-              fontSize: 13, fontWeight: 500, color: '#333', padding: '11px 16px', flexShrink: 0, transition: 'background 0.1s, color 0.1s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f7f7f7'; e.currentTarget.style.color = '#111' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#333' }}
-          >Save</button>
-        ) : (
-          <button
-            onClick={() => onOpenArtifact && onOpenArtifact(artifactRef)}
-            style={{
-              background: 'none', border: 'none', borderLeft: '1px solid #e4e4e4', cursor: 'pointer',
-              fontSize: 13, fontWeight: 500, color: '#888', padding: '11px 16px', flexShrink: 0,
-            }}
-          >Saved ✓</button>
-        )}
+
+        {/* Right: download icon */}
+        <button
+          title="Download"
+          style={{
+            flexShrink: 0, background: 'none', border: 'none',
+            width: 32, height: 36, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#555', transition: 'background 0.12s, color 0.12s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = '#111' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
       </div>
     )
   }
@@ -492,7 +514,7 @@ function QueryResultCard({ structured, onDeviceClick }) {
   )
 }
 
-export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget, canAddToCanvas = false, onAction, onDeviceClick }) {
+export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact, onAddWidget, canAddToCanvas = false, onAction, onDeviceClick, isNarrowLayout = false }) {
   const [feedback, setFeedback] = useState(null)
   const [saved, setSaved] = useState(false)
   const [chartModal, setChartModal] = useState(false)
@@ -569,7 +591,7 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
       )}
       <div className="arow msg-fade-in">
         <div className="ai-text">
-          {renderAIContent(message.content, onOpenArtifact, message.artifactRef, onSaveArtifact, saved, handleSave, onAddWidget, canAddToCanvas)}
+          {renderAIContent(message.content, onOpenArtifact, message.artifactRef, onSaveArtifact, saved, handleSave, onAddWidget, canAddToCanvas, isNarrowLayout)}
         </div>
         {/* Feedback */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>

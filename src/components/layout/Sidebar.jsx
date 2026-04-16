@@ -1,197 +1,451 @@
 import { useState } from 'react'
 
-// Collapsed 44 px sidebar — variant-aware with icon tooltips
+/* ── Icons ──────────────────────────────────────────────────────────────── */
+
+/** Simple hamburger — shown in collapsed state to re-expand */
+function HamburgerIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round">
+      <line x1="3" y1="6"  x2="21" y2="6"  />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  )
+}
+
+/** Product logo mark — shown in expanded state */
+function LogoMark() {
+  return (
+    <div style={{
+      width: 22, height: 22, borderRadius: 6,
+      background: '#2e2e2e',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      flexShrink: 0,
+    }}>
+      <span style={{ color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>N</span>
+    </div>
+  )
+}
+
+/** Collapse icon — chevrons pointing left */
+function CollapseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="11 17 6 12 11 7"/>
+      <polyline points="18 17 13 12 18 7"/>
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5"  y1="12" x2="19" y2="12"/>
+    </svg>
+  )
+}
+function NetworkIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="2" width="8" height="5" rx="1"/>
+      <line x1="12" y1="7" x2="12" y2="11"/>
+      <line x1="4" y1="11" x2="20" y2="11"/>
+      <line x1="4"  y1="11" x2="4"  y2="16"/>
+      <line x1="12" y1="11" x2="12" y2="16"/>
+      <line x1="20" y1="11" x2="20" y2="16"/>
+      <circle cx="4"  cy="19" r="2.5"/>
+      <circle cx="12" cy="19" r="2.5"/>
+      <circle cx="20" cy="19" r="2.5"/>
+    </svg>
+  )
+}
+function InventoryIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="3" y1="9"  x2="21" y2="9"/>
+      <line x1="3" y1="15" x2="21" y2="15"/>
+      <line x1="9" y1="9"  x2="9"  y2="21"/>
+    </svg>
+  )
+}
+function DiscoveryIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8"/>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+  )
+}
+function HistoryIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <polyline points="12 7 12 12 15.5 15.5"/>
+    </svg>
+  )
+}
+function SessionIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  )
+}
+function ChevronDownIcon({ open }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ transition: 'transform 0.18s', transform: open ? 'none' : 'rotate(-90deg)', flexShrink: 0 }}>
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  )
+}
 function UserIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa"
-      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
     </svg>
   )
 }
 
-const IC = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '1.85', strokeLinecap: 'round', strokeLinejoin: 'round', vectorEffect: 'non-scaling-stroke' }
-
-function HomeIcon() {
+/* ── Tooltip bubble ─────────────────────────────────────────────────────── */
+function Tooltip({ label }) {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
-      <g transform="scale(0.75)">
-        <path
-          d="M16.6123,2.2138a1.01,1.01,0,0,0-1.2427,0L1,13.4194l1.2427,1.5717L4,13.6209V26a2.0041,2.0041,0,0,0,2,2H26a2.0037,2.0037,0,0,0,2-2V13.63L29.7573,15,31,13.4282ZM18,26H14V18h4Zm2,0V18a2.0023,2.0023,0,0,0-2-2H14a2.002,2.002,0,0,0-2,2v8H6V12.0615l10-7.79,10,7.8005V26Z"
-          fill="currentColor"
-        />
-      </g>
-    </svg>
-  )
-}
-function HistoryIcon() {
-  return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
-      <g transform="scale(0.75)">
-        <path
-          d="M16,30A14,14,0,1,1,30,16,14,14,0,0,1,16,30ZM16,4A12,12,0,1,0,28,16,12,12,0,0,0,16,4Z"
-          fill="currentColor"
-        />
-        <path
-          d="M20.59 22L15 16.41V7H17V15.58L22 20.59L20.59 22Z"
-          fill="currentColor"
-        />
-      </g>
-    </svg>
-  )
-}
-function NetworkIcon() {
-  return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
-      <g transform="scale(0.75)">
-        <path
-          d="M16,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM5,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM27,26c1.1,0,2,.9,2,2s-.9,2-2,2-2-.9-2-2,.9-2,2-2ZM6,24v-3h9v3h2v-3h9v3h2v-3c0-1.1-.9-2-2-2h-9v-3h-2v3H6c-1.1,0-2,.9-2,2v3h2ZM21.7,6.1c-.8-2.4-3.1-4.1-5.7-4.1s-4.9,1.7-5.7,4.1c-1.9.3-3.3,1.9-3.3,3.9s1.8,4,4,4h10c2.2,0,4-1.8,4-4s-1.4-3.6-3.3-3.9ZM21,12h-10c-1.1,0-2-.9-2-2s.9-2,2-2h1c0-2.2,1.8-4,4-4s4,1.8,4,4h1c1.1,0,2,.9,2,2s-.9,2-2,2Z"
-          fill="currentColor"
-        />
-      </g>
-    </svg>
-  )
-}
-function InventoryIcon() {
-  return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" aria-hidden="true" shapeRendering="geometricPrecision">
-      <g transform="translate(-0.8 -0.8) scale(0.8)">
-        <path
-          d="M24,25h-3v-3h3v3ZM29,22h-3v3h3v-3ZM24,27h-3v3h3v-3ZM29,27h-3v3h3v-3ZM20,8h-8v2h8v-2ZM17,28H6v-4h2v-2h-2v-5h2v-2h-2v-5h2v-2h-2v-4h18v15h2V4c0-1.1-.9-2-2-2H6c-1.1,0-2,.9-2,2v4h-2v2h2v5h-2v2h2v5h-2v2h2v4c0,1.1.9,2,2,2h11v-2ZM20,15h-8v2h8v-2Z"
-          fill="currentColor"
-        />
-      </g>
-    </svg>
-  )
-}
-function ChangeAnalysisIcon() {
-  return (
-    <svg width={18} height={18} viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
-      <rect x="6" y="17" width="8" height="2"/>
-      <circle cx="3" cy="18" r="1"/>
-      <circle cx="13" cy="14" r="1"/>
-      <rect x="2" y="13" width="8" height="2"/>
-      <rect x="6" y="9" width="8" height="2"/>
-      <circle cx="3" cy="10" r="1"/>
-      <path d="M30,28.6l-7.4-7.4c1.5-2,2.4-4.5,2.4-7.2c0-6.6-5.4-12-12-12C9.7,2,6.6,3.3,4.3,5.8l1.5,1.4C7.6,5.1,10.2,4,13,4c5.5,0,10,4.5,10,10s-4.5,10-10,10c-3,0-5.8-1.3-7.7-3.6l-1.5,1.3C6,24.4,9.4,26,13,26c3.2,0,6.1-1.3,8.3-3.3l7.3,7.3L30,28.6z"/>
-    </svg>
-  )
-}
-function DevicesIcon()   { return <svg {...IC}><path d="M8.5 7.5 a5 5 0 0 1 7 0"/><path d="M6 5 a8.5 8.5 0 0 1 12 0"/><rect x="5" y="11" width="14" height="7" rx="1.5"/><circle cx="8.5" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> }
-function MapsIcon()      { return <svg {...IC}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg> }
-function NoteIcon()      { return <svg {...IC}><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> }
-function RectangleIcon() { return <svg {...IC}><rect x="3" y="5" width="18" height="14" rx="1.5"/></svg> }
-function CircleIcon()    { return <svg {...IC}><circle cx="12" cy="12" r="9"/></svg> }
-function LineIcon()      { return <svg {...IC}><line x1="4" y1="12" x2="20" y2="12"/></svg> }
-function ArrowIcon()     { return <svg {...IC}><line x1="5" y1="19" x2="19" y2="5"/><polyline points="10 5 19 5 19 14"/></svg> }
-
-const ICON_MAP = {
-  home: HomeIcon, history: HistoryIcon, network: NetworkIcon,
-  'change-analysis': ChangeAnalysisIcon,
-  inventory: InventoryIcon, devices: DevicesIcon, maps: MapsIcon,
-  note: NoteIcon, rectangle: RectangleIcon, circle: CircleIcon,
-  line: LineIcon, arrow: ArrowIcon,
-}
-
-const WORKSPACE_SLOTS = [
-  { type: 'icon', id: 'home',    tooltip: 'Home',    icon: 'home'    },
-  { type: 'icon', id: 'history', tooltip: 'History', icon: 'history' },
-  { type: 'icon', id: 'network', tooltip: 'Network', icon: 'network' },
-  { type: 'divider' },
-  { type: 'placeholder' },
-  { type: 'placeholder' },
-  { type: 'placeholder' },
-]
-
-const HOME_SLOTS = [
-  { type: 'icon', id: 'home',            tooltip: 'Home',            icon: 'home'            },
-  { type: 'icon', id: 'history',         tooltip: 'History',         icon: 'history'         },
-  { type: 'divider' },
-  { type: 'icon', id: 'network',         tooltip: 'Network',         icon: 'network'         },
-  { type: 'icon', id: 'change-analysis', tooltip: 'Change Analysis', icon: 'change-analysis' },
-  { type: 'icon', id: 'inventory',       tooltip: 'Inventory',       icon: 'inventory'       },
-]
-
-const NETWORK_SLOTS = [
-  { type: 'icon', tooltip: 'Devices',   icon: 'devices'   },
-  { type: 'icon', tooltip: 'Maps',      icon: 'maps'      },
-  { type: 'divider' },
-  { type: 'icon', tooltip: 'Note',      icon: 'note'      },
-  { type: 'icon', tooltip: 'Rectangle', icon: 'rectangle' },
-  { type: 'icon', tooltip: 'Circle',    icon: 'circle'    },
-  { type: 'icon', tooltip: 'Line',      icon: 'line'      },
-  { type: 'icon', tooltip: 'Arrow',     icon: 'arrow'     },
-]
-
-function SidebarIcon({ tooltip, iconName, active, onClick }) {
-  const Icon = ICON_MAP[iconName]
-  const [hovered, setHovered] = useState(false)
-  const iconBg = active ? '#ece9e2' : hovered ? '#f0ede7' : 'transparent'
-  const iconColor = '#514f49'
-
-  return (
-    <div
-      className="sbi-wrap"
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div className="sbi-icon" style={{ background: iconBg, color: iconColor }}>
-        {Icon && <Icon />}
-      </div>
-      <div className="sbi-tooltip">{tooltip}</div>
+    <div style={{
+      position: 'absolute',
+      left: 46,                /* just past the 44-px collapsed rail */
+      top: '50%', transform: 'translateY(-50%)',
+      background: '#1a1a1a', color: '#fff',
+      fontSize: 11, padding: '4px 8px',
+      borderRadius: 4, whiteSpace: 'nowrap',
+      pointerEvents: 'none', zIndex: 400,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+    }}>
+      {/* arrow */}
+      <div style={{
+        position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)',
+        width: 0, height: 0,
+        borderTop: '4px solid transparent',
+        borderBottom: '4px solid transparent',
+        borderRight: '4px solid #1a1a1a',
+      }} />
+      {label}
     </div>
   )
 }
 
-// variant: 'home' | 'workspace' | 'network'
-export default function Sidebar({ variant = 'workspace', activePanel, activeView, onIconClick }) {
-  const slots = variant === 'network' ? NETWORK_SLOTS : variant === 'home' ? HOME_SLOTS : WORKSPACE_SLOTS
+/* ── Unified nav item (works for both expanded and collapsed) ────────────── */
+function SideNavItem({ icon, label, active, onClick, expanded, showTooltip, rightSlot }) {
+  const [hovered, setHovered] = useState(false)
+  const bg = active ? '#ece9e2' : hovered ? '#f0ede7' : 'transparent'
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex', alignItems: 'center',
+          width: '100%', height: 32,
+          padding: '0 6px',
+          background: bg, border: 'none', borderRadius: 6,
+          cursor: 'pointer', textAlign: 'left',
+          transition: 'background 0.12s',
+        }}
+      >
+        {/* Icon — always at a fixed left position so it never shifts */}
+        <span style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 22, flexShrink: 0, color: '#1a1a1a',
+        }}>
+          {icon}
+        </span>
+
+        {/* Label — fades in/out; max-width clamps it so it never wraps outside */}
+        <span style={{
+          fontSize: 13, color: '#1a1a1a', fontWeight: 400,
+          whiteSpace: 'nowrap', overflow: 'hidden',
+          maxWidth: expanded ? 160 : 0,
+          opacity: expanded ? 1 : 0,
+          marginLeft: expanded ? 7 : 0,
+          transition: 'max-width 0.22s ease, opacity 0.16s ease, margin-left 0.22s ease',
+          lineHeight: 1,
+        }}>
+          {label}
+        </span>
+
+        {/* Right slot (e.g. chevron) — fades when collapsed */}
+        {rightSlot && (
+          <span style={{
+            marginLeft: 'auto', paddingLeft: 4, flexShrink: 0,
+            opacity: expanded ? 1 : 0,
+            transition: 'opacity 0.16s ease',
+          }}>
+            {rightSlot}
+          </span>
+        )}
+      </button>
+
+      {/* Tooltip — only when collapsed, not during animation */}
+      {showTooltip && hovered && <Tooltip label={label} />}
+    </div>
+  )
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+export default function Sidebar({
+  expanded,
+  onToggle,
+  onNew,
+  onGoHome,
+  onGoNetwork,
+  networkActive,
+  onGoInventory,
+  inventoryActive,
+  sessions = [],
+  currentSessionName,
+  activeSessionListId = null,
+  onSelectSession,
+  onShowHistory,
+  historyActive,
+}) {
+  const [sessionsOpen, setSessionsOpen] = useState(true)
+  const [hoveredSessionId, setHoveredSessionId] = useState(null)
+  /* During the width animation we keep overflow:hidden so labels don't bleed.
+     After the transition settles, we switch to overflow:visible so tooltips
+     can escape the 44-px rail. */
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  function handleToggle() {
+    setIsAnimating(true)
+    onToggle()
+    setTimeout(() => setIsAnimating(false), 260)
+  }
+
+  /* Tooltips are only meaningful when the sidebar is collapsed and static */
+  const showTooltip = !expanded && !isAnimating
+
   return (
     <aside style={{
-      width: 44, flexShrink: 0, height: '100%',
+      width: expanded ? 220 : 44,
+      flexShrink: 0, height: '100%',
       background: '#fafafa', borderRight: '1px solid #ebebeb',
       display: 'flex', flexDirection: 'column',
+      /* clip labels during animation; let tooltips overflow when static */
+      overflow: isAnimating ? 'hidden' : 'visible',
+      transition: 'width 0.22s ease',
+      /* keep the aside itself from contributing to page scroll */
+      position: 'relative',
     }}>
-      <nav style={{ flex: 1, padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {slots.map((slot, i) => {
-          if (slot.type === 'divider') {
-            return <div key="div" style={{ height: 1, background: '#dddddd', margin: '6px 10px' }} />
-          }
-          if (slot.type === 'icon') {
-            const isActive = slot.id === 'home'
-              ? activeView === 'home' && !activePanel
-              : slot.id === 'inventory' || slot.id === 'change-analysis'
-                ? activeView === slot.id
-                : activePanel === (slot.id || slot.tooltip)
-            return (
-              <SidebarIcon
-                key={slot.id || slot.tooltip}
-                tooltip={slot.tooltip}
-                iconName={slot.icon}
-                active={isActive}
-                onClick={() => onIconClick && onIconClick(slot.id || slot.tooltip)}
-              />
-            )
-          }
-          return (
-            <div key={i} style={{
-              width: 44, height: 36,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <div style={{ width: 18, height: 18, borderRadius: 3, background: '#d8d8d8' }} />
+
+      {/* ── Header: logo + brand (expanded) or hamburger (collapsed) ── */}
+      <div style={{
+        height: 40, display: 'flex', alignItems: 'center',
+        flexShrink: 0, overflow: 'hidden',
+      }}>
+        {expanded ? (
+          /* Expanded: logo mark + name + collapse button — padded to match nav items */
+          <>
+            {/* Logo + name — click navigates home */}
+            <div
+              onClick={onGoHome}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                flex: 1, minWidth: 0, cursor: 'pointer',
+                padding: '0 5px 0 11px', height: '100%',
+              }}
+              onMouseEnter={e => { e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#4b5563' }}
+              onMouseLeave={e => { e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#111' }}
+            >
+              <LogoMark />
+              <span
+                data-role="brand-name"
+                style={{
+                fontSize: 13, fontWeight: 600, color: '#111',
+                letterSpacing: '-0.01em', whiteSpace: 'nowrap',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                lineHeight: 1,
+                transition: 'color 0.12s',
+              }}
+              >
+                ACME NetOps
+              </span>
             </div>
-          )
-        })}
-      </nav>
-      <div style={{ padding: '8px 0', borderTop: '1px solid #ebebeb' }}>
-        <div style={{
-          width: 44, height: 34,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'default',
-        }}>
+
+            {/* Collapse button — right side */}
+            <button
+              onClick={handleToggle}
+              title="Collapse sidebar"
+              style={{
+                flexShrink: 0, width: 28, height: 28, marginRight: 4,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#666', borderRadius: 5,
+                transition: 'background 0.12s, color 0.12s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#ebebeb'; e.currentTarget.style.color = '#222' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#666' }}
+            >
+              <CollapseIcon />
+            </button>
+          </>
+        ) : (
+          /* Collapsed: hamburger fills the full 44px header — same center as nav icons */
+          <button
+            onClick={handleToggle}
+            title="Expand sidebar"
+            style={{
+              width: 44, height: 40, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#333',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f0ede7'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >
+            <HamburgerIcon />
+          </button>
+        )}
+      </div>
+
+      {/* ── Nav items ─────────────────────────────────────────────────── */}
+      <div style={{ padding: '8px 5px 4px', display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
+        <SideNavItem
+          icon={<PlusIcon />}
+          label="New Session"
+          onClick={onNew}
+          expanded={expanded}
+          showTooltip={showTooltip}
+        />
+        <SideNavItem
+          icon={<NetworkIcon />}
+          label="Network"
+          onClick={onGoNetwork}
+          active={networkActive}
+          expanded={expanded}
+          showTooltip={showTooltip}
+        />
+        <SideNavItem
+          icon={<InventoryIcon />}
+          label="Inventory"
+          onClick={onGoInventory}
+          active={inventoryActive}
+          expanded={expanded}
+          showTooltip={showTooltip}
+        />
+        <SideNavItem
+          icon={<DiscoveryIcon />}
+          label="Discovery"
+          onClick={() => {}}
+          expanded={expanded}
+          showTooltip={showTooltip}
+        />
+      </div>
+
+      {/* divider */}
+      <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px', flexShrink: 0 }} />
+
+      {/* ── Sessions section ──────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+
+        {/* When collapsed: history icon button */}
+        {!expanded && (
+          <div style={{ padding: '0 5px', flexShrink: 0 }}>
+            <SideNavItem
+              icon={<HistoryIcon />}
+              label="Sessions"
+              active={historyActive}
+              onClick={onShowHistory}
+              expanded={false}
+              showTooltip={showTooltip}
+            />
+          </div>
+        )}
+
+        {/* When expanded: plain section label + session list */}
+        {expanded && (
+          <>
+            {/* Section label */}
+            <div
+              onClick={() => setSessionsOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '6px 11px 4px',
+                cursor: 'pointer', flexShrink: 0,
+              }}
+            >
+              <span style={{
+                fontSize: 10.5, fontWeight: 500, color: '#8a8a8a',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}>
+                Sessions
+              </span>
+              <ChevronDownIcon open={sessionsOpen} />
+            </div>
+
+            {/* Session list */}
+            {sessionsOpen && (
+              <div style={{ flex: 1, overflowY: 'auto', marginTop: 1, animation: 'fadeInMsg 0.18s ease both' }} className="scrollbar-thin">
+                {sessions
+                  .filter(s => !s.current)   /* skip the sentinel "current" entry — no duplicates */
+                  .map(s => {
+                    const isActive = s.id === activeSessionListId || (!!currentSessionName && s.name === currentSessionName && !activeSessionListId)
+                    const isInteractive = s.id === 's1' || s.id === 's2'
+                    const isHovered = hoveredSessionId === s.id && !isActive
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => {
+                          if (!isInteractive || isActive) return
+                          onSelectSession?.(s.id)
+                        }}
+                        onMouseEnter={() => setHoveredSessionId(s.id)}
+                        onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
+                        style={{
+                          padding: '5px 11px',
+                          borderRadius: 5, margin: '0 3px',
+                          background: isHovered ? '#f0ede7' : 'transparent',
+                          cursor: isActive ? 'default' : 'pointer',
+                          transition: 'background 0.1s',
+                          display: 'flex', alignItems: 'center', gap: 6,
+                        }}
+                      >
+                        {isActive && (
+                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
+                        )}
+                        <span style={{
+                          fontSize: 12, color: isActive ? '#111' : '#333',
+                          fontWeight: isActive ? 500 : 400,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          lineHeight: 1.4, display: 'block',
+                        }}>
+                          {s.name}
+                        </span>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Footer ────────────────────────────────────────────────────── */}
+      <div style={{ padding: '8px 0', borderTop: '1px solid #ebebeb', flexShrink: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32 }}>
           <UserIcon />
         </div>
       </div>

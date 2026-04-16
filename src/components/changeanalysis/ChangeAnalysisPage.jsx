@@ -704,7 +704,7 @@ function AiFilterBanner({ aiFilter, onClear, onSaveAsFilter }) {
 // Columns: Device Name | Device Type | Change Category | Timestamp
 const COLS = 'repeat(4, 1fr)'
 
-export default function ChangeAnalysisPage() {
+export default function ChangeAnalysisPage({ embedded = false }) {
   const [timeRange,     setTimeRange]     = useState('24h')
   const [deviceTypes,   setDeviceTypes]   = useState([])
   const [categories,    setCategories]    = useState([])
@@ -713,10 +713,11 @@ export default function ChangeAnalysisPage() {
   const [sortDir,       setSortDir]       = useState('desc')
   const [selected,      setSelected]      = useState(null)
   const [diffH,         setDiffH]         = useState(null)
-  const [aiOpen,        setAiOpen]        = useState(false)
-  const [aiPaneW,       setAiPaneW]       = useState(340)
-  const [mapTabOpen,    setMapTabOpen]    = useState(false)
-  const [activeTab,     setActiveTab]     = useState('table')
+  const [aiOpen,           setAiOpen]           = useState(false)
+  const [aiPaneW,          setAiPaneW]          = useState(340)
+  const [mapTabOpen,       setMapTabOpen]       = useState(false)
+  const [activeTab,        setActiveTab]        = useState('table')
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
   const containerRef    = useRef(null)
   const searchRef       = useRef(null)
   const isResizing      = useRef(false)   // vertical (diff)
@@ -823,16 +824,69 @@ export default function ChangeAnalysisPage() {
 
   function handleOpenArtifact(artifactRef) {
     if (artifactRef.type === 'changesMap') {
-      setMapTabOpen(true)
-      setActiveTab('map')
+      setShowWorkspaceModal(true)
     }
   }
 
   return (
     <div style={{ display: 'flex', height: '100%', position: 'relative', overflow: 'hidden' }}>
 
+      {/* ── Enter Workspace Confirmation Modal ── */}
+      {showWorkspaceModal && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.25)',
+          zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowWorkspaceModal(false)}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: 440, background: '#fff',
+              borderRadius: 10,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              padding: '28px 28px 22px',
+              display: 'flex', flexDirection: 'column', gap: 16,
+            }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
+              Enter AI Workspace
+            </div>
+            <div style={{ fontSize: 13, color: '#555', lineHeight: 1.6 }}>
+              The layout will switch to workspace tab view, opening the <strong>Changed Devices</strong> map in a new tab alongside the Change Analysis table.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+              <button
+                onClick={() => setShowWorkspaceModal(false)}
+                style={{
+                  fontSize: 13, color: '#555', background: '#fff',
+                  border: '1px solid #ddd', borderRadius: 6,
+                  padding: '7px 16px', cursor: 'pointer', fontWeight: 500,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setMapTabOpen(true); setActiveTab('map'); setShowWorkspaceModal(false) }}
+                style={{
+                  fontSize: 13, color: '#fff', background: '#3b82f6',
+                  border: 'none', borderRadius: 6,
+                  padding: '7px 16px', cursor: 'pointer', fontWeight: 500,
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#2563eb' }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#3b82f6' }}
+              >
+                Enter Workspace
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── AI Side Pane + vertical sash ── */}
-      {aiOpen && <>
+      {!embedded && aiOpen && <>
         <AISidePane
           onClose={() => setAiOpen(false)}
           width={aiPaneW}
@@ -851,7 +905,7 @@ export default function ChangeAnalysisPage() {
       </>}
 
       {/* ── Floating AI button — only when pane is closed ── */}
-      {!aiOpen && <AIFloatingButton onClick={() => setAiOpen(true)} />}
+      {!embedded && !aiOpen && <AIFloatingButton onClick={() => setAiOpen(true)} />}
 
     <div data-resizable="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#fff', overflow: 'hidden' }}>
 
@@ -892,16 +946,18 @@ export default function ChangeAnalysisPage() {
           </div>
         </div>
       ) : (
-        <div style={{ padding: '16px 24px 12px', borderBottom: '1px solid #eeeeee', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-            <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
-              Change Analysis
+        <div style={{ padding: embedded ? '10px 24px' : '16px 24px 12px', borderBottom: '1px solid #eeeeee', flexShrink: 0 }}>
+          {!embedded && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+              <div style={{ fontSize: 15, fontWeight: 650, color: '#111', letterSpacing: '-0.01em' }}>
+                Change Analysis
+              </div>
+              <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
+              <div style={{ fontSize: 11.5, color: '#444' }}>
+                {new Set(filtered.map(c => c.device)).size} changed devices · {filtered.length} change events
+              </div>
             </div>
-            <div style={{ width: 1, height: 14, background: '#ccc', flexShrink: 0 }} />
-            <div style={{ fontSize: 11.5, color: '#444' }}>
-              {new Set(filtered.map(c => c.device)).size} changed devices · {filtered.length} change events
-            </div>
-          </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
             <Dropdown label="Last 24 hours" value={timeLabel} options={TIME_RANGES} onChange={setTimeRange} />
             <Dropdown label="All device types" multi={true} selected={deviceTypes} options={Object.entries(DEVICE_TYPE_LABELS).map(([v, l]) => ({ value: v, label: l }))} onChange={setDeviceTypes} />
