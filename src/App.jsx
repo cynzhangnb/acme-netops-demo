@@ -374,6 +374,7 @@ export default function App() {
       setShowHomeInsights(true)
       setInitialPrompt(prompt)
       setRestoredSession(null)
+      setExternalArtifactToOpen(null)   // clear any stale drag artifact
       setActiveSessionListId(null)
       startSession()           // reserves an ID in memory — NOT saved to history yet
       setHomeSessionKey(k => k + 1)
@@ -442,6 +443,13 @@ export default function App() {
   /* Artifact to inject into active AIWorkspace (from drag-drop while in workspace mode) */
   const [externalArtifactToOpen, setExternalArtifactToOpen] = useState(null)
 
+  /* Auto-clear after one render cycle so it's consumed exactly once */
+  useEffect(() => {
+    if (!externalArtifactToOpen) return
+    const t = setTimeout(() => setExternalArtifactToOpen(null), 200)
+    return () => clearTimeout(t)
+  }, [externalArtifactToOpen])
+
   /* Drag state forwarded from AppFrame so MapSessionWorkspace can block its AI pane */
   const [isDraggingMap, setIsDraggingMap] = useState(false)
 
@@ -487,6 +495,7 @@ export default function App() {
       setShowHomeInsights(true)
       selectSession(id)
       setInitialPrompt('')
+      setExternalArtifactToOpen(null)   // clear any stale drag artifact
       setCurrentSessionName(DEMO_SESSION_NAMES[id] || 'New Session')
       setActiveSessionListId(id)
       setHomeSessionKey(k => k + 1)

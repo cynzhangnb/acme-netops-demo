@@ -29,7 +29,7 @@ const NET_RAIL = [
 const FAKE_SESSIONS = [
   { id: 'current', name: null,              preview: '',                                              ago: 'Now',       artifacts: 0, current: true },
   { id: 's1',      name: 'Boston Network',  preview: 'Explored topology of the Boston data center',  ago: 'Just now',  artifacts: 1  },
-  { id: 's2',      name: 'Recent Configuration Changes', preview: 'Reviewed 8 configuration changes across 4 Boston devices', ago: '2h ago', artifacts: 1 },
+  { id: 's2',      name: 'Show recent configuration changes in my network', preview: 'Reviewed 8 configuration changes across 4 Boston devices', ago: '2h ago', artifacts: 1 },
   { id: 's3',      name: 'Core Router Analysis',    preview: 'Analyzed routing tables on Core-Router-01', ago: 'Yesterday', artifacts: 2  },
   { id: 's4',      name: 'Firewall Policy Review',  preview: 'Reviewed DMZ firewall ACL rules',           ago: '2d ago', artifacts: 1 },
   { id: 's5',      name: 'VLAN Segmentation',       preview: 'Mapped VLANs across distribution layer',   ago: '3d ago',  artifacts: 3  },

@@ -431,6 +431,7 @@ export default function Sidebar({
                           fontWeight: isActive ? 500 : 400,
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           lineHeight: 1.4, display: 'block',
+                          flex: 1, minWidth: 0,
                         }}>
                           {s.name}
                         </span>
