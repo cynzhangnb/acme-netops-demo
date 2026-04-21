@@ -222,14 +222,14 @@ function DiffPanel({ change }) {
   )
 }
 
-const COLS = '130px 100px 1fr 160px'
+const COLS = '130px 150px 1fr 160px'
 
 function SkeletonRow() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', padding: '7px 20px', borderBottom: '1px solid #f5f5f5' }}>
       <div style={{ height: 10, width: '70%', borderRadius: 4, background: '#ececec', animation: 'skeleton-pulse 1.4s ease-in-out infinite' }} />
       <div style={{ height: 9, width: '60%', borderRadius: 4, background: '#f0f0f0', animation: 'skeleton-pulse 1.4s ease-in-out infinite 0.08s' }} />
-      <div style={{ height: 9, width: '85%', borderRadius: 4, background: '#ececec', animation: 'skeleton-pulse 1.4s ease-in-out infinite 0.05s', marginRight: 24 }} />
+      <div style={{ height: 9, width: '85%', borderRadius: 4, background: '#ececec', animation: 'skeleton-pulse 1.4s ease-in-out infinite 0.05s', marginLeft: 12, marginRight: 24 }} />
       <div style={{ height: 9, width: '70%', borderRadius: 4, background: '#ececec', animation: 'skeleton-pulse 1.4s ease-in-out infinite 0.15s' }} />
     </div>
   )
@@ -703,7 +703,7 @@ export default function ChangeAnalysis({ filter }) {
             <div
               key={col.key}
               onClick={() => handleSort(col.key)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', userSelect: 'none', paddingRight: col.key === 'description' ? 24 : 0 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', userSelect: 'none', paddingLeft: col.key === 'description' ? 12 : 0, paddingRight: col.key === 'description' ? 24 : 0 }}
             >
               <span style={{ fontSize: 11.5, fontWeight: 500, color: sortKey === col.key ? '#333' : '#888' }}>{col.label}</span>
               <SortIcon active={sortKey === col.key} dir={sortDir} />
@@ -737,7 +737,7 @@ export default function ChangeAnalysis({ filter }) {
               >
                 <div style={{ fontSize: 12, fontWeight: 400, color: '#111', paddingRight: 12 }}>{change.device}</div>
                 <div style={{ fontSize: 12, color: '#555', paddingRight: 12 }}>{change.type}</div>
-                <div style={{ fontSize: 12, color: '#333', paddingRight: 24 }}>{change.description}</div>
+                <div style={{ fontSize: 12, color: '#333', paddingLeft: 12, paddingRight: 24 }}>{change.description}</div>
                 <div style={{ fontSize: 12, color: '#666' }}>{change.timestamp}</div>
               </div>
             )
