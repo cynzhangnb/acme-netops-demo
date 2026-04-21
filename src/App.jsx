@@ -414,19 +414,17 @@ export default function App() {
       setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
       return
     }
-    /* No active session — create one with the report pre-loaded */
+    /* No active session — navigate to workspace, then inject artifact through
+       handleOpenArtifact so the skeleton loading state always shows first */
     navigate(() => {
       setShowHomeInsights(true)
       setActiveSessionListId(null)
-      setRestoredSession({
-        messages: [],
-        artifacts: [{ id: artifactId, type: 'report', label, dataKey: id }],
-        activeArtifactId: artifactId,
-      })
+      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
       setInitialPrompt('')
       startSession()
       setHomeSessionKey(k => k + 1)
       setViewMode('workspace')
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
     })
   }, [navigate, startSession])
 
