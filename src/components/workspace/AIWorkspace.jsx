@@ -84,6 +84,21 @@ export default function AIWorkspace({
   const [inputPrefill,       setInputPrefill]       = useState('')
   const [sessionNameOverride, setSessionNameOverride] = useState(null)
 
+  /* Session is "active" (has a name, appears in history) only after first AI response.
+     Restored sessions start active; fresh ones start free-floating. */
+  const [sessionActive, setSessionActive] = useState(
+    !!(restoredSession?.messages?.length) || !!initialPrompt
+  )
+  const [sessionJustActivated, setSessionJustActivated] = useState(false)
+  const activateSession = useCallback(() => {
+    setSessionActive(prev => {
+      if (prev) return prev
+      setSessionJustActivated(true)
+      setTimeout(() => setSessionJustActivated(false), 900)
+      return true
+    })
+  }, [])
+
   const { artifacts, activeArtifactId, setActiveArtifactId, addArtifact, removeArtifact } =
     useArtifactManager(
       restoredSession?.artifacts        || [],
@@ -176,6 +191,7 @@ export default function AIWorkspace({
     onSetTopologyHighlight: handleSetHighlight,
     onSetChangesMapOverlay: setChangesMapOverlay,
     onPrefillInput:         setInputPrefill,
+    onFirstAIResponse:      activateSession,
     initialMessages:        restoredSession?.messages || [],
   })
 
@@ -285,8 +301,30 @@ export default function AIWorkspace({
         padding: '0 12px 0 8px', borderBottom: '1px solid #e8e8e8',
         background: '#fff',
       }}>
-        {/* Left: session name */}
-        {isEditingName ? (
+        {/* Left: free-floating placeholder, rename input, or session name */}
+        {!sessionActive ? (
+          /* Free-floating: quiet, intentional placeholder — clearly not a session name */
+          <div
+            className="free-floating-placeholder"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '0 10px 0 12px', height: 26, minWidth: 0,
+              userSelect: 'none',
+            }}
+            title="A session starts automatically after your first AI response"
+          >
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, opacity: 0.55 }}>
+              <path d="M6 1.5L7.2 4.8L10.5 6L7.2 7.2L6 10.5L4.8 7.2L1.5 6L4.8 4.8L6 1.5Z" fill="#378add"/>
+            </svg>
+            <span style={{
+              fontSize: 12, fontWeight: 400, color: '#9a9a9a',
+              letterSpacing: '-0.005em',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              Untitled workspace
+            </span>
+          </div>
+        ) : isEditingName ? (
           <input
             ref={nameInputRef}
             value={editValue}
@@ -314,6 +352,7 @@ export default function AIWorkspace({
             {/* Name — separate click target: opens sessions list */}
             <span
               onClick={() => { setShowSessions(s => !s); setShowMenu(false) }}
+              className={sessionJustActivated ? 'session-name-enter' : ''}
               style={{
                 fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
                 minWidth: 0, flex: '1 1 auto',
@@ -331,7 +370,10 @@ export default function AIWorkspace({
             </span>
 
             {/* Chevron — separate click target with its own dropdown anchor */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div
+              className={sessionJustActivated ? 'session-chrome-enter' : ''}
+              style={{ position: 'relative', flexShrink: 0 }}
+            >
               <button
                 onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
                 style={{

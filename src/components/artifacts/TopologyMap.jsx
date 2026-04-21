@@ -263,6 +263,42 @@ function buildNodePrompt(actionId, node) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+function SaveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M9.5 10.5H2.5C1.95 10.5 1.5 10.05 1.5 9.5V2.5C1.5 1.95 1.95 1.5 2.5 1.5H8L10.5 4V9.5C10.5 10.05 10.05 10.5 9.5 10.5Z" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M8.5 10.5V7H3.5V10.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3.5 1.5V4.5H7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function ShareIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M8 1.5L10.5 4L8 6.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M10.5 4H5C3.067 4 1.5 5.567 1.5 7.5V10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <polyline points="2,6 5,9 10,3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function CloseSmallIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  )
+}
+
 export default function TopologyMap({ highlight, widgetMode = false, onNodeAction, onClearOverlay }) {
   const containerRef = useRef(null)
   const outerRef     = useRef(null)
@@ -275,6 +311,10 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
 
   const [hoveredMenuItem, setHoveredMenuItem] = useState(null)
   const [overlayOn, setOverlayOn] = useState(true)
+
+  function handleSave() {
+    // save handled by parent toolbar
+  }
 
   // Spacebar pan
   const spaceRef     = useRef(false)
@@ -442,7 +482,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
       ref={outerRef}
       style={{
         position: 'relative', width: '100%', height: '100%', overflow: 'hidden',
-        background: widgetMode ? '#fff' : undefined,
+        background: '#fff',
         cursor: panning ? 'grabbing' : spaceDown ? 'grab' : undefined,
       }}
       onMouseDown={e => {
@@ -454,14 +494,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
         }
       }}
     >
-      {!widgetMode && <div className="dot-grid" />}
-
-      {/* Zoom toolbar — focus mode only */}
-      {!widgetMode && <div style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <button style={toolBtnStyle} onClick={() => setZoom(z => Math.min(z + 0.2, 2))}   onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ZoomInIcon /></button>
-        <button style={toolBtnStyle} onClick={() => setZoom(z => Math.max(z - 0.2, 0.5))} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ZoomOutIcon /></button>
-        <button style={toolBtnStyle} onClick={() => setZoom(1)}                            onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}><ResetIcon /></button>
-      </div>}
+      {widgetMode && <div className="dot-grid" />}
 
       {/* Legend — focus mode only */}
       {!widgetMode && isRoutingMode ? (

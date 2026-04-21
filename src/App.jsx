@@ -394,9 +394,10 @@ export default function App() {
       setActiveTabId(null)
       setCurrentSessionName('New Session')
       setActiveSessionListId(null)
+      startSession()           // reserve ID so commitSession works when AI responds
       setViewMode('map-session')
     })
-  }, [navigate])
+  }, [navigate, startSession])
 
   const enterChangeAnalysis = useCallback(() => {
     setOpenTabs(prev => prev.find(t => t.id === 'change-analysis') ? prev : [...prev, { id: 'change-analysis', label: 'Change Analysis' }])
