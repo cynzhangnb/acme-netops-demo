@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 
@@ -133,7 +133,7 @@ function PinFilledIcon() {
 }
 function UserIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa"
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
@@ -244,12 +244,57 @@ export default function Sidebar({
   pinnedIds = new Set(),
   onTogglePin,
 }) {
-  const [sessionsOpen, setSessionsOpen] = useState(true)
-  const [hoveredSessionId, setHoveredSessionId] = useState(null)
+  const [sessionsOpen,      setSessionsOpen]      = useState(true)
+  const [hoveredSessionId,  setHoveredSessionId]  = useState(null)
+  const [openMenuId,        setOpenMenuId]        = useState(null)
+  const [deleteConfirmId,   setDeleteConfirmId]   = useState(null)
+  const [editingId,         setEditingId]         = useState(null)
+  const [editValue,         setEditValue]         = useState('')
+  const [localNames,        setLocalNames]        = useState({})
+  const [deletedIds,        setDeletedIds]        = useState(new Set())
+  const [menuPos,           setMenuPos]           = useState(null)
+  const menuRef = useRef(null)
+
+  /* Close overflow menu on outside click */
+  useEffect(() => {
+    if (!openMenuId) return
+    const handler = e => {
+      const path = e.composedPath ? e.composedPath() : []
+      if (!path.includes(menuRef.current) && !menuRef.current?.contains(e.target)) {
+        setOpenMenuId(null); setDeleteConfirmId(null); setMenuPos(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenuId])
 
   function togglePin(e, id) {
     e.stopPropagation()
     onTogglePin?.(id)
+  }
+
+  function openOverflow(e, s) {
+    e.preventDefault(); e.stopPropagation()
+    if (openMenuId === s.id) { setOpenMenuId(null); setMenuPos(null); return }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setOpenMenuId(s.id); setDeleteConfirmId(null)
+  }
+
+  function startRename(s) {
+    setOpenMenuId(null); setMenuPos(null)
+    setEditingId(s.id); setEditValue(localNames[s.id] || s.name)
+  }
+
+  function confirmRename() {
+    const t = editValue.trim()
+    if (t && editingId) setLocalNames(prev => ({ ...prev, [editingId]: t }))
+    setEditingId(null)
+  }
+
+  function confirmDelete(id) {
+    setDeletedIds(prev => { const n = new Set(prev); n.add(id); return n })
+    setOpenMenuId(null); setMenuPos(null); setDeleteConfirmId(null)
   }
   /* During the width animation we keep overflow:hidden so labels don't bleed.
      After the transition settles, we switch to overflow:visible so tooltips
@@ -413,7 +458,7 @@ export default function Sidebar({
 
             {/* Session list */}
             {sessionsOpen && (() => {
-              const allSessions = sessions.filter(s => !s.current)
+              const allSessions = sessions.filter(s => !s.current && !deletedIds.has(s.id))
               const pinned  = allSessions.filter(s => pinnedIds.has(s.id))
               const recent  = allSessions.filter(s => !pinnedIds.has(s.id))
 
@@ -422,33 +467,52 @@ export default function Sidebar({
                 const isInteractive = s.id === 's1' || s.id === 's2'
                 const isHovered     = hoveredSessionId === s.id
                 const isPinned      = pinnedIds.has(s.id)
+                const isEditing     = editingId === s.id
+                const displayName   = localNames[s.id] || s.name
+                const showIcons     = isHovered || openMenuId === s.id
+
                 return (
                   <div
                     key={s.id}
-                    onClick={() => { if (!isInteractive || isActive) return; onSelectSession?.(s.id) }}
+                    onClick={() => { if (isEditing || !isInteractive || isActive) return; onSelectSession?.(s.id) }}
                     onMouseEnter={() => setHoveredSessionId(s.id)}
                     onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
                     style={{
-                      padding: '5px 6px 5px 11px',
+                      padding: '5px 4px 5px 11px',
                       borderRadius: 5, margin: '0 3px',
                       background: isHovered && !isActive ? '#f0ede7' : 'transparent',
-                      cursor: isActive ? 'default' : 'pointer',
+                      cursor: isActive || isEditing ? 'default' : 'pointer',
                       transition: 'background 0.1s',
-                      display: 'flex', alignItems: 'center', gap: 6,
+                      display: 'flex', alignItems: 'center', gap: 4,
                     }}
                   >
-                    {isActive && (
+                    {isActive && !isEditing && (
                       <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
                     )}
-                    <span style={{
-                      fontSize: 12, color: isActive ? '#111' : '#333',
-                      fontWeight: isActive ? 500 : 400,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      lineHeight: 1.4, flex: 1, minWidth: 0,
-                    }}>
-                      {s.name}
-                    </span>
-                    {/* Pin button — filled icon always visible when pinned; outline shown on hover */}
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={confirmRename}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter')  { e.preventDefault(); confirmRename() }
+                          if (e.key === 'Escape') { e.preventDefault(); setEditingId(null) }
+                        }}
+                        onClick={e => e.stopPropagation()}
+                        style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#111', border: '1px solid #c8c8c8', borderRadius: 4, padding: '1px 5px', outline: 'none', background: '#fff' }}
+                      />
+                    ) : (
+                      <span style={{
+                        fontSize: 12, color: isActive ? '#111' : '#333',
+                        fontWeight: isActive ? 500 : 400,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        lineHeight: 1.4, flex: 1, minWidth: 0,
+                      }}>
+                        {displayName}
+                      </span>
+                    )}
+                    {/* Pin */}
                     <button
                       onClick={e => togglePin(e, s.id)}
                       title={isPinned ? 'Unpin' : 'Pin session'}
@@ -456,8 +520,9 @@ export default function Sidebar({
                         flexShrink: 0, width: 20, height: 20,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
-                        color: isPinned ? '#6b7280' : '#6b7280',
-                        opacity: isPinned || isHovered ? 1 : 0,
+                        color: '#6b7280',
+                        opacity: isPinned || showIcons ? 1 : 0,
+                        pointerEvents: isPinned || showIcons ? 'auto' : 'none',
                         transition: 'opacity 0.1s, color 0.1s, background 0.1s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
@@ -465,25 +530,42 @@ export default function Sidebar({
                     >
                       {isPinned ? <PinFilledIcon /> : <PinOutlineIcon />}
                     </button>
+                    {/* Overflow (⋯) */}
+                    <button
+                      onMouseDown={e => openOverflow(e, s)}
+                      title="More options"
+                      style={{
+                        flexShrink: 0, width: 20, height: 20,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: openMenuId === s.id ? '#e0e0e0' : 'none',
+                        border: 'none', cursor: 'pointer', borderRadius: 3,
+                        color: '#6b7280',
+                        opacity: showIcons ? 1 : 0,
+                        pointerEvents: showIcons ? 'auto' : 'none',
+                        transition: 'opacity 0.1s, background 0.1s, color 0.1s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+                      </svg>
+                    </button>
                   </div>
                 )
               }
 
               return (
                 <div style={{ flex: 1, overflowY: 'auto', marginTop: 1, animation: 'fadeInMsg 0.18s ease both' }} className="scrollbar-thin">
-                  {/* Pinned section */}
                   {pinned.length > 0 && (
                     <>
                       <div style={{ padding: '4px 11px 2px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                         Pinned
                       </div>
                       {pinned.map(renderSession)}
-                      {recent.length > 0 && (
-                        <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px 4px' }} />
-                      )}
+                      {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px 4px' }} />}
                     </>
                   )}
-                  {/* Recent section */}
                   {recent.map(renderSession)}
                 </div>
               )
@@ -498,6 +580,67 @@ export default function Sidebar({
           <UserIcon />
         </div>
       </div>
+
+      {/* Session overflow menu — fixed to escape sidebar overflow */}
+      {openMenuId && menuPos && (
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed', top: menuPos.top, right: menuPos.right,
+            zIndex: 1000,
+            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 160, overflow: 'hidden',
+          }}
+        >
+          {deleteConfirmId === openMenuId ? (
+            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, color: '#222', fontWeight: 500, lineHeight: 1.4 }}>Delete this session?</div>
+              <div style={{ fontSize: 12, color: '#888', lineHeight: 1.4 }}>This action cannot be undone.</div>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setDeleteConfirmId(null) }}
+                  style={{ padding: '5px 12px', border: '1px solid #e0e0e0', borderRadius: 6, background: '#fff', fontSize: 12, color: '#555', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                >Cancel</button>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); confirmDelete(openMenuId) }}
+                  style={{ padding: '5px 12px', border: 'none', borderRadius: 6, background: '#d32f2f', fontSize: 12, color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#b71c1c' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#d32f2f' }}
+                >Delete</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const s = sessions.find(x => x.id === openMenuId); if (s) startRename(s) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Rename
+              </div>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setDeleteConfirmId(openMenuId) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#d32f2f', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+                Delete
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </aside>
   )
 }

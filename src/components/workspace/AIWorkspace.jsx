@@ -120,12 +120,21 @@ export default function AIWorkspace({
   /* ── Session header state ──────────────────────────────────────────────── */
   const [isEditingName,   setIsEditingName]   = useState(false)
   const [editValue,       setEditValue]       = useState('')
-  const [showMenu,        setShowMenu]        = useState(false)
-  const [showSessions,    setShowSessions]    = useState(false)
+  const [showMenu,           setShowMenu]           = useState(false)
+  const [showDeleteConfirm,  setShowDeleteConfirm]  = useState(false)
+  const [showSessions,       setShowSessions]       = useState(false)
   const [nameAreaHovered, setNameAreaHovered] = useState(false)
 
-  const [hoveredSessionId, setHoveredSessionId] = useState(null)
-  const [pinnedSessionIds, setPinnedSessionIds] = useState(new Set())
+  const [hoveredSessionId,    setHoveredSessionId]    = useState(null)
+  const [pinnedSessionIds,    setPinnedSessionIds]    = useState(new Set())
+  const [sessionMenuOpenId,   setSessionMenuOpenId]   = useState(null)
+  const [sessionDelConfirmId, setSessionDelConfirmId] = useState(null)
+  const [sessionEditingId,    setSessionEditingId]    = useState(null)
+  const [sessionEditValue,    setSessionEditValue]    = useState('')
+  const [sessionLocalNames,   setSessionLocalNames]   = useState({})
+  const [sessionDeletedIds,   setSessionDeletedIds]   = useState(new Set())
+  const [sessionMenuPos,      setSessionMenuPos]      = useState(null)
+
   function toggleSessionPin(id) {
     setPinnedSessionIds(prev => {
       const next = new Set(prev)
@@ -133,8 +142,9 @@ export default function AIWorkspace({
       return next
     })
   }
-  const headerRef    = useRef(null)
-  const nameInputRef = useRef(null)
+  const headerRef      = useRef(null)
+  const nameInputRef   = useRef(null)
+  const sessionMenuRef = useRef(null)
 
   /* ── Callbacks ─────────────────────────────────────────────────────────── */
   const handleAddWidget = useCallback((artifactRef) => {
@@ -248,6 +258,7 @@ export default function AIWorkspace({
     setEditValue(sessionName)
     setIsEditingName(true)
     setShowMenu(false)
+    setShowDeleteConfirm(false)
   }
   function confirmHeaderEdit() {
     const t = editValue.trim()
@@ -262,14 +273,35 @@ export default function AIWorkspace({
   useEffect(() => {
     if (!showMenu && !showSessions) return
     const handler = e => {
-      if (!headerRef.current?.contains(e.target)) {
+      // Use composedPath() so the check works even if React has already removed
+      // the clicked element from the DOM (e.g. the Delete menu item) before this
+      // document-level handler fires.
+      const path = e.composedPath ? e.composedPath() : []
+      const inside = path.includes(headerRef.current) || headerRef.current?.contains(e.target)
+      if (!inside) {
         setShowMenu(false)
+        setShowDeleteConfirm(false)
         setShowSessions(false)
+        setSessionMenuOpenId(null)
+        setSessionMenuPos(null)
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [showMenu, showSessions])
+
+  /* Close session overflow menu on outside click */
+  useEffect(() => {
+    if (!sessionMenuOpenId) return
+    const handler = e => {
+      const path = e.composedPath ? e.composedPath() : []
+      if (!path.includes(sessionMenuRef.current) && !sessionMenuRef.current?.contains(e.target)) {
+        setSessionMenuOpenId(null); setSessionDelConfirmId(null); setSessionMenuPos(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [sessionMenuOpenId])
 
   /* ── Sash drag (resize AI pane width) ─────────────────────────────────── */
   function handleSashMouseDown(e) {
@@ -349,7 +381,7 @@ export default function AIWorkspace({
 
             {/* Shared hover wrapper */}
             <div
-              style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, maxWidth: '40%' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 120, maxWidth: '70%' }}
               onMouseEnter={() => setNameAreaHovered(true)}
               onMouseLeave={() => setNameAreaHovered(false)}
             >
@@ -377,7 +409,7 @@ export default function AIWorkspace({
               style={{ position: 'relative', flexShrink: 0 }}
             >
               <button
-                onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
+                onClick={e => { e.stopPropagation(); setShowMenu(m => { if (m) setShowDeleteConfirm(false); return !m }); setShowSessions(false) }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   height: 26, padding: '0 5px', border: 'none',
@@ -395,24 +427,54 @@ export default function AIWorkspace({
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 300,
                   background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 140,
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 180,
                 }}>
-                  <div
-                    onMouseDown={e => { e.preventDefault(); startHeaderEdit() }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#222', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <RenameIcon /> Rename
-                  </div>
-                  <div
-                    onMouseDown={e => { e.preventDefault(); onNew?.(); setShowMenu(false) }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#d32f2f', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    <ArchiveIcon /> Delete
-                  </div>
+                  {showDeleteConfirm ? (
+                    /* ── Confirmation state ── */
+                    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ fontSize: 13, color: '#222', fontWeight: 500, lineHeight: 1.4 }}>
+                        Delete this session?
+                      </div>
+                      <div style={{ fontSize: 12, color: '#888', lineHeight: 1.4 }}>
+                        This action cannot be undone.
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        <button
+                          onMouseDown={e => { e.preventDefault(); setShowDeleteConfirm(false) }}
+                          style={{ padding: '5px 12px', border: '1px solid #e0e0e0', borderRadius: 6, background: '#fff', fontSize: 12, color: '#555', cursor: 'pointer', fontWeight: 500 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                        >Cancel</button>
+                        <button
+                          onMouseDown={e => { e.preventDefault(); onNew?.(); setShowMenu(false); setShowDeleteConfirm(false) }}
+                          style={{ padding: '5px 12px', border: 'none', borderRadius: 6, background: '#d32f2f', fontSize: 12, color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#b71c1c' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#d32f2f' }}
+                        >Delete</button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Normal menu state ── */
+                    <>
+                      <div
+                        onMouseDown={e => { e.preventDefault(); startHeaderEdit() }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <RenameIcon /> Rename
+                      </div>
+                      <div
+                        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setShowDeleteConfirm(true) }}
+                        onClick={e => { e.preventDefault(); e.stopPropagation() }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#d32f2f', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <ArchiveIcon /> Delete
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -423,7 +485,7 @@ export default function AIWorkspace({
         {/* Sessions switcher dropdown — anchored to full header width */}
         {showSessions && (
           <div style={{
-            position: 'absolute', top: 40, left: 0, minWidth: 260, maxWidth: 360, zIndex: 300,
+            position: 'absolute', top: 40, left: 8, minWidth: 300, maxWidth: 380, zIndex: 300,
             background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
           }}>
@@ -432,6 +494,7 @@ export default function AIWorkspace({
               const seenIds = new Set(); const seenNames = new Set()
               const sessionItems = sessions.filter(s => {
                 if (s.current) return false
+                if (sessionDeletedIds.has(s.id)) return false
                 if (seenIds.has(s.id)) return false
                 if (s.name && seenNames.has(s.name)) return false
                 seenIds.add(s.id); if (s.name) seenNames.add(s.name)
@@ -446,12 +509,24 @@ export default function AIWorkspace({
                 const isCurrent     = s.id === currentId
                 const isPinned      = pinnedSessionIds.has(s.id)
                 const isHovered     = hoveredSessionId === s.id
+                const isEditing     = sessionEditingId === s.id
+                const displayName   = sessionLocalNames[s.id] || (isCurrent ? sessionName : s.name)
+
+                function openSessionOverflow(e) {
+                  e.preventDefault(); e.stopPropagation()
+                  if (sessionMenuOpenId === s.id) { setSessionMenuOpenId(null); setSessionMenuPos(null); return }
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setSessionMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+                  setSessionMenuOpenId(s.id); setSessionDelConfirmId(null)
+                }
+
                 return (
                   <div
                     key={s.id}
                     onMouseEnter={() => setHoveredSessionId(s.id)}
                     onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
                     onMouseDown={e => {
+                      if (isEditing) return
                       e.preventDefault()
                       if (isCurrent || !isInteractive) return
                       onSwitchSession?.(s.id)
@@ -459,34 +534,49 @@ export default function AIWorkspace({
                     }}
                     style={{
                       display: 'flex', alignItems: 'center',
-                      padding: '5px 8px 5px 14px',
-                      cursor: isCurrent ? 'default' : (isInteractive ? 'pointer' : 'default'),
+                      padding: '5px 8px 5px 8px',
+                      cursor: isCurrent || isEditing ? 'default' : (isInteractive ? 'pointer' : 'default'),
                       background: isHovered ? '#f0f0f0' : 'transparent',
                       transition: 'background 0.1s',
                     }}
                   >
                     {/* Current-session dot */}
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: isCurrent ? '#378ADD' : 'transparent', flexShrink: 0, marginRight: 8 }} />
-                    {/* Name */}
-                    <span style={{ fontSize: 12, fontWeight: isCurrent ? 500 : 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {s.name}
-                    </span>
-                    {/* Right slot: time fades out, pin fades in */}
-                    <div style={{ position: 'relative', flexShrink: 0, marginLeft: 8, minWidth: 48, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: isCurrent ? '#378ADD' : 'transparent', flexShrink: 0, marginRight: 6 }} />
+                    {/* Name / rename input */}
+                    {isEditing ? (
+                      <input
+                        autoFocus
+                        value={sessionEditValue}
+                        onChange={e => setSessionEditValue(e.target.value)}
+                        onBlur={() => { const t = sessionEditValue.trim(); if (t) setSessionLocalNames(prev => ({ ...prev, [s.id]: t })); setSessionEditingId(null) }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter')  { e.preventDefault(); const t = sessionEditValue.trim(); if (t) setSessionLocalNames(prev => ({ ...prev, [s.id]: t })); setSessionEditingId(null) }
+                          if (e.key === 'Escape') { e.preventDefault(); setSessionEditingId(null) }
+                        }}
+                        onMouseDown={e => e.stopPropagation()}
+                        style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#111', border: '1px solid #c8c8c8', borderRadius: 4, padding: '1px 5px', outline: 'none', background: '#fff' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 12, fontWeight: isCurrent ? 500 : 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {displayName}
+                      </span>
+                    )}
+                    {/* Right slot: time fades out, pin + overflow fade in */}
+                    <div style={{ position: 'relative', flexShrink: 0, marginLeft: 8, minWidth: 52, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                       <span style={{ fontSize: 11, color: '#888', opacity: isHovered ? 0 : 1, transition: 'opacity 0.12s', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
                         {s.ago}
                       </span>
+                      {/* Pin */}
                       <button
                         onMouseDown={e => { e.preventDefault(); e.stopPropagation(); toggleSessionPin(s.id) }}
                         title={isPinned ? 'Unpin' : 'Pin session'}
                         style={{
-                          position: 'absolute', right: -2,
-                          width: 20, height: 20,
+                          position: 'absolute', right: 22, width: 20, height: 20,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
                           color: '#6b7280',
-                          opacity: isHovered ? 1 : 0,
-                          pointerEvents: isHovered ? 'auto' : 'none',
+                          opacity: isHovered || sessionMenuOpenId === s.id ? 1 : 0,
+                          pointerEvents: isHovered || sessionMenuOpenId === s.id ? 'auto' : 'none',
                           transition: 'opacity 0.12s, background 0.1s, color 0.1s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
@@ -496,6 +586,26 @@ export default function AIWorkspace({
                           ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
                           : <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/></svg>
                         }
+                      </button>
+                      {/* Overflow (⋯) */}
+                      <button
+                        onMouseDown={openSessionOverflow}
+                        title="More options"
+                        style={{
+                          position: 'absolute', right: -2, width: 20, height: 20,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: sessionMenuOpenId === s.id ? '#e0e0e0' : 'none',
+                          border: 'none', cursor: 'pointer', borderRadius: 3, color: '#6b7280',
+                          opacity: isHovered || sessionMenuOpenId === s.id ? 1 : 0,
+                          pointerEvents: isHovered || sessionMenuOpenId === s.id ? 'auto' : 'none',
+                          transition: 'opacity 0.12s, background 0.1s, color 0.1s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = sessionMenuOpenId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                          <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -546,21 +656,19 @@ export default function AIWorkspace({
           <button
             title="Share"
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              height: 28, width: 28, padding: 0, border: 'none', borderRadius: 5,
               background: 'transparent', color: '#1a1a1a',
-              fontSize: 12, fontWeight: 500,
-              cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center',
+              cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center', flexShrink: 0,
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
-              <polyline points="16 10 12 6 8 10"/>
-              <line x1="12" y1="6" x2="12" y2="16"/>
+            <svg width="15" height="17" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 18v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+              <polyline points="16 9 12 4 8 9"/>
+              <line x1="12" y1="4" x2="12" y2="17"/>
             </svg>
-            Share
           </button>
 
           {/* AI toggle — 40×40 square flush to right edge, same as MapSessionWorkspace */}
@@ -641,21 +749,19 @@ export default function AIWorkspace({
                   <button
                     title="Share"
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      height: 28, width: 28, padding: 0, border: 'none', borderRadius: 5,
                       background: 'transparent', color: '#444',
-                      fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                      transition: 'background 0.1s', alignSelf: 'center',
+                      cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center', flexShrink: 0,
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
-                      <polyline points="16 10 12 6 8 10"/>
-                      <line x1="12" y1="6" x2="12" y2="16"/>
+                    <svg width="15" height="17" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 18v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+                      <polyline points="16 9 12 4 8 9"/>
+                      <line x1="12" y1="4" x2="12" y2="17"/>
                     </svg>
-                    Share
                   </button>
                   <button
                     onClick={() => setShowChat(v => !v)}
@@ -737,6 +843,59 @@ export default function AIWorkspace({
           />
         </div>
       </div>
+
+      {/* Session overflow menu — fixed so it escapes overflow:hidden */}
+      {sessionMenuOpenId && sessionMenuPos && (
+        <div
+          ref={sessionMenuRef}
+          style={{
+            position: 'fixed', top: sessionMenuPos.top, right: sessionMenuPos.right,
+            zIndex: 1000,
+            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 160, overflow: 'hidden',
+          }}
+        >
+          {sessionDelConfirmId === sessionMenuOpenId ? (
+            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, color: '#222', fontWeight: 500, lineHeight: 1.4 }}>Delete this session?</div>
+              <div style={{ fontSize: 12, color: '#888', lineHeight: 1.4 }}>This action cannot be undone.</div>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setSessionDelConfirmId(null) }}
+                  style={{ padding: '5px 12px', border: '1px solid #e0e0e0', borderRadius: 6, background: '#fff', fontSize: 12, color: '#555', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                >Cancel</button>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setSessionDeletedIds(prev => { const n = new Set(prev); n.add(sessionMenuOpenId); return n }); setSessionMenuOpenId(null); setSessionMenuPos(null); setSessionDelConfirmId(null) }}
+                  style={{ padding: '5px 12px', border: 'none', borderRadius: 6, background: '#d32f2f', fontSize: 12, color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#b71c1c' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#d32f2f' }}
+                >Delete</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setSessionEditingId(sessionMenuOpenId); setSessionEditValue(sessionLocalNames[sessionMenuOpenId] || sessions.find(s => s.id === sessionMenuOpenId)?.name || ''); setSessionMenuOpenId(null); setSessionMenuPos(null) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <RenameIcon /> Rename
+              </div>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setSessionDelConfirmId(sessionMenuOpenId) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#d32f2f', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <ArchiveIcon /> Delete
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

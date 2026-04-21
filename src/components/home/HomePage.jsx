@@ -419,7 +419,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                     flex: 1,
                     padding: '8px 12px',
                     border: '1px solid #e0e0e0', borderRadius: 7,
-                    fontSize: 12, fontWeight: 400, color: '#555',
+                    fontSize: 12, fontWeight: 500, color: '#555',
                     cursor: 'pointer', background: '#fff', whiteSpace: 'nowrap',
                     transition: 'border-color 0.12s, background 0.12s, color 0.12s',
                   }}

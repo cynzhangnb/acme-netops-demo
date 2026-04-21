@@ -149,7 +149,7 @@ ip route 10.8.3.0/24 10.0.2.2 backup`,
   },
 ]
 
-function DiffPanel({ change }) {
+function DiffPanel({ change, onClose }) {
   const beforeLines = change.before.split('\n')
   const afterLines = change.after.split('\n')
   const maxLen = Math.max(beforeLines.length, afterLines.length)
@@ -169,10 +169,21 @@ function DiffPanel({ change }) {
       <div style={{ padding: '8px 16px', borderBottom: '1px solid #f1efea', display: 'flex', alignItems: 'center', gap: 16, background: '#fcfbf9', flexShrink: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>{change.device} — {change.type}</span>
         <span style={{ fontSize: 11, color: '#888' }}>{change.timestamp}</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 14 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontSize: 11, color: '#666' }}>Unchanged <strong style={{ color: '#333' }}>{unchanged}</strong></span>
           <span style={{ fontSize: 11, color: '#1a7a3f' }}>Added <strong>{added}</strong></span>
           <span style={{ fontSize: 11, color: '#c0392b' }}>Removed <strong>{removed}</strong></span>
+          <button
+            onClick={onClose}
+            title="Close"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, border: 'none', borderRadius: 4, background: 'transparent', cursor: 'pointer', color: '#aaa', flexShrink: 0, padding: 0, marginLeft: 4 }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#eeebe4'; e.currentTarget.style.color = '#555' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#aaa' }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -639,35 +650,42 @@ export default function ChangeAnalysis({ filter }) {
     }
   }, [])
 
+  useEffect(() => {
+    function onKeyDown(e) { if (e.key === 'Escape') setSelected(null) }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
 
       {/* Table — fills remaining space */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Filter bar */}
-        <div style={{ padding: '9px 16px 9px 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ height: 40, padding: '0 16px 0 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' }}>
           {/* Event count — left anchor */}
           <div style={{ fontSize: 12, color: '#444', fontWeight: 500, flexShrink: 0 }}>
             {queriedChanges.length} event{queriedChanges.length !== 1 ? 's' : ''}
           </div>
           {/* Spacer */}
           <div style={{ flex: 1 }} />
-          {/* Time dropdown */}
-          <select
-            value={timeFilter}
-            onChange={e => { setTimeFilter(e.target.value); setSelected(null) }}
-            style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-          >
-            {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          {/* Change Type dropdown */}
-          <select
-            value={changeTypeFilter}
-            onChange={e => { setChangeTypeFilter(e.target.value); setSelected(null) }}
-            style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-          >
-            {sourceTypes.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
-          </select>
+          {/* Time + Change Type dropdowns — sidebar CA only */}
+          {isSidebar && <>
+            <select
+              value={timeFilter}
+              onChange={e => { setTimeFilter(e.target.value); setSelected(null) }}
+              style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+            >
+              {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            <select
+              value={changeTypeFilter}
+              onChange={e => { setChangeTypeFilter(e.target.value); setSelected(null) }}
+              style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+            >
+              {sourceTypes.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
+            </select>
+          </>}
           {/* Search bar */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"
@@ -760,7 +778,7 @@ export default function ChangeAnalysis({ filter }) {
 
           {/* Diff pane */}
           <div style={{ height: diffH, flexShrink: 0, borderTop: '1px solid #e8e8e8', overflow: 'hidden' }}>
-            <DiffPanel change={selected} />
+            <DiffPanel change={selected} onClose={() => setSelected(null)} />
           </div>
         </>
       )}

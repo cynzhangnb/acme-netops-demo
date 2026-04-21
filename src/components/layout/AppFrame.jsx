@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Sidebar from './Sidebar'
 import DeviceBrowserPane from '../network/DeviceBrowserPane'
 import { allDevices } from '../../data/deviceData'
@@ -37,60 +37,144 @@ const FAKE_SESSIONS = [
   { id: 's7',      name: 'BGP Peer Troubleshoot',   preview: 'Investigated BGP flap on Edge-Router-02',  ago: '5d ago',  artifacts: 2  },
 ]
 
+/* ── Shared session-row icons ────────────────────────────────────────────── */
+function SessionOverflowIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
+    </svg>
+  )
+}
+function SessionRenameIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  )
+}
+function SessionTrashIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+    </svg>
+  )
+}
+
 /* ── Session History Pane ────────────────────────────────────────────────── */
 function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinnedIds = new Set(), onTogglePin }) {
-  const [hoveredId, setHoveredId] = useState(null)
+  const [hoveredId,       setHoveredId]       = useState(null)
+  const [openMenuId,      setOpenMenuId]      = useState(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null)
+  const [editingId,       setEditingId]       = useState(null)
+  const [editValue,       setEditValue]       = useState('')
+  const [localNames,      setLocalNames]      = useState({})
+  const [deletedIds,      setDeletedIds]      = useState(new Set())
+  const [menuPos,         setMenuPos]         = useState(null)
+  const menuRef    = useRef(null)
+  const editInputRef = useRef(null)
 
-  const sessions = FAKE_SESSIONS.filter(s => !s.current)
+  /* Close overflow menu on outside click */
+  useEffect(() => {
+    if (!openMenuId) return
+    const handler = e => {
+      const path = e.composedPath ? e.composedPath() : []
+      if (!path.includes(menuRef.current) && !menuRef.current?.contains(e.target)) {
+        setOpenMenuId(null); setDeleteConfirmId(null); setMenuPos(null)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [openMenuId])
+
+  /* Focus rename input when editing starts */
+  useEffect(() => { if (editingId) editInputRef.current?.focus() }, [editingId])
+
+  const sessions = FAKE_SESSIONS.filter(s => !s.current && !deletedIds.has(s.id))
   const pinned   = sessions.filter(s => pinnedIds.has(s.id))
   const recent   = sessions.filter(s => !pinnedIds.has(s.id))
+
+  function openOverflowMenu(e, s) {
+    e.preventDefault(); e.stopPropagation()
+    if (openMenuId === s.id) { setOpenMenuId(null); setMenuPos(null); return }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    setOpenMenuId(s.id); setDeleteConfirmId(null)
+  }
+
+  function startRename(s) {
+    setOpenMenuId(null); setMenuPos(null)
+    setEditingId(s.id); setEditValue(localNames[s.id] || s.name)
+  }
+
+  function confirmRename() {
+    const t = editValue.trim()
+    if (t && editingId) setLocalNames(prev => ({ ...prev, [editingId]: t }))
+    setEditingId(null)
+  }
+
+  function confirmDelete(id) {
+    setDeletedIds(prev => { const n = new Set(prev); n.add(id); return n })
+    setOpenMenuId(null); setMenuPos(null); setDeleteConfirmId(null)
+  }
 
   const renderRow = (s) => {
     const isInteractive = s.id === 's1' || s.id === 's2'
     const isPinned      = pinnedIds.has(s.id)
     const isHovered     = hoveredId === s.id
+    const isEditing     = editingId === s.id
+    const displayName   = localNames[s.id] || s.name
+
     return (
       <div
         key={s.id}
-        onClick={() => { if (!isInteractive) return; onSelectSession?.(s.id); onClose() }}
+        onClick={() => { if (isEditing || !isInteractive) return; onSelectSession?.(s.id); onClose() }}
         onMouseEnter={() => setHoveredId(s.id)}
-        onMouseLeave={() => setHoveredId(null)}
+        onMouseLeave={() => setHoveredId(prev => prev === s.id ? null : prev)}
         style={{
           display: 'flex', alignItems: 'center',
           padding: '5px 8px 5px 14px',
-          /* no borderBottom — dividers removed; only pinned/recent separator remains */
-          cursor: isInteractive ? 'pointer' : 'default',
+          cursor: isInteractive && !isEditing ? 'pointer' : 'default',
           background: isHovered ? '#f0f0f0' : 'transparent',
           transition: 'background 0.1s',
         }}
       >
-        <span style={{ fontSize: 12, fontWeight: 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {s.name}
-        </span>
+        {isEditing ? (
+          <input
+            ref={editInputRef}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            onBlur={confirmRename}
+            onKeyDown={e => {
+              if (e.key === 'Enter')  { e.preventDefault(); confirmRename() }
+              if (e.key === 'Escape') { e.preventDefault(); setEditingId(null) }
+            }}
+            onClick={e => e.stopPropagation()}
+            style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#111', border: '1px solid #c8c8c8', borderRadius: 4, padding: '1px 5px', outline: 'none', background: '#fff' }}
+          />
+        ) : (
+          <span style={{ fontSize: 12, fontWeight: 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {displayName}
+          </span>
+        )}
 
-        {/* Right slot — fixed width so nothing shifts on hover.
-            Time fades out, pin button fades in via opacity only (no mount/unmount). */}
+        {/* Right slot: timestamp fades, pin + overflow fade in on hover */}
         <div style={{ position: 'relative', flexShrink: 0, marginLeft: 8, minWidth: 52, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-          <span style={{
-            fontSize: 11, color: '#666',
-            opacity: isHovered ? 0 : 1,
-            transition: 'opacity 0.12s',
-            pointerEvents: 'none',
-            whiteSpace: 'nowrap',
-          }}>
+          <span style={{ fontSize: 11, color: '#666', opacity: isHovered ? 0 : 1, transition: 'opacity 0.12s', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
             {s.ago}
           </span>
+          {/* Pin */}
           <button
             onClick={e => { e.stopPropagation(); onTogglePin?.(s.id) }}
             title={isPinned ? 'Unpin' : 'Pin session'}
             style={{
-              position: 'absolute', right: -2,
-              width: 20, height: 20,
+              position: 'absolute', right: 22, width: 20, height: 20,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
               color: '#6b7280',
-              opacity: isHovered ? 1 : 0,
-              pointerEvents: isHovered ? 'auto' : 'none',
+              opacity: isHovered || openMenuId === s.id ? 1 : 0,
+              pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
               transition: 'opacity 0.12s, background 0.1s, color 0.1s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
@@ -100,6 +184,25 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
               ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
               : <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/></svg>
             }
+          </button>
+          {/* Overflow (⋯) */}
+          <button
+            onMouseDown={e => openOverflowMenu(e, s)}
+            title="More options"
+            style={{
+              position: 'absolute', right: -2, width: 20, height: 20,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: openMenuId === s.id ? '#e0e0e0' : 'none',
+              border: 'none', cursor: 'pointer', borderRadius: 3,
+              color: '#6b7280',
+              opacity: isHovered || openMenuId === s.id ? 1 : 0,
+              pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
+              transition: 'opacity 0.12s, background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            <SessionOverflowIcon />
           </button>
         </div>
       </div>
@@ -117,7 +220,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
       boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
       overflow: 'hidden',
     }}>
-      {/* Header — identical to Network/Inventory pane */}
+      {/* Header */}
       <div style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Sessions</span>
         <button
@@ -134,18 +237,68 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
 
       {/* Session list */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
-        {/* Pinned section */}
         {pinned.length > 0 && (
           <>
-            <div style={{ padding: '5px 14px 3px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Pinned
-            </div>
+            <div style={{ padding: '5px 14px 3px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Pinned</div>
             {pinned.map(renderRow)}
             {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px' }} />}
           </>
         )}
         {recent.map(renderRow)}
       </div>
+
+      {/* Overflow menu — fixed so it escapes overflow:hidden */}
+      {openMenuId && menuPos && (
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed', top: menuPos.top, right: menuPos.right,
+            zIndex: 1000,
+            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 160, overflow: 'hidden',
+          }}
+        >
+          {deleteConfirmId === openMenuId ? (
+            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 13, color: '#222', fontWeight: 500, lineHeight: 1.4 }}>Delete this session?</div>
+              <div style={{ fontSize: 12, color: '#888', lineHeight: 1.4 }}>This action cannot be undone.</div>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setDeleteConfirmId(null) }}
+                  style={{ padding: '5px 12px', border: '1px solid #e0e0e0', borderRadius: 6, background: '#fff', fontSize: 12, color: '#555', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                >Cancel</button>
+                <button
+                  onMouseDown={e => { e.preventDefault(); e.stopPropagation(); confirmDelete(openMenuId) }}
+                  style={{ padding: '5px 12px', border: 'none', borderRadius: 6, background: '#d32f2f', fontSize: 12, color: '#fff', cursor: 'pointer', fontWeight: 500 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#b71c1c' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#d32f2f' }}
+                >Delete</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const s = sessions.find(x => x.id === openMenuId); if (s) startRename(s) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <SessionRenameIcon /> Rename
+              </div>
+              <div
+                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setDeleteConfirmId(openMenuId) }}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#d32f2f', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <SessionTrashIcon /> Delete
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -165,10 +318,16 @@ const MAP_INSTANCES = [
 function MapItemIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#888' }}>
-      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-      <line x1="8" y1="2" x2="8" y2="18"/>
-      <line x1="16" y1="6" x2="16" y2="22"/>
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: '#888' }}>
+      <rect x="8" y="2" width="8" height="5" rx="1"/>
+      <line x1="12" y1="7" x2="12" y2="11"/>
+      <line x1="4" y1="11" x2="20" y2="11"/>
+      <line x1="4"  y1="11" x2="4"  y2="16"/>
+      <line x1="12" y1="11" x2="12" y2="16"/>
+      <line x1="20" y1="11" x2="20" y2="16"/>
+      <circle cx="4"  cy="19" r="2.5"/>
+      <circle cx="12" cy="19" r="2.5"/>
+      <circle cx="20" cy="19" r="2.5"/>
     </svg>
   )
 }
@@ -230,7 +389,6 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '5px 14px',
-              borderBottom: i < MAP_INSTANCES.length - 1 ? '1px solid #f5f5f5' : 'none',
               background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#f0f0f0' : 'transparent',
               transition: 'background 0.15s',
               cursor: 'grab',
@@ -357,7 +515,6 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '5px 14px', cursor: 'pointer', userSelect: 'none',
-                  borderBottom: '1px solid #f5f5f5',
                   background: 'transparent', transition: 'background 0.12s',
                 }}
                 onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
@@ -387,7 +544,6 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '5px 14px 5px 31px',
-                    borderBottom: '1px solid #f5f5f5',
                     cursor: dragging ? 'grabbing' : 'grab',
                     userSelect: 'none',
                     background: hoveredId === d.id ? '#f0f0f0' : 'transparent',
@@ -576,7 +732,6 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
         style={{
           display: 'flex', alignItems: 'center', gap: 5,
           padding: `5px 14px 5px ${indent}px`,
-          borderBottom: '1px solid #f5f5f5',
           cursor: isFolder ? 'pointer' : 'grab',
           userSelect: 'none',
           background: hovered ? '#f0f0f0' : 'transparent',
@@ -652,7 +807,7 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
 function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onDragEnd }) {
   return (
     <div style={{
-      width: 272, flexShrink: 0,
+      width: 280, flexShrink: 0,
       background: '#fff',
       display: 'flex', flexDirection: 'column',
       height: '100%',
@@ -747,8 +902,15 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
   function handleNetworkToggle() {
     if (networkPinned) {
+      // clicking the already-pinned pane → unpin / close it
       setNetworkPinned(false)
       setNetworkPaneOpen(false)
+    } else if (inventoryPinned) {
+      // swap: inventory was pinned → close it, open network as pinned
+      setInventoryPinned(false)
+      setInventoryPaneOpen(false)
+      setNetworkPinned(true)
+      setShowHistory(false)
     } else {
       const opening = !networkPaneOpen
       setNetworkPaneOpen(prev => !prev)
@@ -772,14 +934,20 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
   function handleInventoryToggle() {
     if (inventoryPinned) {
+      // clicking the already-pinned pane → unpin / close it
       setInventoryPinned(false)
       setInventoryPaneOpen(false)
+    } else if (networkPinned) {
+      // swap: network was pinned → close it, open inventory as pinned
+      setNetworkPinned(false)
+      setNetworkPaneOpen(false)
+      setInventoryPinned(true)
+      setShowHistory(false)
     } else {
       const opening = !inventoryPaneOpen
       setInventoryPaneOpen(prev => !prev)
       if (opening) {
         setNetworkPaneOpen(false)
-        setNetworkPinned(false)
         setShowHistory(false)
       }
     }
@@ -901,7 +1069,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         {!sidebarExpanded && activeView === 'home' && (
           <button
             onClick={handleHistoryToggle}
-            title="Session history"
+            title="Show Sessions"
             style={{
               position: 'absolute', left: 8, top: 8, zIndex: 50,
               width: 30, height: 30, borderRadius: 7,
@@ -1027,12 +1195,18 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
               pointerEvents: 'none',
             }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-                stroke={isDragOver ? '#378ADD' : '#aaa'} strokeWidth="1.6"
+                stroke={isDragOver ? '#378ADD' : '#aaa'} strokeWidth="1.5"
                 strokeLinecap="round" strokeLinejoin="round"
                 style={{ transition: 'stroke 0.15s' }}>
-                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-                <line x1="8" y1="2" x2="8" y2="18"/>
-                <line x1="16" y1="6" x2="16" y2="22"/>
+                <rect x="8" y="2" width="8" height="5" rx="1"/>
+                <line x1="12" y1="7" x2="12" y2="11"/>
+                <line x1="4" y1="11" x2="20" y2="11"/>
+                <line x1="4"  y1="11" x2="4"  y2="16"/>
+                <line x1="12" y1="11" x2="12" y2="16"/>
+                <line x1="20" y1="11" x2="20" y2="16"/>
+                <circle cx="4"  cy="19" r="2.5"/>
+                <circle cx="12" cy="19" r="2.5"/>
+                <circle cx="20" cy="19" r="2.5"/>
               </svg>
               <div style={{ fontSize: 13, fontWeight: 600, color: isDragOver ? '#111' : '#555', transition: 'color 0.15s' }}>
                 Drop to open in workspace
