@@ -548,21 +548,23 @@ export default function App() {
       return
     }
     if (viewModeRef.current === 'map-session') {
-      /* Already in map-session — just open the map inside MapSessionWorkspace */
+      /* Already in an explicit map-session — add map there */
       setExternalMapToOpen({ id, label })
       return
     }
-    /* Any other view → transition to map-session with the map pre-loaded */
+    /* Home or any other view with no active session — start a workspace so that
+       subsequent artifacts (CA, reports) can stack as tabs without remounting */
     navigate(() => {
       setShowHomeInsights(true)
-      setOpenTabs([])
-      setActiveTabId(null)
-      setCurrentSessionName('New Session')
       setActiveSessionListId(null)
-      setViewMode('map-session')
-      setExternalMapToOpen({ id, label })
+      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
+      setInitialPrompt('')
+      startSession()
+      setHomeSessionKey(k => k + 1)
+      setViewMode('workspace')
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'networkMap', label, mapId: id })
     })
-  }, [navigate, openMapResourceTab])
+  }, [navigate, openMapResourceTab, startSession])
 
   const handleSelectSession = useCallback((id) => {
     navigate(() => {
