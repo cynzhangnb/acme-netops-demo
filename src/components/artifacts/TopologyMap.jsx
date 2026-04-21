@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { getDeviceConfig } from '../../data/deviceConfigs'
 
 // ─── Node data — 3 tiers: Core → Distribution → Access ───────────────────────
 const NODES = [
@@ -312,6 +313,10 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
   const [hoveredMenuItem, setHoveredMenuItem] = useState(null)
   const [overlayOn, setOverlayOn] = useState(true)
 
+  /* Detail panel state — shown when user picks View Configuration or View Properties */
+  const [detailPanel, setDetailPanel] = useState(null) // { type: 'config' | 'properties', nodeId }
+  const [copyState, setCopyState] = useState('idle')   // 'idle' | 'copied'
+
   function handleSave() {
     // save handled by parent toolbar
   }
@@ -455,6 +460,18 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
     setSelectedNodeId(node.id)
     setContextMenu(null)
     setHoveredMenuItem(null)
+
+    /* Handle detail panel actions internally */
+    if (actionId === 'view-config') {
+      setCopyState('idle')
+      setDetailPanel({ type: 'config', nodeId: node.id })
+      return
+    }
+    if (actionId === 'view-properties') {
+      setDetailPanel({ type: 'properties', nodeId: node.id })
+      return
+    }
+
     onNodeAction?.({
       actionId,
       node,
@@ -752,6 +769,176 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
           })}
         </div>
       )}
+
+      {/* ── Detail panel — View Configuration / View Properties ── */}
+      {(() => {
+        const panelNode = detailPanel ? NODES.find(n => n.id === detailPanel.nodeId) : null
+        if (!panelNode) return null
+        const neighbors = EDGES
+          .filter(e => e.a === panelNode.id || e.b === panelNode.id)
+          .map(e => {
+            const neighborId = e.a === panelNode.id ? e.b : e.a
+            const neighbor = NODES.find(n => n.id === neighborId)
+            return neighbor ? { label: neighbor.label, protocol: EDGE_PROTOCOLS[e.id]?.toUpperCase() ?? '—' } : null
+          })
+          .filter(Boolean)
+
+        const typeLabel = {
+          'core-router': 'Core Router',
+          'dist-switch': 'Distribution Switch',
+          'access-switch': 'Access Switch',
+        }[panelNode.type] ?? panelNode.type
+
+        const statusColor = panelNode.status === 'up' ? '#16a34a' : panelNode.status === 'degraded' ? '#d97706' : '#dc2626'
+
+        return (
+          <div
+            onMouseDown={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', top: 0, right: 0, bottom: 0,
+              width: 272, zIndex: 25,
+              background: '#fff',
+              borderLeft: '1px solid #e8e8e8',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '-4px 0 16px rgba(0,0,0,0.07)',
+              animation: 'slideInRight 0.2s ease',
+            }}
+          >
+            {/* Panel header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '10px 12px 10px 14px',
+              borderBottom: '1px solid #f0f0f0', flexShrink: 0,
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111', lineHeight: 1.3 }}>{panelNode.label}</div>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{typeLabel}</div>
+              </div>
+              {/* Tab switcher */}
+              <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                {['config', 'properties'].map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => { setDetailPanel({ type: tab, nodeId: panelNode.id }); setCopyState('idle') }}
+                    style={{
+                      padding: '3px 8px', border: 'none', borderRadius: 5, cursor: 'pointer',
+                      fontSize: 11, fontWeight: 500,
+                      background: detailPanel.type === tab ? '#e8e8e8' : 'transparent',
+                      color: detailPanel.type === tab ? '#111' : '#888',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { if (detailPanel.type !== tab) e.currentTarget.style.background = '#f5f5f5' }}
+                    onMouseLeave={e => { if (detailPanel.type !== tab) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    {tab === 'config' ? 'Config' : 'Properties'}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setDetailPanel(null)}
+                title="Close"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 3,
+                  color: '#aaa', display: 'flex', alignItems: 'center', borderRadius: 4,
+                  flexShrink: 0,
+                  transition: 'color 0.1s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#555' }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#aaa' }}
+              >
+                <CloseSmallIcon />
+              </button>
+            </div>
+
+            {/* Panel body */}
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }} className="scrollbar-thin">
+              {detailPanel.type === 'config' ? (
+                /* ── Configuration view ── */
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => {
+                      const cfg = getDeviceConfig(panelNode.label)
+                      navigator.clipboard?.writeText(cfg).then(() => {
+                        setCopyState('copied')
+                        setTimeout(() => setCopyState('idle'), 1600)
+                      })
+                    }}
+                    style={{
+                      position: 'absolute', top: 8, right: 10, zIndex: 2,
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '3px 8px', border: '1px solid #e0e0e0', borderRadius: 5,
+                      background: '#fff', fontSize: 10.5, fontWeight: 500,
+                      color: copyState === 'copied' ? '#16a34a' : '#555',
+                      cursor: 'pointer', transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={e => { if (copyState !== 'copied') e.currentTarget.style.background = '#f5f5f5' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#fff' }}
+                  >
+                    {copyState === 'copied' ? <CheckIcon /> : (
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><path d="M8 4V2.5A1.5 1.5 0 0 0 6.5 1H2.5A1.5 1.5 0 0 0 1 2.5V6.5A1.5 1.5 0 0 0 2.5 8H4" stroke="currentColor" strokeWidth="1.2"/></svg>
+                    )}
+                    {copyState === 'copied' ? 'Copied' : 'Copy'}
+                  </button>
+                  <pre style={{
+                    margin: 0, padding: '12px 14px 16px',
+                    fontFamily: '"SF Mono", "Fira Code", "Consolas", monospace',
+                    fontSize: 10.5, lineHeight: 1.65, color: '#2a2a2a',
+                    whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                    background: '#fafafa',
+                    borderBottom: '1px solid #f0f0f0',
+                  }}>
+                    {getDeviceConfig(panelNode.label)}
+                  </pre>
+                </div>
+              ) : (
+                /* ── Properties view ── */
+                <div style={{ padding: '12px 14px 16px', display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {[
+                    { label: 'Hostname',  value: panelNode.label },
+                    { label: 'IP Address', value: panelNode.ip },
+                    { label: 'Role',      value: typeLabel },
+                    { label: 'Status',    value: panelNode.status, statusColor },
+                    ...(panelNode.as ? [{ label: 'AS Number', value: panelNode.as }] : []),
+                    { label: 'Location',  value: 'Boston DC' },
+                  ].map(({ label, value, statusColor: sc }) => (
+                    <div key={label} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      padding: '7px 0', borderBottom: '1px solid #f5f5f5',
+                      gap: 8,
+                    }}>
+                      <span style={{ fontSize: 11.5, color: '#888', flexShrink: 0 }}>{label}</span>
+                      <span style={{
+                        fontSize: 11.5, fontWeight: 500, color: sc ?? '#222',
+                        textAlign: 'right', fontFamily: label === 'IP Address' || label === 'AS Number' ? 'monospace' : 'inherit',
+                      }}>{value}</span>
+                    </div>
+                  ))}
+
+                  {/* Neighbors section */}
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: '#aaa', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+                      Connected Neighbors
+                    </div>
+                    {neighbors.map(nb => (
+                      <div key={nb.label} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '6px 0', borderBottom: '1px solid #f5f5f5', gap: 8,
+                      }}>
+                        <span style={{ fontSize: 11.5, color: '#222' }}>{nb.label}</span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 4,
+                          background: nb.protocol === 'BGP' ? '#dbeafe' : nb.protocol === 'OSPF' ? '#f1f5f9' : '#f3f4f6',
+                          color: nb.protocol === 'BGP' ? '#1d4ed8' : '#555',
+                        }}>{nb.protocol}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Hover tooltip */}
       {hoveredNode && (() => {
