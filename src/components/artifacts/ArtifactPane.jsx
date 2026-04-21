@@ -38,7 +38,7 @@ function BackArrowIcon() {
 
 function SplitScreenIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="18" rx="2"/>
       <line x1="12" y1="3" x2="12" y2="21"/>
     </svg>
@@ -1028,10 +1028,16 @@ function ArtifactTabIcon({ type }) {
   if (type === 'topology' || type === 'changesMap' || type === 'networkMap') {
     return (
       <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-        <line x1="8" y1="2" x2="8" y2="18"/>
-        <line x1="16" y1="6" x2="16" y2="22"/>
+        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="8" y="2" width="8" height="5" rx="1"/>
+        <line x1="12" y1="7" x2="12" y2="11"/>
+        <line x1="4" y1="11" x2="20" y2="11"/>
+        <line x1="4"  y1="11" x2="4"  y2="16"/>
+        <line x1="12" y1="11" x2="12" y2="16"/>
+        <line x1="20" y1="11" x2="20" y2="16"/>
+        <circle cx="4"  cy="19" r="2.5"/>
+        <circle cx="12" cy="19" r="2.5"/>
+        <circle cx="20" cy="19" r="2.5"/>
       </svg>
     )
   }
@@ -1070,12 +1076,10 @@ function ArtifactTabIcon({ type }) {
   }
   if (type === 'report') {
     return (
-      <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="8" y1="13" x2="16" y2="13"/>
-        <line x1="8" y1="17" x2="13" y2="17"/>
+      <svg {...s} viewBox="0 0 32 32" fill="currentColor">
+        <path d="M25.7,9.3l-7-7C18.5,2.1,18.3,2,18,2H8C6.9,2,6,2.9,6,4v24c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V10C26,9.7,25.9,9.5,25.7,9.3z M18,4.4l5.6,5.6H18V4.4z M24,28H8V4h8v6c0,1.1,0.9,2,2,2h6V28z"/>
+        <rect x="10" y="22" width="12" height="2"/>
+        <rect x="10" y="16" width="12" height="2"/>
       </svg>
     )
   }
@@ -1112,6 +1116,10 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   const splitContainerRef = useRef(null)
   const splitResizeState = useRef(null)
   const dragTabId = useRef(null)
+  // Tab reorder state
+  const [tabOrder, setTabOrder] = useState(() => artifacts.map(a => a.id))
+  const [reorderOverId, setReorderOverId] = useState(null)
+  const [reorderSide, setReorderSide] = useState(null) // 'before' | 'after'
   const prevArtifactIdsRef = useRef(new Set())
 
   useEffect(() => { canvasItemsRef.current = canvasItems }, [canvasItems])
@@ -1224,6 +1232,18 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
       return next
     })
   }, [widgets]) // eslint-disable-line
+
+  // Keep tabOrder in sync as artifacts are added / removed
+  useEffect(() => {
+    setTabOrder(prev => {
+      const existingIds = new Set(artifacts.map(a => a.id))
+      const newIds = artifacts.map(a => a.id).filter(id => !prev.includes(id))
+      return [...prev.filter(id => existingIds.has(id)), ...newIds]
+    })
+  }, [artifacts])
+
+  // Artifacts sorted by user's drag order
+  const orderedArtifacts = tabOrder.map(id => artifacts.find(a => a.id === id)).filter(Boolean)
 
   const handleDragStart = useCallback((e, id) => {
     e.preventDefault()
@@ -1427,8 +1447,8 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
   }, [artifacts]) // eslint-disable-line
 
   // Split screen computed values
-  const leftArtifacts = splitMode ? artifacts.filter(a => !rightArtifactIds.includes(a.id)) : artifacts
-  const rightArtifacts = splitMode ? artifacts.filter(a => rightArtifactIds.includes(a.id)) : []
+  const leftArtifacts = splitMode ? orderedArtifacts.filter(a => !rightArtifactIds.includes(a.id)) : orderedArtifacts
+  const rightArtifacts = splitMode ? orderedArtifacts.filter(a => rightArtifactIds.includes(a.id)) : []
   const activeLeft = leftArtifacts.find(a => a.id === activeArtifactId) ?? leftArtifacts[0] ?? null
   const activeRight = rightArtifacts.find(a => a.id === activeRightId) ?? rightArtifacts[0] ?? null
 
@@ -1632,14 +1652,57 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
       ) : (
         <>
         {/* Normal mode tab bar */}
-        <div style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0 }}>
-          {artifacts.map(artifact => {
+        <div
+          style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0 }}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => {
+            // Drop onto empty space at end of tab bar → move tab to last position
+            const id = e.dataTransfer.getData('tabId')
+            if (id) setTabOrder(prev => [...prev.filter(x => x !== id), id])
+            setReorderOverId(null); setReorderSide(null)
+          }}
+        >
+          {orderedArtifacts.map(artifact => {
             const isActive = artifact.id === activeArtifactId
+            const showBefore = reorderOverId === artifact.id && reorderSide === 'before'
+            const showAfter  = reorderOverId === artifact.id && reorderSide === 'after'
             return (
               <div key={artifact.id} draggable
                 onDragStart={e => { e.dataTransfer.setData('tabId', artifact.id); dragTabId.current = artifact.id }}
+                onDragOver={e => {
+                  e.preventDefault(); e.stopPropagation()
+                  const rect = e.currentTarget.getBoundingClientRect()
+                  setReorderOverId(artifact.id)
+                  setReorderSide(e.clientX < rect.left + rect.width / 2 ? 'before' : 'after')
+                }}
+                onDragLeave={() => { setReorderOverId(null); setReorderSide(null) }}
+                onDrop={e => {
+                  e.preventDefault(); e.stopPropagation()
+                  const draggedId = e.dataTransfer.getData('tabId')
+                  if (draggedId && draggedId !== artifact.id) {
+                    const rect = e.currentTarget.getBoundingClientRect()
+                    const side = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+                    setTabOrder(prev => {
+                      const without = prev.filter(id => id !== draggedId)
+                      const idx = without.indexOf(artifact.id)
+                      if (idx === -1) return prev
+                      const next = [...without]
+                      next.splice(side === 'after' ? idx + 1 : idx, 0, draggedId)
+                      return next
+                    })
+                  }
+                  setReorderOverId(null); setReorderSide(null)
+                }}
                 onClick={() => onSetActive(artifact.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '0 6px 0 10px', height: 28, borderRadius: 6, background: isActive ? '#f0f0f0' : 'transparent', cursor: 'pointer', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap', fontSize: 12, fontWeight: isActive ? 500 : 400, color: isActive ? '#111' : '#767676', transition: 'background 0.1s' }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '0 6px 0 10px', height: 28, borderRadius: 6,
+                  background: isActive ? '#f0f0f0' : 'transparent',
+                  cursor: 'grab', userSelect: 'none', flexShrink: 0, whiteSpace: 'nowrap',
+                  fontSize: 12, fontWeight: isActive ? 500 : 400,
+                  color: isActive ? '#111' : '#767676', transition: 'background 0.1s',
+                  boxShadow: showBefore ? 'inset 2px 0 0 0 #1a73e8' : showAfter ? 'inset -2px 0 0 0 #1a73e8' : 'none',
+                }}
                 onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
               >
