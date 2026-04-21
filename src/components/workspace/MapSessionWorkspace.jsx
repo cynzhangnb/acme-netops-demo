@@ -42,10 +42,18 @@ function DeleteIcon() {
 }
 function ShareIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 16v4.25a.75.75 0 0 0 .75.75h14.5a.75.75 0 0 0 .75-.75V16"/>
-      <polyline points="16 7 12 3 8 7"/>
-      <line x1="12" y1="3" x2="12" y2="16"/>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+      <polyline points="16 10 12 6 8 10"/>
+      <line x1="12" y1="6" x2="12" y2="16"/>
+    </svg>
+  )
+}
+function PlusIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5"  y1="12" x2="19" y2="12"/>
     </svg>
   )
 }
@@ -584,16 +592,17 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
         <button
           onClick={() => { onNew?.() }}
           style={{
-            display: 'inline-flex', alignItems: 'center',
+            display: 'inline-flex', alignItems: 'center', gap: 5,
             height: 26, padding: '0 9px', border: 'none', borderRadius: 5,
-            background: 'transparent', color: '#444', alignSelf: 'center',
+            background: 'transparent', color: '#1a1a1a', alignSelf: 'center',
             fontSize: 12, fontWeight: 500, cursor: 'pointer',
             transition: 'background 0.1s', flexShrink: 0, marginRight: 2,
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
           onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
         >
-          + New
+          <PlusIcon />
+          New
         </button>
       )}
       <div style={{ position: 'relative', alignSelf: 'center' }}>
@@ -604,7 +613,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             display: 'inline-flex', alignItems: 'center', gap: 5,
             height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
             background: showShareMenu ? '#f0f0f0' : 'transparent',
-            color: '#444', fontSize: 12, fontWeight: 500,
+            color: '#1a1a1a', fontSize: 12, fontWeight: 500,
             cursor: 'pointer', transition: 'background 0.1s',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
@@ -736,7 +745,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
               <>
                 {/* Shared hover zone — hovering either element highlights both */}
                 <div
-                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, gap: 2 }}
+                  style={{ display: 'flex', alignItems: 'center', minWidth: 0, gap: 2, maxWidth: '40%' }}
                   onMouseEnter={() => setNameAreaHovered(true)}
                   onMouseLeave={() => setNameAreaHovered(false)}
                 >
@@ -746,7 +755,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     onClick={() => { setShowSessions(s => !s); setShowMenu(false); setShowShareMenu(false) }}
                     style={{
                       fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
-                      cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
+                      cursor: 'pointer', userSelect: 'none', flex: 1, minWidth: 0,
                       height: 26, padding: '0 4px 0 10px',
                       borderRadius: '6px 0 0 6px',
                       display: 'flex', alignItems: 'center',
