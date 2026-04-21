@@ -264,24 +264,71 @@ export default function ChatPane({ messages, isStreaming, onSend, onSaveArtifact
 
       </div>}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}
-           className="scrollbar-thin">
-        {messages.map(msg => (
-          <MessageBubble
-            key={msg.id}
-            message={msg}
-            onSaveArtifact={onSaveArtifact}
-            onOpenArtifact={onOpenArtifact}
-            onAddWidget={onAddWidget}
-            canAddToCanvas={canAddToCanvas}
-            onAction={onMessageAction}
-            onDeviceClick={onDeviceClick}
-            isNarrowLayout={isNarrowLayout}
-          />
-        ))}
-        {isStreaming && <SkeletonMessage />}
-        <div ref={bottomRef} />
-      </div>
+      {messages.length === 0 && !isStreaming ? (
+        /* ── Empty state ── */
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 16px 28px' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingBottom: 16 }}>
+            {/* NB Workspace hub-and-spoke icon */}
+            <svg width="64" height="64" viewBox="0 0 44 44" fill="none" style={{ marginBottom: 14, display: 'block' }}>
+              <circle cx="22" cy="22" r="15" stroke="#ccc" strokeWidth="1" strokeDasharray="2.5 3"/>
+              <line x1="22" y1="22" x2="22" y2="7" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1="22" y1="22" x2="34.990" y2="14.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1="22" y1="22" x2="34.990" y2="29.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1="22" y1="22" x2="22" y2="37" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1="22" y1="22" x2="9.010" y2="29.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1="22" y1="22" x2="9.010" y2="14.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <circle cx="22" cy="7" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="34.990" cy="14.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="34.990" cy="29.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="22" cy="37" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="9.010" cy="29.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="9.010" cy="14.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+              <circle cx="22" cy="22" r="5" fill="#fff" stroke="#aaa" strokeWidth="1.6"/>
+              <circle cx="22" cy="22" r="2" fill="#bbb"/>
+            </svg>
+            <div style={{ fontSize: 12.5, color: '#888', lineHeight: 1.5, textAlign: 'center', maxWidth: 200 }}>
+              Ask questions about your network or open a map to get started.
+            </div>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#555', letterSpacing: '0.01em', marginBottom: 6, paddingLeft: 10 }}>
+            Try asking
+          </div>
+          {[
+            { label: 'Show network topology', prompt: 'Show network topology of [location]' },
+            { label: 'Expand neighbours of this device', prompt: 'Expand neighbours of @device' },
+            { label: 'Trace path between A and B', prompt: 'Trace path between @deviceA and @deviceB' },
+          ].map(({ label, prompt }) => (
+            <div
+              key={label}
+              onClick={() => onSend?.(prompt)}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              style={{ padding: '9px 10px', borderRadius: 7, cursor: 'pointer', fontSize: 13, color: '#222', background: 'transparent', transition: 'background 0.12s', marginBottom: 2 }}
+            >
+              {label}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}
+             className="scrollbar-thin">
+          {messages.map(msg => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              onSaveArtifact={onSaveArtifact}
+              onOpenArtifact={onOpenArtifact}
+              onAddWidget={onAddWidget}
+              canAddToCanvas={canAddToCanvas}
+              onAction={onMessageAction}
+              onDeviceClick={onDeviceClick}
+              isNarrowLayout={isNarrowLayout}
+            />
+          ))}
+          {isStreaming && <SkeletonMessage />}
+          <div ref={bottomRef} />
+        </div>
+      )}
 
       <div style={{ padding: '16px 24px', borderTop: '1px solid #f0f0f0', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 680 }}>

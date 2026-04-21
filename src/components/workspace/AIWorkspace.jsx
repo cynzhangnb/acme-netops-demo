@@ -84,6 +84,21 @@ export default function AIWorkspace({
   const [inputPrefill,       setInputPrefill]       = useState('')
   const [sessionNameOverride, setSessionNameOverride] = useState(null)
 
+  /* Session is "active" (has a name, appears in history) only after first AI response.
+     Restored sessions start active; fresh ones start free-floating. */
+  const [sessionActive, setSessionActive] = useState(
+    !!(restoredSession?.messages?.length) || !!initialPrompt
+  )
+  const [sessionJustActivated, setSessionJustActivated] = useState(false)
+  const activateSession = useCallback(() => {
+    setSessionActive(prev => {
+      if (prev) return prev
+      setSessionJustActivated(true)
+      setTimeout(() => setSessionJustActivated(false), 900)
+      return true
+    })
+  }, [])
+
   const { artifacts, activeArtifactId, setActiveArtifactId, addArtifact, removeArtifact } =
     useArtifactManager(
       restoredSession?.artifacts        || [],
@@ -94,7 +109,9 @@ export default function AIWorkspace({
 
   /* ── Right-pane (AI chat) width — user can drag the sash ──────────────── */
   const [chatPaneWidth, setChatPaneWidth] = useState(DEFAULT_CHAT_W)
-  const [showChat,      setShowChat]      = useState(true)
+  // Show chat pane by default only when there's already a conversation (restored session or auto-sent prompt).
+  // Opening a fresh artifact (e.g. device report) starts with the artifact filling the full width.
+  const [showChat,      setShowChat]      = useState(!!(initialPrompt || restoredSession?.messages?.length))
   const isDraggingSash = useRef(false)
 
   /* ── Pending artifact: shown as skeleton during split transition ──────── */
@@ -105,7 +122,7 @@ export default function AIWorkspace({
   const [editValue,       setEditValue]       = useState('')
   const [showMenu,        setShowMenu]        = useState(false)
   const [showSessions,    setShowSessions]    = useState(false)
-  const [nameAreaHovered, setNameAreaHovered] = useState(false)
+
   const [hoveredSessionId, setHoveredSessionId] = useState(null)
   const headerRef    = useRef(null)
   const nameInputRef = useRef(null)
@@ -176,6 +193,7 @@ export default function AIWorkspace({
     onSetTopologyHighlight: handleSetHighlight,
     onSetChangesMapOverlay: setChangesMapOverlay,
     onPrefillInput:         setInputPrefill,
+    onFirstAIResponse:      activateSession,
     initialMessages:        restoredSession?.messages || [],
   })
 
@@ -278,14 +296,22 @@ export default function AIWorkspace({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
 
-      {/* ── Session header — full-width, always at top ── */}
+      {/* ── Session header — slides in when session activates, hidden when free-floating ── */}
       <div ref={headerRef} style={{
-        height: 40, flexShrink: 0, position: 'relative',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 12px 0 8px', borderBottom: '1px solid #e8e8e8',
-        background: '#fff',
+        height: sessionActive ? 40 : 0,
+        overflow: sessionActive ? 'visible' : 'hidden',
+        flexShrink: 0, position: 'relative',
+        transition: 'height 380ms cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
-        {/* Left: session name */}
+      <div style={{
+        height: 40,
+        display: 'flex', alignItems: 'center',
+        padding: '0 8px', borderBottom: '1px solid #e8e8e8',
+        background: '#fff',
+        opacity: sessionActive ? 1 : 0,
+        transition: 'opacity 260ms ease 120ms',
+      }}>
+        {/* Left: rename input or session name */}
         {isEditingName ? (
           <input
             ref={nameInputRef}
@@ -304,44 +330,44 @@ export default function AIWorkspace({
             }}
           />
         ) : (
-          /* Outer: 30% max-width cap + anchor for the dropdown */
-          <div
-            style={{ maxWidth: '30%', minWidth: 0, position: 'relative', flexShrink: 1, display: 'flex', alignItems: 'center', gap: 2 }}
-            onMouseEnter={() => setNameAreaHovered(true)}
-            onMouseLeave={() => setNameAreaHovered(false)}
-          >
+          /* Session name + chevron — independent hover shapes (no connected pill) */
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1 }}>
 
-            {/* Name — separate click target: opens sessions list */}
+            {/* Name — opens sessions list */}
             <span
               onClick={() => { setShowSessions(s => !s); setShowMenu(false) }}
+              className={sessionJustActivated ? 'session-name-enter' : ''}
+              onMouseEnter={e => { if (!showSessions) e.currentTarget.style.background = '#f0f0f0' }}
+              onMouseLeave={e => { if (!showSessions) e.currentTarget.style.background = 'transparent' }}
               style={{
                 fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
-                minWidth: 0, flex: '1 1 auto',
-                height: 26, display: 'flex', alignItems: 'center',
-                padding: '0 6px 0 10px',
-                borderRadius: showSessions || nameAreaHovered || showMenu ? '6px 0 0 6px' : 6,
-                cursor: 'pointer', userSelect: 'none',
-                background: showSessions ? '#e8e8e8' : nameAreaHovered || showMenu ? '#f0f0f0' : 'transparent',
-                transition: 'background 0.12s, border-radius 0.12s',
+                cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
+                padding: '3px 6px 3px 10px',
+                borderRadius: 6,
+                background: showSessions ? '#e8e8e8' : 'transparent',
+                transition: 'background 0.12s',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
               }}
             >
-              <span style={{ minWidth: 0, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
-                {sessionName}
-              </span>
+              {sessionName}
             </span>
 
-            {/* Chevron — separate click target with its own dropdown anchor */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+            {/* Chevron — separate click target */}
+            <div
+              className={sessionJustActivated ? 'session-chrome-enter' : ''}
+              style={{ position: 'relative', flexShrink: 0 }}
+            >
               <button
                 onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
+                onMouseEnter={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : '#f0f0f0'; e.currentTarget.style.color = '#555' }}
+                onMouseLeave={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = showMenu ? '#555' : '#aaa' }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  height: 26, padding: '0 5px',
-                  border: 'none',
-                  borderRadius: showMenu || nameAreaHovered ? '0 6px 6px 0' : 5,
-                  background: showMenu ? '#e8e8e8' : nameAreaHovered ? '#f0f0f0' : 'transparent',
-                  color: showMenu || nameAreaHovered ? '#555' : '#888', cursor: 'pointer',
-                  transition: 'background 0.12s, color 0.12s, border-radius 0.12s',
+                  height: 26, padding: '0 5px', border: 'none',
+                  borderRadius: 6,
+                  background: showMenu ? '#e8e8e8' : 'transparent',
+                  color: showMenu ? '#555' : '#aaa',
+                  cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
                 }}
               >
                 <ChevronIcon />
@@ -473,67 +499,77 @@ export default function AIWorkspace({
           </div>
         )}
 
-        {/* Right: controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-          {/* + New */}
-          <button
-            onClick={onNew}
-            title="New session"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              height: 28, padding: '0 9px', border: 'none', borderRadius: 5,
-              background: 'transparent', color: '#444',
-              fontSize: 12, fontWeight: 500, cursor: 'pointer',
-              transition: 'background 0.1s, color 0.1s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
-          >
-            + New
-          </button>
+        {/* Right: controls — stretch container so AI button can fill full height */}
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, flexShrink: 0, alignSelf: 'stretch' }}>
+          {/* + New — only once a session exists */}
+          {sessionActive && (
+            <button
+              onClick={onNew}
+              title="New session"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                height: 26, padding: '0 9px', border: 'none', borderRadius: 5,
+                background: 'transparent', color: '#444', alignSelf: 'center',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                transition: 'background 0.1s, color 0.1s', flexShrink: 0, marginRight: 2,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
+              + New
+            </button>
+          )}
 
           {/* Share */}
           <button
-            title="Share session"
+            title="Share"
             style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 28, height: 28, border: 'none', borderRadius: 5,
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
               background: 'transparent', color: '#444',
-              cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
+              fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 16v4.25a.75.75 0 0 0 .75.75h14.5a.75.75 0 0 0 .75-.75V16"/>
+              <polyline points="16 7 12 3 8 7"/>
+              <line x1="12" y1="3" x2="12" y2="16"/>
             </svg>
+            Share
           </button>
 
-          {/* Show / hide chat pane — only when an artifact is open */}
+          {/* AI toggle — 40×40 square flush to right edge, same as MapSessionWorkspace */}
           {isSplit && (
             <button
-            onClick={() => setShowChat(v => !v)}
-            title={showChat ? 'Hide AI pane' : 'Show AI pane'}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 28, height: 28, border: 'none', borderRadius: 5,
-                background: showChat ? '#f0f0f0' : 'transparent',
-                color: '#333',
-                cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
-                marginLeft: 6,
+              onClick={() => setShowChat(v => !v)}
+              title={showChat ? 'Hide AI pane' : 'Show AI pane'}
+              style={{
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                padding: 0,
+                alignSelf: 'stretch',
+                height: 'auto',
+                width: 40,
+                border: 'none',
+                borderLeft: showChat ? '1px solid #e0e0e0' : 'none',
+                borderRadius: 0,
+                background: showChat ? '#e8e8e8' : 'transparent',
+                color: showChat ? '#111' : '#333',
+                cursor: 'pointer',
+                transition: 'background 0.1s, color 0.1s',
+                marginRight: -8,
+                flexShrink: 0,
               }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#333' }}
-            onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#f0f0f0' : 'transparent'; e.currentTarget.style.color = '#333' }}
-          >
-            <AIPaneIcon />
-          </button>
-        )}
-
+              onMouseEnter={e => { e.currentTarget.style.background = showChat ? '#dedede' : '#f0f0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#e8e8e8' : 'transparent' }}
+            >
+              <AIPaneIcon />
+            </button>
+          )}
         </div>
+      </div>
       </div>
 
       {/* ── Content area — flex row so artifact grows left→right and pushes chat right ── */}
@@ -577,6 +613,48 @@ export default function AIWorkspace({
               changesMapOverlay={changesMapOverlay}
               widgets={widgetsByArtifact[activeArtifactId] || []}
               onTopologyNodeAction={handleTopologyNodeAction}
+              headerRight={!sessionActive ? (
+                /* Free-floating: Share + AI toggle in the artifact tab bar */
+                <div style={{ display: 'flex', alignItems: 'stretch', alignSelf: 'stretch', gap: 2, marginLeft: 2 }}>
+                  <button
+                    title="Share"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+                      background: 'transparent', color: '#444',
+                      fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                      transition: 'background 0.1s', alignSelf: 'center',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2.5 10v3.5a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V10"/>
+                      <polyline points="10.5 4.5 8 2 5.5 4.5"/>
+                      <line x1="8" y1="2" x2="8" y2="10.5"/>
+                    </svg>
+                    Share
+                  </button>
+                  <button
+                    onClick={() => setShowChat(v => !v)}
+                    title={showChat ? 'Hide AI pane' : 'Show AI pane'}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      padding: 0, alignSelf: 'stretch', height: 'auto', width: 40,
+                      border: 'none', borderRadius: 0,
+                      borderLeft: showChat ? '1px solid #e0e0e0' : 'none',
+                      background: showChat ? '#e8e8e8' : 'transparent',
+                      color: showChat ? '#111' : '#333',
+                      cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
+                      marginRight: -8, flexShrink: 0,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = showChat ? '#dedede' : '#f0f0f0' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#e8e8e8' : 'transparent' }}
+                  >
+                    <AIPaneIcon />
+                  </button>
+                </div>
+              ) : null}
             />
           )}
         </div>

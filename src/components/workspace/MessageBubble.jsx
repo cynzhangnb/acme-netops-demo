@@ -530,9 +530,11 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
     onAction?.({ ...action, messageId: message.id })
   }
 
+  const px = isNarrowLayout ? '0 16px' : '0 24px'
+
   if (isUser) {
     return (
-      <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '0 24px', display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: px, display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <div className="u-bubble">{message.content}</div>
       </div>
     )
@@ -541,7 +543,7 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
   // Structured response (e.g. query result card)
   if (message.structured) {
     return (
-      <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: px, marginBottom: 20 }}>
         <div className="arow msg-fade-in">
           <QueryResultCard structured={message.structured} onAction={handleAction} onDeviceClick={onDeviceClick} />
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
@@ -554,7 +556,7 @@ export default function MessageBubble({ message, onOpenArtifact, onSaveArtifact,
   }
 
   return (
-    <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '0 24px' }}>
+    <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: px, marginBottom: 20 }}>
       {/* Chart pop-out modal */}
       {chartModal && (
         <div

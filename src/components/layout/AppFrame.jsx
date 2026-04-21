@@ -162,54 +162,76 @@ function PinIcon({ pinned }) {
 }
 
 function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
-  const [hoveredId, setHoveredId] = useState(null)
+  const [hoveredId, setHoveredId]   = useState(null)
+  const [openingId, setOpeningId]   = useState(null)
+
+  function handleOpen(e, map) {
+    e.stopPropagation()
+    if (openingId) return
+    setOpeningId(map.id)
+    onOpenTab(map.id, map.name)
+    setTimeout(() => setOpeningId(null), 1200)
+  }
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
-      {MAP_INSTANCES.map((map, i) => (
-        <div
-          key={map.id}
-          draggable
-          onDragStart={(e) => {
-            // Must call setData — Firefox won't start the drag without it
-            e.dataTransfer.setData('text/plain', map.id)
-            e.dataTransfer.effectAllowed = 'copy'
-            // Defer setState via rAF: calling setState synchronously inside
-            // dragstart triggers a React re-render that cancels the native drag
-            requestAnimationFrame(() => onMapDragStart(map))
-          }}
-          onDragEnd={onMapDragEnd}
-          onMouseEnter={() => setHoveredId(map.id)}
-          onMouseLeave={() => setHoveredId(null)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '9px 14px',
-            borderBottom: i < MAP_INSTANCES.length - 1 ? '1px solid #f5f5f5' : 'none',
-            background: hoveredId === map.id ? '#fafafa' : 'transparent',
-            transition: 'background 0.1s',
-            cursor: 'grab',
-            userSelect: 'none',
-          }}
-        >
-          <MapItemIcon />
-          <span style={{ flex: 1, fontSize: 12, color: '#222', lineHeight: 1.4 }}>{map.name}</span>
-          {/* always in DOM so row height stays stable */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenTab(map.id, map.name) }}
-            style={{
-              fontSize: 11, color: '#378ADD', background: 'none',
-              border: 'none', cursor: 'pointer',
-              padding: '2px 7px', borderRadius: 4, lineHeight: 1.5,
-              flexShrink: 0,
-              visibility: hoveredId === map.id ? 'visible' : 'hidden',
+      {MAP_INSTANCES.map((map, i) => {
+        const isOpening = openingId === map.id
+        return (
+          <div
+            key={map.id}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('text/plain', map.id)
+              e.dataTransfer.effectAllowed = 'copy'
+              requestAnimationFrame(() => onMapDragStart(map))
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#e8f2ff'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            onDragEnd={onMapDragEnd}
+            onMouseEnter={() => setHoveredId(map.id)}
+            onMouseLeave={() => setHoveredId(null)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 14px',
+              borderBottom: i < MAP_INSTANCES.length - 1 ? '1px solid #f5f5f5' : 'none',
+              background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#fafafa' : 'transparent',
+              transition: 'background 0.15s',
+              cursor: 'grab',
+              userSelect: 'none',
+            }}
           >
-            Open
-          </button>
-        </div>
-      ))}
+            <MapItemIcon />
+            <span style={{ flex: 1, fontSize: 12, color: isOpening ? '#378ADD' : '#222', lineHeight: 1.4, transition: 'color 0.15s' }}>{map.name}</span>
+            {/* always in DOM so row height stays stable */}
+            <button
+              onClick={(e) => handleOpen(e, map)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                fontSize: 11, color: '#378ADD', background: 'none',
+                border: 'none', cursor: isOpening ? 'default' : 'pointer',
+                padding: '2px 7px', borderRadius: 4, lineHeight: 1.5,
+                flexShrink: 0,
+                visibility: (hoveredId === map.id || isOpening) ? 'visible' : 'hidden',
+                opacity: isOpening ? 0.7 : 1,
+              }}
+              onMouseEnter={e => { if (!isOpening) e.currentTarget.style.background = '#e8f2ff' }}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              {isOpening ? (
+                <>
+                  <span style={{
+                    display: 'inline-block', width: 9, height: 9,
+                    border: '1.5px solid #378ADD', borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                    flexShrink: 0,
+                  }} />
+                  Opening
+                </>
+              ) : 'Open'}
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 }

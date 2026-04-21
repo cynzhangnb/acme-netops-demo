@@ -38,7 +38,7 @@ function BackArrowIcon() {
 
 function SplitScreenIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="20" height="18" rx="2"/>
       <line x1="12" y1="3" x2="12" y2="21"/>
     </svg>
@@ -977,32 +977,11 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
   )
 }
 
-/* ── Network Map placeholder artifact ───────────────────────────────────── */
+/* ── Network Map artifact — renders the full topology map ────────────────── */
 function NetworkMapArtifact({ label }) {
   return (
-    <div style={{
-      flex: 1, height: '100%', position: 'relative', overflow: 'hidden',
-      background: '#fff',
-      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
-      backgroundSize: '22px 22px',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      flexDirection: 'column', gap: 16,
-    }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: 10,
-        background: '#fff', border: '1px solid #e4e4e4',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888"
-          strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-          <line x1="8" y1="2" x2="8" y2="18"/>
-          <line x1="16" y1="6" x2="16" y2="22"/>
-        </svg>
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 500, color: '#333', letterSpacing: '-0.01em' }}>{label}</div>
-      <div style={{ fontSize: 12, color: '#aaa' }}>Map canvas coming soon</div>
+    <div style={{ flex: 1, height: '100%', position: 'relative', overflow: 'hidden' }}>
+      <TopologyMap />
     </div>
   )
 }
@@ -1068,7 +1047,7 @@ function ArtifactTabIcon({ type }) {
   return null
 }
 
-export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction }) {
+export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction, headerRight = null }) {
   const active = artifacts.find(a => a.id === activeArtifactId)
   const [modal, setModal] = useState(null)
   const [propertiesPane, setPropertiesPane] = useState(null)
@@ -1640,13 +1619,20 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
             )
           })}
           {artifacts.length === 0 && <span style={{ fontSize: 12, color: '#bbb', paddingLeft: 4 }}>No artifacts</span>}
-          <button onClick={enterSplitMode} title="Split view"
-            style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 5, cursor: 'pointer', background: 'transparent', color: '#767676', flexShrink: 0, marginLeft: 'auto' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#767676' }}
-          >
-            <SplitScreenIcon />
-          </button>
+          {/* Spacer pushes right-side controls to the end */}
+          <div style={{ flex: 1 }} />
+          {/* Split view — only when 2+ tabs are open */}
+          {artifacts.length >= 2 && (
+            <button onClick={enterSplitMode} title="Split view"
+              style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 5, cursor: 'pointer', background: 'transparent', color: '#2e2c28', flexShrink: 0 }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#111' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2c28' }}
+            >
+              <SplitScreenIcon />
+            </button>
+          )}
+          {/* Injected right controls (e.g. Share + AI toggle when free-floating) */}
+          {headerRight}
         </div>
         {/* Normal mode content */}
         {(

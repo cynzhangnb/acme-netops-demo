@@ -4,10 +4,11 @@ import { matchResponse } from '../data/mockResponses'
 let msgCounter = 0
 function genMsgId() { return `msg-${++msgCounter}` }
 
-export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onSetChangesMapOverlay, onPrefillInput, initialMessages = [] }) {
+export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHighlight, onSetChangesMapOverlay, onPrefillInput, onFirstAIResponse, initialMessages = [] }) {
   const [messages, setMessages] = useState(initialMessages)
   const [isStreaming, setIsStreaming] = useState(false)
   const timerRef = useRef(null)
+  const hasFirstResponse = useRef(initialMessages.some(m => m.role === 'assistant'))
 
   const sendMessage = useCallback((inputText) => {
     if (!inputText.trim() || isStreaming) return
@@ -60,6 +61,11 @@ export function useAIResponse({ onAddArtifact, onTriggerSplit, onSetTopologyHigh
 
       setMessages(prev => [...prev, aiMsg])
       setIsStreaming(false)
+
+      if (!hasFirstResponse.current) {
+        hasFirstResponse.current = true
+        onFirstAIResponse?.()
+      }
 
       // Pre-fill the next suggested prompt if defined
       if (response.prefillNext && onPrefillInput) {
