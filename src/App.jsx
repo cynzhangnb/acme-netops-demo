@@ -409,9 +409,19 @@ export default function App() {
 
   const enterChangeAnalysis = useCallback(() => {
     if (viewModeRef.current === 'workspace') {
+      /* Already in workspace — inject artifact without touching session key */
       setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
       return
     }
+    if (homeSessionKeyRef.current > 0) {
+      /* Active workspace exists but a different view is showing — switch back without remounting */
+      navigate(() => {
+        setViewMode('workspace')
+        setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
+      })
+      return
+    }
+    /* No active session yet — create one */
     navigate(() => {
       setShowHomeInsights(true)
       setActiveSessionListId(null)
@@ -425,10 +435,17 @@ export default function App() {
   }, [navigate, startSession])
 
   const openReportInSession = useCallback((id, label) => {
-    const artifactId = `report-${id}`
     if (viewModeRef.current === 'workspace') {
       /* Active AI session — inject report as a new artifact tab */
       setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
+      return
+    }
+    if (homeSessionKeyRef.current > 0) {
+      /* Active workspace exists but a different view is showing — switch back without remounting */
+      navigate(() => {
+        setViewMode('workspace')
+        setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
+      })
       return
     }
     /* No active session — navigate to workspace, then inject artifact through
@@ -463,6 +480,9 @@ export default function App() {
   useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
   const openTabsRef = useRef(openTabs)
   useEffect(() => { openTabsRef.current = openTabs }, [openTabs])
+  /* Track homeSessionKey so callbacks know when an AI workspace is already active */
+  const homeSessionKeyRef = useRef(homeSessionKey)
+  useEffect(() => { homeSessionKeyRef.current = homeSessionKey }, [homeSessionKey])
 
   /* When in map-session mode, maps from the network pane open inside MapSessionWorkspace */
   const [externalMapToOpen, setExternalMapToOpen] = useState(null)
@@ -519,22 +539,32 @@ export default function App() {
       openMapResourceTab(id, label)
       return
     }
+    if (homeSessionKeyRef.current > 0) {
+      /* Active workspace exists but a different view is showing — switch back and add map */
+      navigate(() => {
+        setViewMode('workspace')
+        setExternalArtifactToOpen({ _key: Date.now(), type: 'networkMap', label, mapId: id })
+      })
+      return
+    }
     if (viewModeRef.current === 'map-session') {
-      /* Already in map-session — just open the map inside MapSessionWorkspace */
+      /* Already in an explicit map-session — add map there */
       setExternalMapToOpen({ id, label })
       return
     }
-    /* Any other view → transition to map-session with the map pre-loaded */
+    /* Home or any other view with no active session — start a workspace so that
+       subsequent artifacts (CA, reports) can stack as tabs without remounting */
     navigate(() => {
       setShowHomeInsights(true)
-      setOpenTabs([])
-      setActiveTabId(null)
-      setCurrentSessionName('New Session')
       setActiveSessionListId(null)
-      setViewMode('map-session')
-      setExternalMapToOpen({ id, label })
+      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
+      setInitialPrompt('')
+      startSession()
+      setHomeSessionKey(k => k + 1)
+      setViewMode('workspace')
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'networkMap', label, mapId: id })
     })
-  }, [navigate, openMapResourceTab])
+  }, [navigate, openMapResourceTab, startSession])
 
   const handleSelectSession = useCallback((id) => {
     navigate(() => {
