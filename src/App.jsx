@@ -403,7 +403,7 @@ export default function App() {
 
   const enterChangeAnalysis = useCallback(() => {
     if (viewModeRef.current === 'workspace') {
-      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'last-24h' })
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
       return
     }
     navigate(() => {
@@ -414,7 +414,7 @@ export default function App() {
       startSession()
       setHomeSessionKey(k => k + 1)
       setViewMode('workspace')
-      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'last-24h' })
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
     })
   }, [navigate, startSession])
 
