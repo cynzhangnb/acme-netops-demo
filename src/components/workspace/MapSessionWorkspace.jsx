@@ -101,17 +101,18 @@ function MapDotGrid() {
 }
 
 /* ── Map toolbar drawing tools ───────────────────────────────────────────── */
-/* All icons: 16×16, viewBox 0 0 16 16, strokeWidth 1.5 — matches sidebar icon weight */
+/* viewBox 0 0 24 24 at width/height 15 — same ratio as sidebar (18px/24vb)
+   so visual stroke weight = 1.5 × (15/24) ≈ 0.94px, matching the sidebar's slender style */
 const MAP_TOOLS = [
   {
     id: 'page',
     label: 'Note',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M3.5 1.5H9.5L12.5 4.5V14.5H3.5V1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
-        <path d="M9.5 1.5V4.5H12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <line x1="5.5" y1="7.5" x2="10.5" y2="7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="5.5" y1="10" x2="8.5" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-5-6z"/>
+        <polyline points="14 3 14 9 20 9"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="12" y2="17"/>
       </svg>
     ),
   },
@@ -119,12 +120,12 @@ const MAP_TOOLS = [
     id: 'table',
     label: 'Table',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="1.75" y="1.75" width="12.5" height="12.5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="1.75" y1="5.75" x2="14.25" y2="5.75" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="1.75" y1="10.25" x2="14.25" y2="10.25" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="6" y1="1.75" x2="6" y2="14.25" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="10.25" y1="1.75" x2="10.25" y2="14.25" stroke="currentColor" strokeWidth="1.5"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+        <line x1="15" y1="3" x2="15" y2="21"/>
       </svg>
     ),
   },
@@ -132,8 +133,8 @@ const MAP_TOOLS = [
     id: 'rect',
     label: 'Rectangle',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="5" width="18" height="14" rx="2"/>
       </svg>
     ),
   },
@@ -141,8 +142,8 @@ const MAP_TOOLS = [
     id: 'ellipse',
     label: 'Ellipse',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <ellipse cx="8" cy="8" rx="6" ry="5" stroke="currentColor" strokeWidth="1.5"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="12" rx="9" ry="7"/>
       </svg>
     ),
   },
@@ -150,8 +151,8 @@ const MAP_TOOLS = [
     id: 'line',
     label: 'Line',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <line x1="4" y1="20" x2="20" y2="4"/>
       </svg>
     ),
   },
@@ -159,9 +160,9 @@ const MAP_TOOLS = [
     id: 'arrow',
     label: 'Arrow',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <line x1="3" y1="13" x2="12" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M12 4H8M12 4V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="5" y1="19" x2="19" y2="5"/>
+        <polyline points="9 5 19 5 19 15"/>
       </svg>
     ),
   },
@@ -169,9 +170,10 @@ const MAP_TOOLS = [
     id: 'text',
     label: 'Text',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M2.5 4H13.5M8 4V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M5.5 13H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+        <line x1="4" y1="7" x2="20" y2="7"/>
+        <line x1="12" y1="7" x2="12" y2="20"/>
+        <line x1="8" y1="20" x2="16" y2="20"/>
       </svg>
     ),
   },
@@ -179,10 +181,10 @@ const MAP_TOOLS = [
     id: 'link',
     label: 'Link',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M6.5 6H5A3 3 0 0 0 5 12H6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M9.5 6H11A3 3 0 0 1 11 12H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="6" y1="9" x2="10" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 8H8a4 4 0 0 0 0 8h2"/>
+        <path d="M14 8h2a4 4 0 0 1 0 8h-2"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
       </svg>
     ),
   },
@@ -190,9 +192,9 @@ const MAP_TOOLS = [
     id: 'pen',
     label: 'Pen',
     icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M11 2L14 5L6 13L2.5 13.5L3 10L11 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
-        <line x1="9" y1="4" x2="12" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3l4 4L8 19l-5 1 1-5L17 3z"/>
+        <line x1="15" y1="5" x2="19" y2="9"/>
       </svg>
     ),
   },
