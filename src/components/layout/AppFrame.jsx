@@ -856,6 +856,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         networkActive={networkActive}
         onGoInventory={handleInventoryToggle}
         inventoryActive={inventoryActive}
+        onGoChangeAnalysis={onGoChangeAnalysis}
         sessions={FAKE_SESSIONS}
         currentSessionName={currentSessionName}
         activeSessionListId={activeSessionListId}

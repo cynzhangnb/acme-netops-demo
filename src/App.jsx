@@ -402,10 +402,21 @@ export default function App() {
   }, [navigate, startSession])
 
   const enterChangeAnalysis = useCallback(() => {
-    setOpenTabs(prev => prev.find(t => t.id === 'change-analysis') ? prev : [...prev, { id: 'change-analysis', label: 'Change Analysis' }])
-    setActiveTabId('change-analysis')
-    setChangeAnalysisMounted(true)
-  }, [])
+    if (viewModeRef.current === 'workspace') {
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'last-24h' })
+      return
+    }
+    navigate(() => {
+      setShowHomeInsights(true)
+      setActiveSessionListId(null)
+      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
+      setInitialPrompt('')
+      startSession()
+      setHomeSessionKey(k => k + 1)
+      setViewMode('workspace')
+      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'last-24h' })
+    })
+  }, [navigate, startSession])
 
   const openReportInSession = useCallback((id, label) => {
     const artifactId = `report-${id}`
