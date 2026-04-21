@@ -1019,11 +1019,7 @@ function CanvasWidget({ item, onDragStart, onResizeStart, highlight, isFocused, 
 
 /* ── Network Map artifact — renders the full topology map ────────────────── */
 function NetworkMapArtifact({ label }) {
-  return (
-    <div style={{ flex: 1, height: '100%', position: 'relative', overflow: 'hidden' }}>
-      <TopologyMap />
-    </div>
-  )
+  return <TopologyWithToolbar />
 }
 
 /* ── Artifact type icons for tab labels ─────────────────────────────────── */
