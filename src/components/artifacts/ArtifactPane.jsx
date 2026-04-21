@@ -1024,7 +1024,7 @@ function NetworkMapArtifact({ label }) {
 
 /* ── Artifact type icons for tab labels ─────────────────────────────────── */
 function ArtifactTabIcon({ type }) {
-  const s = { width: 12, height: 12, flexShrink: 0, display: 'block' }
+  const s = { width: 12, height: 12, style: { flexShrink: 0, display: 'block' } }
   if (type === 'topology' || type === 'changesMap' || type === 'networkMap') {
     return (
       <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor"
