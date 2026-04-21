@@ -125,6 +125,14 @@ export default function AIWorkspace({
   const [nameAreaHovered, setNameAreaHovered] = useState(false)
 
   const [hoveredSessionId, setHoveredSessionId] = useState(null)
+  const [pinnedSessionIds, setPinnedSessionIds] = useState(new Set())
+  function toggleSessionPin(id) {
+    setPinnedSessionIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
   const headerRef    = useRef(null)
   const nameInputRef = useRef(null)
 
@@ -170,8 +178,13 @@ export default function AIWorkspace({
   }, [artifacts, addArtifact, setActiveArtifactId])
 
   /* ── Open artifact from outside (e.g. drag-drop from network pane) ──────── */
+  // Guard ref: prevents the same _key from being processed twice (React 18 Strict Mode
+  // double-fires effects; without this, two identical tabs would be created).
+  const lastExternalKeyRef = useRef(null)
   useEffect(() => {
     if (!externalArtifact) return
+    if (externalArtifact._key === lastExternalKeyRef.current) return
+    lastExternalKeyRef.current = externalArtifact._key
     const { _key, ...artifactRef } = externalArtifact
     handleOpenArtifact(artifactRef)
   }, [externalArtifact])
@@ -410,97 +423,101 @@ export default function AIWorkspace({
         {/* Sessions switcher dropdown — anchored to full header width */}
         {showSessions && (
           <div style={{
-            position: 'absolute', top: 40, left: 0, width: '50%', minWidth: 280, maxWidth: 520, zIndex: 300,
+            position: 'absolute', top: 40, left: 0, minWidth: 260, maxWidth: 360, zIndex: 300,
             background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
           }}>
-            <div style={{ maxHeight: 10 * 40, overflowY: 'auto' }} className="scrollbar-thin">
-              {(() => {
-                // Keep current session in the list and pin it to the top.
-                const currentId = currentSessionListId ?? restoredSession?.id
-                const seenIds   = new Set()
-                const seenNames = new Set()
-                const sessionItems = sessions.filter(s => {
-                  if (seenIds.has(s.id)) return false
-                  if (s.name && seenNames.has(s.name)) return false
-                  seenIds.add(s.id)
-                  if (s.name) seenNames.add(s.name)
-                  return true
-                })
-                const orderedSessions = currentId
-                  ? [
-                      ...sessionItems.filter(s => s.id === currentId),
-                      ...sessionItems.filter(s => s.id !== currentId),
-                    ]
-                  : sessionItems
+            {(() => {
+              const currentId = currentSessionListId ?? restoredSession?.id
+              const seenIds = new Set(); const seenNames = new Set()
+              const sessionItems = sessions.filter(s => {
+                if (s.current) return false
+                if (seenIds.has(s.id)) return false
+                if (s.name && seenNames.has(s.name)) return false
+                seenIds.add(s.id); if (s.name) seenNames.add(s.name)
+                return true
+              }).slice(0, 10)
 
-                return orderedSessions.length > 0
-                  ? orderedSessions.map(s => (
-                      (() => {
-                        const isInteractive = s.id === 's1' || s.id === 's2'
-                        const isCurrent = s.id === currentId
-                        return (
-                      <div
-                        key={s.id}
-                        onMouseEnter={e => { setHoveredSessionId(s.id); e.currentTarget.style.background = '#f5f5f5' }}
-                        onMouseLeave={e => { setHoveredSessionId(prev => prev === s.id ? null : prev); e.currentTarget.style.background = 'transparent' }}
-                        onMouseDown={e => {
-                          e.preventDefault()
-                          if (isCurrent || !isInteractive) return
-                          onSwitchSession?.(s.id)
-                          setShowSessions(false)
-                        }}
+              const pinned = sessionItems.filter(s => pinnedSessionIds.has(s.id))
+              const recent = sessionItems.filter(s => !pinnedSessionIds.has(s.id))
+
+              const renderSessionRow = (s) => {
+                const isInteractive = s.id === 's1' || s.id === 's2'
+                const isCurrent     = s.id === currentId
+                const isPinned      = pinnedSessionIds.has(s.id)
+                const isHovered     = hoveredSessionId === s.id
+                return (
+                  <div
+                    key={s.id}
+                    onMouseEnter={() => setHoveredSessionId(s.id)}
+                    onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
+                    onMouseDown={e => {
+                      e.preventDefault()
+                      if (isCurrent || !isInteractive) return
+                      onSwitchSession?.(s.id)
+                      setShowSessions(false)
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center',
+                      padding: '5px 8px 5px 14px',
+                      cursor: isCurrent ? 'default' : (isInteractive ? 'pointer' : 'default'),
+                      background: isHovered ? '#f0f0f0' : 'transparent',
+                      transition: 'background 0.1s',
+                    }}
+                  >
+                    {/* Current-session dot */}
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: isCurrent ? '#378ADD' : 'transparent', flexShrink: 0, marginRight: 8 }} />
+                    {/* Name */}
+                    <span style={{ fontSize: 12, fontWeight: isCurrent ? 500 : 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.name}
+                    </span>
+                    {/* Right slot: time fades out, pin fades in */}
+                    <div style={{ position: 'relative', flexShrink: 0, marginLeft: 8, minWidth: 48, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: 11, color: '#888', opacity: isHovered ? 0 : 1, transition: 'opacity 0.12s', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                        {s.ago}
+                      </span>
+                      <button
+                        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); toggleSessionPin(s.id) }}
+                        title={isPinned ? 'Unpin' : 'Pin session'}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          padding: '9px 16px',
-                          fontSize: 12.5,
-                          color: '#222',
-                          cursor: isCurrent ? 'default' : (isInteractive ? 'pointer' : 'default'),
-                          borderBottom: '1px solid #f5f5f5',
-                          background: 'transparent',
+                          position: 'absolute', right: -2,
+                          width: 20, height: 20,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
+                          color: '#6b7280',
+                          opacity: isHovered ? 1 : 0,
+                          pointerEvents: isHovered ? 'auto' : 'none',
+                          transition: 'opacity 0.12s, background 0.1s, color 0.1s',
                         }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                          <span style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: '50%',
-                            background: isCurrent ? '#378ADD' : 'transparent',
-                            flexShrink: 0,
-                          }} />
-                          <span style={{ minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: isCurrent ? 500 : 400 }}>
-                            {s.name}
-                          </span>
-                        </div>
-                        <span
-                          onMouseDown={e => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            if (!isInteractive) return
-                            onDeleteSession?.(s.id)
-                            setHoveredSessionId(null)
-                          }}
-                          style={{
-                            flexShrink: 0,
-                            fontSize: 11,
-                            color: '#b42318',
-                            opacity: hoveredSessionId === s.id ? 1 : 0,
-                            pointerEvents: hoveredSessionId === s.id ? 'auto' : 'none',
-                            transition: 'opacity 0.12s',
-                            cursor: isInteractive ? 'pointer' : 'default',
-                          }}
-                        >
-                          Delete
-                        </span>
-                      </div>
-                        )
-                      })()
-                    ))
-                  : <div style={{ padding: '10px 16px', fontSize: 12, color: '#999' }}>No other sessions</div>
-              })()}
-            </div>
+                        {isPinned
+                          ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
+                          : <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/></svg>
+                        }
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
+              if (sessionItems.length === 0) {
+                return <div style={{ padding: '10px 14px', fontSize: 12, color: '#999' }}>No sessions</div>
+              }
+              return (
+                <div style={{ maxHeight: 10 * 32, overflowY: 'auto' }} className="scrollbar-thin">
+                  {pinned.length > 0 && (
+                    <>
+                      <div style={{ padding: '6px 14px 2px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Pinned</div>
+                      {pinned.map(renderSessionRow)}
+                      {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px' }} />}
+                    </>
+                  )}
+                  {recent.map(renderSessionRow)}
+                </div>
+              )
+            })()}
           </div>
         )}
 
