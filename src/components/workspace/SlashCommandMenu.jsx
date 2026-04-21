@@ -2,10 +2,10 @@ export const NETWORK_TEMPLATE = `Help me explore my network.\nScope: [e.g. a sit
 
 /* ── "/" quick-action commands ────────────────────────────────────────────── */
 export const COMMAND_MENU_ITEMS = [
-  { id: 'new-map',        label: 'New map',        hoverPrompt: 'Create a new map to visualize your network' },
-  { id: 'open-map',       label: 'Open Map',       hoverPrompt: 'Open an existing network map' },
-  { id: 'show-inventory', label: 'Show Inventory', hoverPrompt: 'Browse and search your device inventory' },
-  { id: 'review-change',  label: 'Review Change',  hoverPrompt: 'Review recent configuration changes' },
+  { id: 'new-map',        label: 'New map',        hoverPrompt: 'Create a blank map canvas' },
+  { id: 'open-map',       label: 'Open map',       hoverPrompt: 'Open an existing network map' },
+  { id: 'show-inventory', label: 'Show inventory', hoverPrompt: 'Browse and search your device inventory' },
+  { id: 'review-change',  label: 'Review change',  hoverPrompt: 'Review recent configuration changes' },
   { id: 'device-lookup',  label: 'Device lookup',  hoverPrompt: 'Look up a device by hostname or IP address' },
 ]
 

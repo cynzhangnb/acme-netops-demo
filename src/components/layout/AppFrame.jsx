@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import DeviceBrowserPane from '../network/DeviceBrowserPane'
 import { allDevices } from '../../data/deviceData'
@@ -146,17 +146,28 @@ function MapItemIcon() {
   )
 }
 
+/* Pin icon — outline stroke when floating, filled when pinned */
 function PinIcon({ pinned }) {
-  return pinned ? (
-    /* filled pin = currently pinned */
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="0" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a1 1 0 0 1 1 1v1h3a1 1 0 0 1 .707 1.707L14 8.414V13l3 2v1H7v-1l3-2V8.414L7.293 5.707A1 1 0 0 1 8 4h3V3a1 1 0 0 1 1-1zM10 19h4a2 2 0 0 1-4 0z"/>
-    </svg>
-  ) : (
-    /* outline pin = not pinned */
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="17" x2="12" y2="22"/>
-      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17z"/>
+  if (pinned) {
+    /* pin--filled.svg: solid silhouette = visually "locked in place" */
+    return (
+      <svg
+        width="15" height="15" viewBox="0 0 32 32"
+        fill="currentColor"
+        style={{ display: 'block', flexShrink: 0 }}
+      >
+        <path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/>
+      </svg>
+    )
+  }
+  /* pin.svg: outline silhouette — floating state */
+  return (
+    <svg
+      width="15" height="15" viewBox="0 0 32 32"
+      fill="currentColor"
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/>
     </svg>
   )
 }
@@ -191,7 +202,7 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
             onMouseLeave={() => setHoveredId(null)}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              padding: '9px 14px',
+              padding: '5px 14px',
               borderBottom: i < MAP_INSTANCES.length - 1 ? '1px solid #f5f5f5' : 'none',
               background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#fafafa' : 'transparent',
               transition: 'background 0.15s',
@@ -201,34 +212,31 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
           >
             <MapItemIcon />
             <span style={{ flex: 1, fontSize: 12, color: isOpening ? '#378ADD' : '#222', lineHeight: 1.4, transition: 'color 0.15s' }}>{map.name}</span>
-            {/* always in DOM so row height stays stable */}
-            <button
+            {/* plain text link — no button chrome whatsoever */}
+            <span
               onClick={(e) => handleOpen(e, map)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                fontSize: 11, color: '#378ADD', background: 'none',
-                border: 'none', cursor: isOpening ? 'default' : 'pointer',
-                padding: '2px 7px', borderRadius: 4, lineHeight: 1.5,
-                flexShrink: 0,
+                fontSize: 12, color: '#378ADD',
+                cursor: isOpening ? 'default' : 'pointer',
+                flexShrink: 0, userSelect: 'none', lineHeight: 1.5,
                 visibility: (hoveredId === map.id || isOpening) ? 'visible' : 'hidden',
                 opacity: isOpening ? 0.7 : 1,
               }}
-              onMouseEnter={e => { if (!isOpening) e.currentTarget.style.background = '#e8f2ff' }}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              onMouseEnter={e => { if (!isOpening) e.currentTarget.style.color = '#1a56a0' }}
+              onMouseLeave={e => { if (!isOpening) e.currentTarget.style.color = '#378ADD' }}
             >
               {isOpening ? (
                 <>
                   <span style={{
                     display: 'inline-block', width: 9, height: 9,
                     border: '1.5px solid #378ADD', borderTopColor: 'transparent',
-                    borderRadius: '50%',
-                    animation: 'spin 0.7s linear infinite',
-                    flexShrink: 0,
+                    borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0,
                   }} />
                   Opening
                 </>
               ) : 'Open'}
-            </button>
+            </span>
           </div>
         )
       })}
@@ -236,7 +244,156 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
   )
 }
 
-function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTab, onMapDragStart, onMapDragEnd }) {
+/* ── Device category icons — match sidebar icon style (#514f49, same stroke weight) ── */
+const DIC = { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: '#514f49', strokeWidth: '1.6', strokeLinecap: 'round', strokeLinejoin: 'round' }
+function CatRouterIcon()   { return <svg {...DIC}><circle cx="12" cy="12" r="9"/><line x1="3" y1="12" x2="21" y2="12"/><path d="M12 3a15 15 0 0 1 4 9 15 15 0 0 1-4 9 15 15 0 0 1-4-9 15 15 0 0 1 4-9z"/></svg> }
+function CatSwitchIcon()   { return <svg {...DIC}><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="11" x2="6" y2="13"/><line x1="10" y1="11" x2="10" y2="13"/><line x1="14" y1="11" x2="14" y2="13"/><line x1="18" y1="11" x2="18" y2="13"/></svg> }
+function CatFirewallIcon() { return <svg {...DIC}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> }
+function CatServerIcon()   { return <svg {...DIC}><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg> }
+function CatDefaultIcon()  { return <svg {...DIC}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> }
+
+const DEVICE_TYPE_ICON = {
+  'Core Router':          CatRouterIcon,
+  'WAN Router':           CatRouterIcon,
+  'Firewall':             CatFirewallIcon,
+  'Load Balancer':        CatFirewallIcon,
+  'Distribution Switch':  CatSwitchIcon,
+  'Access Switch':        CatSwitchIcon,
+}
+function CategoryIcon({ type }) {
+  const Icon = DEVICE_TYPE_ICON[type] || CatDefaultIcon
+  return <Icon />
+}
+
+/* Group allDevices by type, preserving insertion order */
+function groupDevicesByType(devices) {
+  const map = new Map()
+  devices.forEach(d => {
+    if (!map.has(d.type)) map.set(d.type, [])
+    map.get(d.type).push(d)
+  })
+  return Array.from(map.entries()).map(([type, items]) => ({ type, items }))
+}
+
+/* ── Device tree (used inside NetworkBrowserPane Device tab) ─────────────── */
+function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }) {
+  const [openGroups, setOpenGroups] = useState(() => {
+    const init = {}
+    groupDevicesByType(allDevices).forEach(({ type }) => { init[type] = true })
+    return init
+  })
+  const [search, setSearch] = useState('')
+  const [hoveredId, setHoveredId] = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const query = search.trim().toLowerCase()
+
+  const groups = groupDevicesByType(allDevices)
+    .map(g => ({
+      ...g,
+      items: query ? g.items.filter(d => d.hostname.toLowerCase().includes(query) || d.ip.includes(query)) : g.items,
+    }))
+    .filter(g => !query || g.items.length > 0)
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Search */}
+      <div style={{ padding: '5px 10px', flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          padding: '3px 8px',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search devices…"
+            style={{
+              flex: 1, border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 12, color: '#222',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Tree */}
+      <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
+        {groups.map(({ type, items }) => {
+          const open = openGroups[type] ?? true
+          return (
+            <div key={type}>
+              {/* Category header — same padding/density as map rows */}
+              <div
+                onClick={() => setOpenGroups(p => ({ ...p, [type]: !p[type] }))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '5px 14px', cursor: 'pointer', userSelect: 'none',
+                  borderBottom: '1px solid #f5f5f5',
+                  background: 'transparent', transition: 'background 0.12s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: '#bbb' }}>
+                  <polyline points="2.5,1.5 6.5,4.5 2.5,7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <CategoryIcon type={type} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#222', flex: 1 }}>{type}</span>
+                <span style={{ fontSize: 11, color: '#888', flexShrink: 0 }}>{items.length}</span>
+              </div>
+
+              {/* Device rows — single line, same density, no IP, no status */}
+              {open && items.map(d => (
+                <div
+                  key={d.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', d.id)
+                    e.dataTransfer.effectAllowed = 'copy'
+                    requestAnimationFrame(() => { setDragging(true); onDeviceDragStart?.(d) })
+                  }}
+                  onDragEnd={() => { setDragging(false); onDeviceDragEnd?.() }}
+                  onMouseEnter={() => setHoveredId(d.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '5px 14px 5px 31px',
+                    borderBottom: '1px solid #f5f5f5',
+                    cursor: dragging ? 'grabbing' : 'grab',
+                    userSelect: 'none',
+                    background: hoveredId === d.id ? '#fafafa' : 'transparent',
+                    transition: 'background 0.12s',
+                  }}
+                >
+                  <span style={{ fontSize: 12, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{d.hostname}</span>
+                  {/* "Open in map" hover link */}
+                  <span
+                    onClick={(e) => { e.stopPropagation(); onOpenDeviceInMap?.(d) }}
+                    style={{
+                      fontSize: 12, color: '#378ADD',
+                      cursor: 'pointer', flexShrink: 0,
+                      userSelect: 'none', lineHeight: 1.5,
+                      visibility: hoveredId === d.id ? 'visible' : 'hidden',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = '#1a56a0' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = '#378ADD' }}
+                  >
+                    Open in map
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+    </div>
+  )
+}
+
+function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTab, onMapDragStart, onMapDragEnd, onDeviceDragStart, onDeviceDragEnd, onOpenDeviceInMap }) {
   return (
     <div style={{
       width: 280, flexShrink: 0,
@@ -265,10 +422,10 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: pinned ? '#378ADD' : '#aaa',
+              color: '#6b7280',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; if (!pinned) e.currentTarget.style.color = '#555' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; if (!pinned) e.currentTarget.style.color = '#aaa' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
           >
             <PinIcon pinned={pinned} />
           </button>
@@ -278,10 +435,10 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#aaa',
+              color: '#6b7280',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#555' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#aaa' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -319,6 +476,8 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
       {/* Content area */}
       {tab === 'map' ? (
         <MapList onOpenTab={onOpenTab} onMapDragStart={onMapDragStart} onMapDragEnd={onMapDragEnd} />
+      ) : tab === 'device' ? (
+        <DeviceTreeTab onOpenDeviceInMap={onOpenDeviceInMap} onDeviceDragStart={onDeviceDragStart} onDeviceDragEnd={onDeviceDragEnd} />
       ) : (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ fontSize: 12, color: '#bbb' }}>{NETWORK_TABS.find(t => t.toLowerCase() === tab)} view</span>
@@ -389,11 +548,11 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
         onMouseLeave={() => setHovered(false)}
         style={{
           display: 'flex', alignItems: 'center', gap: 5,
-          padding: `7px 8px 7px ${indent}px`,
-          margin: '0 4px', borderRadius: 4,
+          padding: `5px 14px 5px ${indent}px`,
+          borderBottom: '1px solid #f5f5f5',
           cursor: isFolder ? 'pointer' : 'grab',
           userSelect: 'none',
-          background: hovered ? '#f0f0f0' : 'transparent',
+          background: hovered ? '#fafafa' : 'transparent',
           color: '#222',
         }}
       >
@@ -411,20 +570,21 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
           </svg>
         </span>
 
-        {/* Folder / report icon */}
+        {/* Folder icon — closed: simple outline, open: open-folder metaphor (both stroke, no fill) */}
         {isFolder ? (
           open ? (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e9a825" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              <line x1="2" y1="10" x2="22" y2="10"/>
+            /* Open folder — front flap lifted, showing interior */
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"/>
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            /* Closed folder — simple outline */
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
               <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
             </svg>
           )
         ) : (
-          <svg width="14" height="14" viewBox="0 0 32 32" fill="#1a1a1a" style={{ flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 32 32" fill="currentColor" style={{ flexShrink: 0 }}>
             <path d="M25.7,9.3l-7-7C18.5,2.1,18.3,2,18,2H8C6.9,2,6,2.9,6,4v24c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V10C26,9.7,25.9,9.5,25.7,9.3z M18,4.4l5.6,5.6H18V4.4z M24,28H8V4h8v6c0,1.1,0.9,2,2,2h6V28z"/>
             <rect x="10" y="22" width="12" height="2"/>
             <rect x="10" y="16" width="12" height="2"/>
@@ -432,26 +592,25 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
         )}
 
         {/* Label */}
-        <span style={{ fontSize: 12, lineHeight: '1.35', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+        <span style={{ fontSize: 12, fontWeight: 400, lineHeight: '1.35', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           {node.label}
         </span>
 
         {/* Open button — reports only; always in DOM to prevent jitter */}
         {!isFolder && (
-          <button
+          <span
             onClick={e => { e.stopPropagation(); onOpen?.(node) }}
             style={{
-              fontSize: 11, color: '#378ADD', background: 'none',
-              border: 'none', cursor: 'pointer',
-              padding: '2px 6px', borderRadius: 4, lineHeight: 1.5,
-              flexShrink: 0,
+              fontSize: 12, color: '#378ADD',
+              cursor: 'pointer', flexShrink: 0,
+              userSelect: 'none', lineHeight: 1.5,
               visibility: hovered ? 'visible' : 'hidden',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#e8f2ff'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            onMouseEnter={e => { e.currentTarget.style.color = '#1a56a0' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#378ADD' }}
           >
             Open
-          </button>
+          </span>
         )}
       </div>
 
@@ -493,19 +652,19 @@ function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onD
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: pinned ? '#378ADD' : '#aaa',
+              color: '#6b7280',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; if (!pinned) e.currentTarget.style.color = '#555' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; if (!pinned) e.currentTarget.style.color = '#aaa' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
           >
             <PinIcon pinned={pinned} />
           </button>
           <button
             onClick={onClose}
             title="Close"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#555' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#aaa' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -532,7 +691,7 @@ function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onD
 }
 
 /* ── AppFrame ────────────────────────────────────────────────────────────── */
-export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoChangeAnalysis, currentSessionName, activeSessionListId, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning, onOpenTab, onOpenReportTab, onDragMapStateChange }) {
+export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoChangeAnalysis, currentSessionName, activeSessionListId, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning, onOpenTab, onOpenReportTab, onDragMapStateChange, openNetworkPaneRequest, onDeviceDrop }) {
   const [sidebarExpanded, setSidebarExpanded]   = useState(true)
   const [showHistory, setShowHistory]           = useState(false)
   const [networkPaneOpen, setNetworkPaneOpen]   = useState(false)
@@ -542,6 +701,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   const [inventoryPinned,   setInventoryPinned]   = useState(false)
   const [draggingMap,    setDraggingMap]    = useState(null)  // { id, name }
   const [draggingReport, setDraggingReport] = useState(null)  // { id, label }
+  const [draggingDevice, setDraggingDevice] = useState(null)  // device object
   const [isDragOver, setIsDragOver]         = useState(false)
 
   function handleSelectSession(id) {
@@ -600,6 +760,16 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
   const inventoryActive = inventoryPaneOpen || inventoryPinned
 
+  /* Open NetworkBrowserPane to a specific tab when requested externally (e.g. from blank canvas) */
+  useEffect(() => {
+    if (!openNetworkPaneRequest) return
+    setNetworkPaneOpen(true)
+    setNetworkTab(openNetworkPaneRequest.tab ?? 'device')
+    setInventoryPaneOpen(false)
+    setInventoryPinned(false)
+    setShowHistory(false)
+  }, [openNetworkPaneRequest]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleHistoryToggle() {
     const opening = !showHistory
     setShowHistory(prev => !prev)
@@ -615,17 +785,24 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   function handleMapDragEnd()            { setDraggingMap(null); setIsDragOver(false); onDragMapStateChange?.(false) }
   function handleReportDragStart(report) { setDraggingReport(report) }
   function handleReportDragEnd()         { setDraggingReport(null); setIsDragOver(false) }
+  function handleDeviceDragStart(device) { setDraggingDevice(device); onDragMapStateChange?.(true) }
+  function handleDeviceDragEnd()         { setDraggingDevice(null); setIsDragOver(false); onDragMapStateChange?.(false) }
+  function handleOpenDeviceInMap(device, actionId) {
+    onDeviceDrop?.(device)
+  }
   function handleDropZoneDrop(e) {
     e.preventDefault()
     if (draggingMap)    { onOpenTab?.(draggingMap.id, draggingMap.name) }
     if (draggingReport?.id === 'device-report') { onOpenReportTab?.(draggingReport.id, draggingReport.label) }
+    if (draggingDevice) { onDeviceDrop?.(draggingDevice) }
     setDraggingMap(null)
     setDraggingReport(null)
+    setDraggingDevice(null)
     setIsDragOver(false)
     onDragMapStateChange?.(false)
   }
-  const isDragging = draggingMap || draggingReport
-  const draggingLabel = draggingMap ? draggingMap.name : draggingReport?.label
+  const isDragging = draggingMap || draggingReport || draggingDevice
+  const draggingLabel = draggingMap ? draggingMap.name : draggingReport?.label || draggingDevice?.hostname
 
   return (
     <div style={{
@@ -662,6 +839,9 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
           onOpenTab={onOpenTab}
           onMapDragStart={handleMapDragStart}
           onMapDragEnd={handleMapDragEnd}
+          onDeviceDragStart={handleDeviceDragStart}
+          onDeviceDragEnd={handleDeviceDragEnd}
+          onOpenDeviceInMap={handleOpenDeviceInMap}
         />
       )}
 
@@ -703,6 +883,9 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
                 onOpenTab={onOpenTab}
                 onMapDragStart={handleMapDragStart}
                 onMapDragEnd={handleMapDragEnd}
+                onDeviceDragStart={handleDeviceDragStart}
+                onDeviceDragEnd={handleDeviceDragEnd}
+                onOpenDeviceInMap={handleOpenDeviceInMap}
               />
             </div>
           </>

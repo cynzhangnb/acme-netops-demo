@@ -327,13 +327,13 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
             </div>
             <div>
               <div style={{ fontSize: 20, fontWeight: 600, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
-                NB Workspace
+                Welcome to NB Workspace
               </div>
             </div>
           </div>
 
           {/* Input */}
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 10 }}>
             <InputArea
               onSend={(text) => {
                 setHomeInput('')
@@ -359,7 +359,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               commandSet="home"
               disableAutoResize={hoverPrompt !== null}
               onCommand={(id, text) => {
-                if (id === 'new-map')             onEnterMapSession?.()
+                if (id === 'new-map')             onEnterMapSession?.('Create a blank map canvas')
                 else if (id === 'show-inventory') onShowInventory?.()
                 else if (id === 'review-change')  onReviewChange?.()
                 else                              onStartAI(text)
@@ -379,7 +379,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1 }}>{activeShortcut}</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: '#555', lineHeight: 1 }}>{activeShortcut}</span>
               </div>
               {/* Prompt rows */}
               {SECOND_LAYER[activeShortcut].map(({ label, prompt }, i) => {

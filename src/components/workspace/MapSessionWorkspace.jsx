@@ -7,7 +7,6 @@ import SkeletonMessage from './SkeletonMessage'
 import TopologyMap from '../artifacts/TopologyMap'
 import ChangeAnalysisPage from '../changeanalysis/ChangeAnalysisPage'
 import { DevicePropertiesPane, buildDeviceProperties, buildConfigPaneState, ConfigWorkspacePane } from '../artifacts/ArtifactPane'
-// NewSessionButton removed — replaced with inline + New Session
 
 /* ── Header icons ─────────────────────────────────────────────────────────── */
 function ChevronIcon() {
@@ -70,6 +69,7 @@ const MAP_TRY_PROMPTS = [
   },
 ]
 
+
 /* ── Small icons ──────────────────────────────────────────────────────────── */
 function CloseTabIcon() {
   return (
@@ -89,14 +89,123 @@ function SplitScreenIcon() {
   )
 }
 
-function MapDotGrid() {
+/* ── Blank canvas empty state ─────────────────────────────────────────────── */
+function BlankMapEmptyState({ onOpenDevicePane }) {
+  const [btnHovered, setBtnHovered] = useState(false)
   return (
     <div style={{
       flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       background: '#fff',
       backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
       backgroundSize: '22px 22px',
-    }} />
+      animation: 'fadeInMsg 0.4s ease both',
+    }}>
+      {/* Left-aligned content block, directly on canvas */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+        textAlign: 'left', width: 240,
+      }}>
+
+        {/* ── Illustration — Linear/Claude style: dark strokes, white fill, subtle shadows ── */}
+        <svg width="168" height="118" viewBox="0 0 180 126" fill="none" style={{ marginBottom: 20, display: 'block' }}>
+
+          {/* ── Drop shadows (offset +3,+3, blurred by color lightness) ── */}
+          <rect x="71" y="14" width="44" height="24" rx="5" fill="#e8e8e8"/>
+          <rect x="22" y="66" width="42" height="22" rx="4" fill="#ececec"/>
+          <rect x="122" y="66" width="42" height="22" rx="4" fill="#ececec"/>
+          <rect x="9"   y="103" width="36" height="20" rx="3.5" fill="#efefef"/>
+          <rect x="51"  y="103" width="36" height="20" rx="3.5" fill="#efefef"/>
+          <rect x="99"  y="103" width="36" height="20" rx="3.5" fill="#efefef"/>
+          <rect x="141" y="103" width="36" height="20" rx="3.5" fill="#efefef"/>
+
+          {/* ── Tier-1 connections (core → distribution) ── */}
+          <line x1="90" y1="34" x2="43" y2="63" stroke="#c8c8c8" strokeWidth="1.5"/>
+          <line x1="90" y1="34" x2="143" y2="63" stroke="#c8c8c8" strokeWidth="1.5"/>
+
+          {/* ── Tier-2 connections (distribution → access) ── */}
+          <line x1="43" y1="85" x2="27" y2="100" stroke="#d0d0d0" strokeWidth="1.4"/>
+          <line x1="43" y1="85" x2="69" y2="100" stroke="#d0d0d0" strokeWidth="1.4"/>
+          <line x1="143" y1="85" x2="117" y2="100" stroke="#d0d0d0" strokeWidth="1.4"/>
+          <line x1="143" y1="85" x2="159" y2="100" stroke="#d0d0d0" strokeWidth="1.4"/>
+
+          {/* ── Core router ── */}
+          <rect x="68" y="10" width="44" height="24" rx="5" fill="white" stroke="#888" strokeWidth="1.6"/>
+          {/* signal arcs */}
+          <path d="M82,18 Q90,13 98,18" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+          <path d="M85,22.5 Q90,19 95,22.5" stroke="#aaa" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+          <circle cx="90" cy="26.5" r="1.4" fill="#bbb"/>
+          {/* port indicator dot */}
+          <circle cx="103" cy="15" r="2.5" fill="#ddd" stroke="#bbb" strokeWidth="1"/>
+
+          {/* ── Distribution switches ── */}
+          <rect x="19" y="63" width="42" height="22" rx="4" fill="white" stroke="#999" strokeWidth="1.5"/>
+          <line x1="27" y1="71" x2="27" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="32" y1="71" x2="32" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="37" y1="71" x2="37" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="42" y1="71" x2="42" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <circle cx="53" cy="69" r="2" fill="#ddd" stroke="#bbb" strokeWidth="1"/>
+
+          <rect x="119" y="63" width="42" height="22" rx="4" fill="white" stroke="#999" strokeWidth="1.5"/>
+          <line x1="127" y1="71" x2="127" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="132" y1="71" x2="132" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="137" y1="71" x2="137" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <line x1="142" y1="71" x2="142" y2="77" stroke="#bbb" strokeWidth="1.2" strokeLinecap="round"/>
+          <circle cx="153" cy="69" r="2" fill="#ddd" stroke="#bbb" strokeWidth="1"/>
+
+          {/* ── Access switches — solid first two, dashed last two (placeholder hint) ── */}
+          <rect x="6"   y="100" width="36" height="20" rx="3.5" fill="white" stroke="#aaa" strokeWidth="1.4"/>
+          <rect x="48"  y="100" width="36" height="20" rx="3.5" fill="white" stroke="#aaa" strokeWidth="1.4"/>
+          <rect x="96"  y="100" width="36" height="20" rx="3.5" fill="#fafafa" stroke="#c4c4c4" strokeWidth="1.3" strokeDasharray="4 2.5"/>
+          <rect x="138" y="100" width="36" height="20" rx="3.5" fill="#fafafa" stroke="#c4c4c4" strokeWidth="1.3" strokeDasharray="4 2.5"/>
+
+          {/* tiny port slots in access switches */}
+          {[6, 48].map(x => (
+            <g key={x}>
+              <line x1={x+9}  y1="108" x2={x+9}  y2="113" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1={x+14} y1="108" x2={x+14} y2="113" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+              <line x1={x+19} y1="108" x2={x+19} y2="113" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+            </g>
+          ))}
+        </svg>
+
+        {/* ── Title ── */}
+        <div style={{ fontSize: 14, fontWeight: 600, color: '#111', marginBottom: 7, letterSpacing: '-0.015em' }}>
+          Network Map
+        </div>
+
+        {/* ── Hint ── */}
+        <div style={{ fontSize: 12.5, color: '#555', lineHeight: 1.55, marginBottom: 16 }}>
+          Browse devices in the Network pane and add them to the canvas to start building.
+        </div>
+
+        {/* ── CTA — compact, left-aligned ── */}
+        <button
+          onClick={onOpenDevicePane}
+          onMouseEnter={() => setBtnHovered(true)}
+          onMouseLeave={() => setBtnHovered(false)}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '5px 12px', border: 'none', borderRadius: 6,
+            background: btnHovered ? '#2b6fb5' : '#378ADD',
+            color: '#fff', fontSize: 12, fontWeight: 500,
+            cursor: 'pointer', transition: 'background 0.15s',
+            letterSpacing: '-0.01em',
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="2" width="8" height="8" rx="1.5"/>
+            <rect x="14" y="2" width="8" height="8" rx="1.5"/>
+            <rect x="8" y="14" width="8" height="8" rx="1.5"/>
+            <line x1="6" y1="10" x2="12" y2="14"/>
+            <line x1="18" y1="10" x2="12" y2="14"/>
+          </svg>
+          Browse devices
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -201,7 +310,7 @@ const MAP_TOOLS = [
 ]
 
 /* ── Map Session Workspace ────────────────────────────────────────────────── */
-export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllTabsClosed, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false }) {
+export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllTabsClosed, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false, initialPrompt, onInitialPromptConsumed, onOpenDevicePane, externalDeviceToAdd, onExternalDeviceConsumed }) {
   const [sessionName, setSessionName]   = useState('')
   const [nameOverride, setNameOverride] = useState(null)
 
@@ -261,12 +370,33 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
     }
   }
 
-  /* AI pane visibility + resize — hidden by default when a map is opened directly */
-  const [showAiPane, setShowAiPane] = useState(false)
+  /* AI pane — open immediately when an initialPrompt is provided (conversation-first flow) */
+  const [showAiPane, setShowAiPane] = useState(!!initialPrompt)
+  /* Canvas — hidden during conversation-first phase; revealed after first AI response */
+  const [canvasVisible, setCanvasVisible] = useState(!initialPrompt)
+  /* Ref so canvas-reveal animation only plays in the "New map" flow, not on normal opens */
+  const canvasStartedHiddenRef = useRef(!!initialPrompt)
   const [aiPaneWidth, setAiPaneWidth] = useState(360)
   const isDragging = useRef(false)
 
   const bottomRef = useRef(null)
+
+  /* ── Extra device nodes dropped from NetworkBrowserPane ─────────────────── */
+  const [extraDeviceNodes, setExtraDeviceNodes] = useState([])
+
+  useEffect(() => {
+    if (!externalDeviceToAdd) return
+    const index = extraDeviceNodes.length
+    const px = 10 + (index % 6) * 16  // 10,26,42,58,74,90 then wrap
+    const py = 90 + Math.floor(index / 6) * 10
+    setExtraDeviceNodes(prev => [...prev, {
+      id: externalDeviceToAdd.id,
+      label: externalDeviceToAdd.hostname,
+      type: externalDeviceToAdd.type ?? 'Access Switch',
+      px, py,
+    }])
+    onExternalDeviceConsumed?.()
+  }, [externalDeviceToAdd]) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Artifact handlers ──────────────────────────────────────────────────── */
   const handleAddArtifact = useCallback((artifactRef) => {
@@ -338,8 +468,28 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
     onSetTopologyHighlight: () => {},
     onSetChangesMapOverlay: () => {},
     onPrefillInput: () => {},
-    onFirstAIResponse: () => activateSession(),
+    onFirstAIResponse: () => { activateSession(); setCanvasVisible(true) },
   })
+
+  /* Auto-send initial prompt (e.g. from "New map" slash command) on first mount.
+     The AI pane is already open (showAiPane=true), so we just need to fire the message.
+     Sequence: page fades in with AI pane full-width → message fires → thinking dots →
+               AI responds → canvas slides in from left, AI pane narrows to sidebar.
+
+     Strict-Mode-safe pattern: DON'T mutate any ref in the effect body (cleanup would undo it
+     and the second run would see the mutated value). Instead, put the guard inside the timer
+     callback — the first timer is cancelled by cleanup, the second timer fires successfully. */
+  const messageSentRef = useRef(false)
+  useEffect(() => {
+    if (!initialPrompt) return
+    const t = setTimeout(() => {
+      if (messageSentRef.current) return   // guard against any double-fire edge case
+      messageSentRef.current = true
+      sendMessage(initialPrompt)           // initialPrompt is captured in closure at mount
+      onInitialPromptConsumed?.()
+    }, 100)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* Scroll to bottom on new messages */
   useEffect(() => {
@@ -584,36 +734,40 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
               />
             ) : (
               <>
-                <span
-                  className={sessionJustActivated ? 'session-name-enter' : ''}
-                  onClick={() => { setShowSessions(s => !s); setShowMenu(false); setShowShareMenu(false) }}
-                  onMouseEnter={e => { if (!showSessions) e.currentTarget.style.background = '#f0f0f0' }}
-                  onMouseLeave={e => { if (!showSessions) e.currentTarget.style.background = 'transparent' }}
-                  style={{
-                    fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
-                    cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
-                    padding: '3px 6px 3px 10px',
-                    borderRadius: 6,
-                    background: showSessions ? '#e8e8e8' : 'transparent',
-                    transition: 'background 0.12s',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                  }}
+                {/* Shared hover zone — hovering either element highlights both */}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', flexShrink: 0, minWidth: 0, gap: 2 }}
+                  onMouseEnter={() => setNameAreaHovered(true)}
+                  onMouseLeave={() => setNameAreaHovered(false)}
                 >
-                  {displayName}
-                </span>
+                  {/* Session name — right corners flat (adjacent to chevron) */}
+                  <span
+                    className={sessionJustActivated ? 'session-name-enter' : ''}
+                    onClick={() => { setShowSessions(s => !s); setShowMenu(false); setShowShareMenu(false) }}
+                    style={{
+                      fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
+                      cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
+                      height: 26, padding: '0 4px 0 10px',
+                      borderRadius: '6px 0 0 6px',
+                      display: 'flex', alignItems: 'center',
+                      background: showSessions ? '#e8e8e8' : (nameAreaHovered ? '#f0f0f0' : 'transparent'),
+                      transition: 'background 0.12s',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {displayName}
+                  </span>
 
-                {/* Chevron + rename/delete dropdown */}
-                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  {/* Chevron — left corners flat (adjacent to name) */}
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
                     onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
-                    onMouseEnter={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : '#f0f0f0'; e.currentTarget.style.color = '#555' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = showMenu ? '#555' : '#aaa' }}
                     style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       height: 26, padding: '0 5px', border: 'none',
-                      borderRadius: 6,
-                      background: showMenu ? '#e8e8e8' : 'transparent',
-                      color: showMenu ? '#555' : '#aaa',
+                      borderRadius: '0 6px 6px 0',
+                      background: showMenu ? '#e8e8e8' : (nameAreaHovered ? '#f0f0f0' : 'transparent'),
+                      color: (nameAreaHovered || showMenu) ? '#555' : '#aaa',
                       cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
                     }}
                   >
@@ -645,6 +799,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     </div>
                   )}
                 </div>
+                </div>{/* end shared hover zone */}
               </>
             )}
 
@@ -687,8 +842,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
       {/* ── Content row ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* ── Left: Map canvas area ── */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* ── Left: Map canvas area — hidden during conversation-first phase ── */}
+        {canvasVisible && <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: canvasStartedHiddenRef.current ? 'canvasReveal 0.42s ease both' : undefined }}>
 
           {mapTabs.length === 0 ? (
             /* ── Empty workspace state ── */
@@ -841,7 +996,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                         )}
                         <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex' }}>
                           <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                            <TopologyMap onNodeAction={handleMapNodeAction} />
+                            <TopologyMap onNodeAction={handleMapNodeAction} extraNodes={extraDeviceNodes} />
                           </div>
                           {configPane && (
                             <>
@@ -874,7 +1029,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                   if (artifact?.type === 'changeAnalysis') {
                     return <div key={tabId} style={style}><ChangeAnalysisPage embedded={true} /></div>
                   }
-                  return <MapDotGrid key={tabId} />
+                  return <BlankMapEmptyState key={tabId} onOpenDevicePane={onOpenDevicePane} />
                 }
 
                 /* ── Split mode: first two tabs side by side ── */
@@ -908,33 +1063,36 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
               })()}
             </>
           )}
-        </div>
+        </div>}
 
-        {/* ── Resize handle + AI pane (hidden when showAiPane is false) ── */}
+        {/* ── Resize sash — only when canvas is visible alongside AI pane ── */}
+        {showAiPane && canvasVisible && (
+          <div style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 11 }}>
+            <div
+              onMouseDown={handleResizeStart}
+              style={{
+                position: 'absolute', top: 0, bottom: 0,
+                left: -3, width: 6,
+                cursor: 'col-resize',
+                background: 'transparent',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            />
+          </div>
+        )}
+
+        {/* ── AI pane — full-width during conversation-first phase, sidebar when canvas visible ── */}
         {showAiPane && (
-          <>
-            {/* Zero-width sash — takes no layout space, hit-target straddles the border */}
-            <div style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 11 }}>
-              <div
-                onMouseDown={handleResizeStart}
-                style={{
-                  position: 'absolute', top: 0, bottom: 0,
-                  left: -3, width: 6,
-                  cursor: 'col-resize',
-                  background: 'transparent',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              />
-            </div>
-
-            {/* ── Right: AI pane ── */}
             <div style={{
-              width: aiPaneWidth, flexShrink: 0,
+              ...(canvasVisible
+                ? { width: aiPaneWidth, flexShrink: 0, borderLeft: '1px solid #e8e8e8' }
+                : { flex: 1, borderLeft: 'none' }
+              ),
               display: 'flex', flexDirection: 'column',
               background: '#fff', overflow: 'hidden',
-              borderLeft: '1px solid #e8e8e8',
               position: 'relative',
+              animation: 'slideInRight 0.28s ease both',
             }}>
               {/* Drag blocker — prevents the AppFrame drop zone from accepting drops on the AI pane */}
               {isDraggingMap && (
@@ -1041,7 +1199,6 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             />
           </div>
         </div>
-          </>
         )}
       </div>
     </div>

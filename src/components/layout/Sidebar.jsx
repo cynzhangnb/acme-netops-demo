@@ -75,11 +75,17 @@ function InventoryIcon() {
     </svg>
   )
 }
-function DiscoveryIcon() {
+function ChangeAnalysisIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor">
-      <path d="m31,29.5859l-8.5479-8.5469c-2.0986,2.5171-5.178,3.9609-8.4521,3.9609-6.0654,0-11-4.9346-11-11S7.9346,3,14,3s11,4.9346,11,11c0,1.6001-.3354,3.1416-.9968,4.583l1.8174.834c.7827-1.7041,1.1794-3.5269,1.1794-5.417,0-7.168-5.8318-13-13-13S1,6.832,1,14s5.8318,13,13,13c3.1343,0,6.1025-1.1387,8.4395-3.1465l7.1465,7.1465,1.4141-1.4141Z"/>
-      <path d="m17,15c-.8066,0-1.5369.3237-2.0767.8438l-2.96-1.4805c.0146-.1201.0366-.2388.0366-.3633s-.022-.2432-.0366-.3633l2.96-1.4805c.5398.52,1.27.8438,2.0767.8438,1.6543,0,3-1.3457,3-3s-1.3457-3-3-3-3,1.3457-3,3c0,.1245.022.2432.0366.3633l-2.96,1.4805c-.5398-.52-1.27-.8438-2.0767-.8438-1.6543,0-3,1.3457-3,3s1.3457,3,3,3c.8066,0,1.5369-.3237,2.0767-.8438l2.96,1.4805c-.0146.1201-.0366.2388-.0366.3633,0,1.6543,1.3457,3,3,3s3-1.3457,3-3-1.3457-3-3-3Zm0-6c.5515,0,1,.4482,1,1s-.4485,1-1,1-1-.4482-1-1,.4485-1,1-1Zm-8,6c-.5515,0-1-.4482-1-1s.4485-1,1-1,1,.4482,1,1-.4485,1-1,1Zm8,4c-.5515,0-1-.4482-1-1s.4485-1,1-1,1,.4482,1,1-.4485,1-1,1Z"/>
+      {/* Circular arrow — bottom */}
+      <path d="m24,21v2h1.7483c-2.2363,3.1196-5.8357,5-9.7483,5-6.6169,0-12-5.3833-12-12h-2c0,7.7197,6.2803,14,14,14,4.355,0,8.3743-2.001,11-5.3452v1.3452h2v-5h-5Z"/>
+      {/* Circular arrow — top */}
+      <path d="m16,2c-4.355,0-8.3743,2.001-11,5.3452v-1.3452h-2v5h5v-2h-1.7483c2.2363-3.1196,5.8357-5,9.7483-5,6.6169,0,12,5.3833,12,12h2c0-7.7197-6.2803-14-14-14Z"/>
+      {/* Narrow hamburger — 3 lines, width (6) < height span (9) */}
+      <line x1="13" y1="11.5" x2="19" y2="11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="16"   x2="19" y2="16"   stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="20.5" x2="19" y2="20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
     </svg>
   )
 }
@@ -106,6 +112,22 @@ function ChevronDownIcon({ open }) {
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
       style={{ transition: 'transform 0.18s', transform: open ? 'none' : 'rotate(-90deg)', flexShrink: 0 }}>
       <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  )
+}
+/* Outline pin — hover action (same path as pin.svg) */
+function PinOutlineIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor" style={{ display: 'block', flexShrink: 0 }}>
+      <path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/>
+    </svg>
+  )
+}
+/* Filled pin — shown persistently when pinned (same path as pin--filled.svg) */
+function PinFilledIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor" style={{ display: 'block', flexShrink: 0 }}>
+      <path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/>
     </svg>
   )
 }
@@ -181,7 +203,7 @@ function SideNavItem({ icon, label, active, onClick, expanded, showTooltip, righ
           opacity: expanded ? 1 : 0,
           marginLeft: expanded ? 7 : 0,
           transition: 'max-width 0.22s ease, opacity 0.16s ease, margin-left 0.22s ease',
-          lineHeight: 1,
+          lineHeight: 1.3,
         }}>
           {label}
         </span>
@@ -223,6 +245,16 @@ export default function Sidebar({
 }) {
   const [sessionsOpen, setSessionsOpen] = useState(true)
   const [hoveredSessionId, setHoveredSessionId] = useState(null)
+  const [pinnedIds, setPinnedIds] = useState(new Set())
+
+  function togglePin(e, id) {
+    e.stopPropagation()
+    setPinnedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
   /* During the width animation we keep overflow:hidden so labels don't bleed.
      After the transition settles, we switch to overflow:visible so tooltips
      can escape the 44-px rail. */
@@ -346,8 +378,8 @@ export default function Sidebar({
           showTooltip={showTooltip}
         />
         <SideNavItem
-          icon={<DiscoveryIcon />}
-          label="Discovery"
+          icon={<ChangeAnalysisIcon />}
+          label="Change Analysis"
           onClick={() => {}}
           expanded={expanded}
           showTooltip={showTooltip}
@@ -396,49 +428,82 @@ export default function Sidebar({
             </div>
 
             {/* Session list */}
-            {sessionsOpen && (
-              <div style={{ flex: 1, overflowY: 'auto', marginTop: 1, animation: 'fadeInMsg 0.18s ease both' }} className="scrollbar-thin">
-                {sessions
-                  .filter(s => !s.current)   /* skip the sentinel "current" entry — no duplicates */
-                  .map(s => {
-                    const isActive = s.id === activeSessionListId || (!!currentSessionName && s.name === currentSessionName && !activeSessionListId)
-                    const isInteractive = s.id === 's1' || s.id === 's2'
-                    const isHovered = hoveredSessionId === s.id && !isActive
-                    return (
-                      <div
-                        key={s.id}
-                        onClick={() => {
-                          if (!isInteractive || isActive) return
-                          onSelectSession?.(s.id)
-                        }}
-                        onMouseEnter={() => setHoveredSessionId(s.id)}
-                        onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
-                        style={{
-                          padding: '5px 11px',
-                          borderRadius: 5, margin: '0 3px',
-                          background: isHovered ? '#f0ede7' : 'transparent',
-                          cursor: isActive ? 'default' : 'pointer',
-                          transition: 'background 0.1s',
-                          display: 'flex', alignItems: 'center', gap: 6,
-                        }}
-                      >
-                        {isActive && (
-                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
-                        )}
-                        <span style={{
-                          fontSize: 12, color: isActive ? '#111' : '#333',
-                          fontWeight: isActive ? 500 : 400,
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          lineHeight: 1.4, display: 'block',
-                          flex: 1, minWidth: 0,
-                        }}>
-                          {s.name}
-                        </span>
+            {sessionsOpen && (() => {
+              const allSessions = sessions.filter(s => !s.current)
+              const pinned  = allSessions.filter(s => pinnedIds.has(s.id))
+              const recent  = allSessions.filter(s => !pinnedIds.has(s.id))
+
+              const renderSession = (s) => {
+                const isActive      = s.id === activeSessionListId || (!!currentSessionName && s.name === currentSessionName && !activeSessionListId)
+                const isInteractive = s.id === 's1' || s.id === 's2'
+                const isHovered     = hoveredSessionId === s.id
+                const isPinned      = pinnedIds.has(s.id)
+                return (
+                  <div
+                    key={s.id}
+                    onClick={() => { if (!isInteractive || isActive) return; onSelectSession?.(s.id) }}
+                    onMouseEnter={() => setHoveredSessionId(s.id)}
+                    onMouseLeave={() => setHoveredSessionId(prev => prev === s.id ? null : prev)}
+                    style={{
+                      padding: '5px 6px 5px 11px',
+                      borderRadius: 5, margin: '0 3px',
+                      background: isHovered && !isActive ? '#f0ede7' : 'transparent',
+                      cursor: isActive ? 'default' : 'pointer',
+                      transition: 'background 0.1s',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    {isActive && (
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
+                    )}
+                    <span style={{
+                      fontSize: 12, color: isActive ? '#111' : '#333',
+                      fontWeight: isActive ? 500 : 400,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      lineHeight: 1.4, flex: 1, minWidth: 0,
+                    }}>
+                      {s.name}
+                    </span>
+                    {/* Pin button — filled icon always visible when pinned; outline shown on hover */}
+                    <button
+                      onClick={e => togglePin(e, s.id)}
+                      title={isPinned ? 'Unpin' : 'Pin session'}
+                      style={{
+                        flexShrink: 0, width: 20, height: 20,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
+                        color: isPinned ? '#6b7280' : '#9ca3af',
+                        opacity: isPinned || isHovered ? 1 : 0,
+                        transition: 'opacity 0.1s, color 0.1s, background 0.1s',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isPinned ? '#6b7280' : '#9ca3af' }}
+                    >
+                      {isPinned ? <PinFilledIcon /> : <PinOutlineIcon />}
+                    </button>
+                  </div>
+                )
+              }
+
+              return (
+                <div style={{ flex: 1, overflowY: 'auto', marginTop: 1, animation: 'fadeInMsg 0.18s ease both' }} className="scrollbar-thin">
+                  {/* Pinned section */}
+                  {pinned.length > 0 && (
+                    <>
+                      <div style={{ padding: '4px 11px 2px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                        Pinned
                       </div>
-                    )
-                  })}
-              </div>
-            )}
+                      {pinned.map(renderSession)}
+                      {recent.length > 0 && (
+                        <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px 4px' }} />
+                      )}
+                    </>
+                  )}
+                  {/* Recent section */}
+                  {recent.map(renderSession)}
+                </div>
+              )
+            })()}
           </>
         )}
       </div>
