@@ -278,7 +278,7 @@
 
   /* AI message text */
   .ai-text {
-    font-size: 13px; color: #222; line-height: 1.7;
+    font-size: 13px; color: #222; line-height: 1.45;
   }
   .ai-text strong { font-weight: 600; color: #111; }
   /* Extra top spacing before each bold section title */
@@ -325,6 +325,7 @@
   @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   @keyframes spin { to { transform: rotate(360deg) } }
   @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes canvasReveal { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
   @keyframes progress-indeterminate { 0%{transform:translateX(-100%) scaleX(0.3)} 50%{transform:translateX(30%) scaleX(0.6)} 100%{transform:translateX(100%) scaleX(0.3)} }
   @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
   .thinking-dot { display: inline-block; width: 4px; height: 4px; border-radius: 50%; background: #999; animation: blink 1.2s infinite; }
@@ -342,12 +343,17 @@
   }
   .slash-item {
     display: flex; align-items: center; gap: 0;
-    padding: 8px 14px; cursor: pointer;
+    padding: 5px 12px; cursor: pointer;
     transition: background 0.1s;
   }
+  .slash-item:first-child { padding-top: 9px; }
   .slash-item:hover, .slash-item.active { background: #f5f5f5; }
-  .slash-item-name { font-size: 12px; font-weight: 500; color: #111; }
-  .slash-item-desc { display: none; }
+  .slash-item-name { font-size: 12px; font-weight: 400; color: #111; flex-shrink: 0; }
+  .slash-item-desc {
+    font-size: 11px; color: #767676; /* #767676 on #fff = 4.54:1, passes WCAG AA */
+    margin-left: auto; padding-left: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   /* Header icon tooltip (What's New) */
   div:hover > .hdr-tooltip { opacity: 1 !important; }

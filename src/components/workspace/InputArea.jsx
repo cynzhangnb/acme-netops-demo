@@ -56,7 +56,7 @@ export default function InputArea({
 
   /* "/" command menu state */
   const [cmdOpen, setCmdOpen]           = useState(false)
-  const [cmdIndex, setCmdIndex]         = useState(0)
+  const [cmdIndex, setCmdIndex]         = useState(-1) /* -1 = nothing highlighted until user navigates */
   /* Hover preview: temporarily overrides displayed textarea value.
      We keep "value" as the real "/" so parent state never diverges. */
   const [cmdHoverPreview, setCmdHoverPreview] = useState(null)
@@ -136,7 +136,8 @@ export default function InputArea({
     /* Trigger "/" command menu */
     if (raw === '/') {
       setCmdOpen(true)
-      setCmdIndex(0)
+      setCmdIndex(-1)   /* nothing highlighted until user navigates */
+      setCmdHoverPreview(null)
       setHashOpen(false)
       return
     }
@@ -163,6 +164,15 @@ export default function InputArea({
       setReviewChangeIndex(0)
       setCmdOpen(false)
       setCmdHoverPreview(null)
+      return
+    }
+    /* new-map: auto-send immediately — no pre-fill, fires the command right away */
+    if (id === 'new-map') {
+      setCmdOpen(false)
+      setCmdHoverPreview(null)
+      setValue('')
+      onValueChange?.('')
+      onCommand?.('new-map', 'Create a blank map canvas')
       return
     }
     const item = COMMAND_MENU_ITEMS.find(i => i.id === id)
@@ -220,10 +230,22 @@ export default function InputArea({
       if (e.key === 'Escape')    { setReviewChangeOpen(false); return }
     }
     if (cmdOpen) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); setCmdIndex(i => Math.min(i + 1, COMMAND_MENU_ITEMS.length - 1)); return }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); setCmdIndex(i => Math.max(i - 1, 0)); return }
-      if (e.key === 'Enter')     { e.preventDefault(); handleCommandSelect(COMMAND_MENU_ITEMS[cmdIndex]?.id); return }
-      if (e.key === 'Escape')    { setCmdOpen(false); setCmdHoverPreview(null); return }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = Math.min(cmdIndex + 1, COMMAND_MENU_ITEMS.length - 1)
+        setCmdIndex(next)
+        setCmdHoverPreview(COMMAND_MENU_ITEMS[next]?.hoverPrompt ?? null)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const next = Math.max(cmdIndex - 1, -1)
+        setCmdIndex(next)
+        setCmdHoverPreview(next >= 0 ? (COMMAND_MENU_ITEMS[next]?.hoverPrompt ?? null) : null)
+        return
+      }
+      if (e.key === 'Enter')  { e.preventDefault(); handleCommandSelect(COMMAND_MENU_ITEMS[cmdIndex]?.id); return }
+      if (e.key === 'Escape') { setCmdOpen(false); setCmdHoverPreview(null); return }
     }
     if (hashOpen) {
       const filtered = activeHashCommands.filter(cmd =>
@@ -316,7 +338,12 @@ export default function InputArea({
             className="send-btn"
             onClick={handleSend}
             disabled={!canSend}
-            style={{ opacity: canSend ? 1 : 0.4 }}
+            style={{
+              opacity: canSend ? 1 : 0.4,
+              ...(canSend ? { background: '#222', borderColor: '#222', color: '#fff' } : {}),
+            }}
+            onMouseEnter={e => { if (canSend) { e.currentTarget.style.background = '#111'; e.currentTarget.style.borderColor = '#111' } }}
+            onMouseLeave={e => { if (canSend) { e.currentTarget.style.background = '#222'; e.currentTarget.style.borderColor = '#222' } }}
           >
             <SendIcon />
           </button>

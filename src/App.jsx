@@ -353,6 +353,7 @@ export default function App() {
   const [currentSessionName, setCurrentSessionName] = useState('New Session')
   const [activeSessionListId, setActiveSessionListId] = useState(null)
   const [networkPanel, setNetworkPanel] = useState(null)
+  const [openNetworkPaneRequest, setOpenNetworkPaneRequest] = useState(null)
   const [changeAnalysisMounted, setChangeAnalysisMounted] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [openTabs, setOpenTabs] = useState([])          // [{id, label}]
@@ -387,13 +388,14 @@ export default function App() {
     setViewMode('network')
   }, [])
 
-  const enterMapSession = useCallback(() => {
+  const enterMapSession = useCallback((initialPrompt) => {
     navigate(() => {
       setShowHomeInsights(true)
       setOpenTabs([])
       setActiveTabId(null)
       setCurrentSessionName('New Session')
       setActiveSessionListId(null)
+      setInitialMapPrompt(initialPrompt ?? null)
       startSession()           // reserve ID so commitSession works when AI responds
       setViewMode('map-session')
     })
@@ -438,6 +440,9 @@ export default function App() {
 
   const [loadingTabId, setLoadingTabId] = useState(null)
 
+  /* Initial prompt to inject into a new map session (set by enterMapSession, consumed by MapSessionWorkspace) */
+  const [initialMapPrompt, setInitialMapPrompt] = useState(null)
+
   /* Track viewMode in a ref so openMapTab (stable callback) can read it */
   const viewModeRef = useRef(viewMode)
   useEffect(() => { viewModeRef.current = viewMode }, [viewMode])
@@ -459,6 +464,25 @@ export default function App() {
 
   /* Drag state forwarded from AppFrame so MapSessionWorkspace can block its AI pane */
   const [isDraggingMap, setIsDraggingMap] = useState(false)
+
+  /* Device dropped from NetworkBrowserPane onto the map canvas */
+  const [externalDeviceToAdd, setExternalDeviceToAdd] = useState(null)
+
+  const handleDeviceDrop = useCallback((device) => {
+    if (viewModeRef.current !== 'map-session') {
+      navigate(() => {
+        setShowHomeInsights(true)
+        setOpenTabs([])
+        setActiveTabId(null)
+        setCurrentSessionName('New Session')
+        setActiveSessionListId(null)
+        setViewMode('map-session')
+        setExternalDeviceToAdd({ ...device, _key: Date.now() })
+      })
+    } else {
+      setExternalDeviceToAdd({ ...device, _key: Date.now() })
+    }
+  }, [navigate])
 
   const openMapResourceTab = useCallback((id, label) => {
     const tabId = `map-${id}`
@@ -561,6 +585,8 @@ export default function App() {
         isTransitioning={isTransitioning}
         onOpenTab={openMapTab}
         onDragMapStateChange={setIsDraggingMap}
+        openNetworkPaneRequest={openNetworkPaneRequest}
+        onDeviceDrop={handleDeviceDrop}
       >
         {openTabs.length > 0 ? (
           /* ── Resource tab workspace ── */
@@ -733,6 +759,11 @@ export default function App() {
                 externalMapToOpen={externalMapToOpen}
                 onExternalMapConsumed={() => setExternalMapToOpen(null)}
                 isDraggingMap={isDraggingMap}
+                initialPrompt={initialMapPrompt}
+                onInitialPromptConsumed={() => setInitialMapPrompt(null)}
+                onOpenDevicePane={() => setOpenNetworkPaneRequest({ tab: 'device', t: Date.now() })}
+                externalDeviceToAdd={externalDeviceToAdd}
+                onExternalDeviceConsumed={() => setExternalDeviceToAdd(null)}
               />
             ) : null}
           </>

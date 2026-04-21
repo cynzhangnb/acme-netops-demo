@@ -549,6 +549,25 @@ area: 0 (backbone)
     },
     sideEffects: [],
   },
+  {
+    id: 'blank-canvas',
+    keywords: ['blank', 'canvas'],
+    priority: 15,
+    response: {
+      content: `**Your blank canvas is ready.**
+Start building manually or let me do the heavy lifting. Try asking me to:
+
+- **Generate Topology** — "Show the Boston data center"
+- **Show Devices** — "Add CR-BOS-01 and its neighbors"
+- **Trace Path** — "Trace the path from 10.8.1.4 to 10.8.3.134"
+
+Just describe what you're looking for and I'll map it out for you.`,
+      artifactType: null,
+      artifactLabel: null,
+      artifactDataKey: null,
+    },
+    sideEffects: [],
+  },
 ]
 
 export const fallbackResponse = {

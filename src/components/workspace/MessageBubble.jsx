@@ -235,9 +235,9 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
         }
       }
       out.push(
-        <ul key={`ul${i}`} style={{ paddingLeft: 16, margin: '4px 0 2px' }}>
+        <ul key={`ul${i}`} style={{ paddingLeft: 16, margin: '6px 0 4px' }}>
           {items.map((it, j) => (
-            <li key={j} style={{ margin: '4px 0', fontSize: 13, color: '#222' }}>
+            <li key={j} style={{ margin: '7px 0', fontSize: 13, color: '#222', lineHeight: 1.45 }}>
               {inlineFormat(it.main)}
               {it.sub && <div style={{ fontSize: 13, color: '#222', marginTop: 1 }}>{inlineFormat(it.sub)}</div>}
             </li>
@@ -273,7 +273,7 @@ function renderAIContent(text, onOpenArtifact, artifactRef, onSaveArtifact, save
 
     if (line.trim() === '') { i++; continue }
 
-    out.push(<div key={i} className="ai-text" style={{ marginBottom: 4, fontSize: 13, color: '#222' }}>{inlineFormat(line)}</div>)
+    out.push(<div key={i} className="ai-text" style={{ marginBottom: 10, fontSize: 13, color: '#222' }}>{inlineFormat(line)}</div>)
     i++
   }
 

@@ -299,7 +299,8 @@ function CloseSmallIcon() {
   )
 }
 
-export default function TopologyMap({ highlight, widgetMode = false, onNodeAction, onClearOverlay }) {
+
+export default function TopologyMap({ highlight, widgetMode = false, onNodeAction, onClearOverlay, extraNodes = [] }) {
   const containerRef = useRef(null)
   const outerRef     = useRef(null)
   const nodeRefs    = useRef({})
@@ -653,6 +654,26 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
             </div>
           )
         })}
+
+        {extraNodes.map(node => (
+          <div
+            key={node.id}
+            className="ng-node"
+            style={{
+              left: `${node.px}%`, top: `${node.py}%`,
+              position: 'absolute',
+              borderStyle: 'dashed',
+              opacity: 0.9,
+              animation: 'fadeInMsg 0.3s ease both',
+            }}
+          >
+            <NodeIcon type={
+              node.type === 'Core Router' ? 'core-router' :
+              node.type === 'Distribution Switch' ? 'dist-switch' : 'access-switch'
+            } />
+            <span className="ng-lbl">{node.label}</span>
+          </div>
+        ))}
       </div>
 
       {contextMenu && (
@@ -753,6 +774,7 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
           })}
         </div>
       )}
+
 
       {/* Hover tooltip */}
       {hoveredNode && (() => {
