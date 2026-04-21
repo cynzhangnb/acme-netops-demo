@@ -247,6 +247,308 @@ function SortIcon({ active, dir }) {
   )
 }
 
+const RAW_CHANGES = [
+  // ── Last 24h (>= 2026-04-05) ──────────────────────────────────────────────
+  {
+    id: 101, device: 'CR-BOS-01', type: 'Route Table',
+    description: '2 entries added via BGP; 1 withdrawn route removed',
+    timestamp: '2026-04-05 07:12 UTC',
+    before: `10.8.0.0/16  via 10.0.0.1  [20/0]  BGP
+10.8.3.0/24  via 10.0.1.1  [20/0]  BGP
+10.9.0.0/16  via 10.0.0.2  [20/0]  BGP`,
+    after: `10.8.0.0/16  via 10.0.0.1  [20/0]  BGP
+10.8.3.0/24  via 10.0.2.1  [20/0]  BGP
+10.9.0.0/16  via 10.0.0.2  [20/0]  BGP
+10.20.99.0/24  via 10.0.0.1  [20/100]  BGP
+192.168.50.0/24  via 10.0.0.3  [20/0]  BGP`,
+    changedLines: { before: [2], after: [2, 4, 5] },
+  },
+  {
+    id: 102, device: 'AS-BOS-01', type: 'ARP Table',
+    description: '3 new ARP entries learned; 1 stale entry aged out',
+    timestamp: '2026-04-05 08:43 UTC',
+    before: `10.10.1.1   00:1a:2b:3c:4d:5e   Ethernet0/1   DYNAMIC
+10.10.1.5   00:1a:2b:3c:4d:62   Ethernet0/1   DYNAMIC
+10.10.2.1   00:aa:bb:cc:dd:01   Ethernet0/2   DYNAMIC
+10.10.2.10  00:aa:bb:cc:dd:10   Ethernet0/2   DYNAMIC`,
+    after: `10.10.1.1   00:1a:2b:3c:4d:5e   Ethernet0/1   DYNAMIC
+10.10.1.5   00:1a:2b:3c:4d:62   Ethernet0/1   DYNAMIC
+10.10.1.20  00:1a:2b:3c:4d:88   Ethernet0/1   DYNAMIC
+10.10.2.1   00:aa:bb:cc:dd:01   Ethernet0/2   DYNAMIC
+10.10.2.15  00:aa:bb:cc:dd:15   Ethernet0/2   DYNAMIC
+10.10.2.30  00:aa:bb:cc:dd:30   Ethernet0/2   DYNAMIC`,
+    changedLines: { before: [4], after: [3, 5, 6] },
+  },
+  {
+    id: 103, device: 'DS-BOS-02', type: 'MAC Table',
+    description: 'MAC addresses learned on Gi0/3 after port came up',
+    timestamp: '2026-04-05 09:22 UTC',
+    before: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------
+10    00:11:22:33:44:55  DYNAMIC  Gi0/1
+10    00:11:22:33:44:66  DYNAMIC  Gi0/2
+20    00:aa:bb:cc:11:22  DYNAMIC  Gi0/2`,
+    after: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------
+10    00:11:22:33:44:55  DYNAMIC  Gi0/1
+10    00:11:22:33:44:66  DYNAMIC  Gi0/2
+10    00:11:22:33:44:77  DYNAMIC  Gi0/3
+10    00:11:22:33:44:88  DYNAMIC  Gi0/3
+20    00:aa:bb:cc:11:22  DYNAMIC  Gi0/2
+20    00:aa:bb:cc:11:33  DYNAMIC  Gi0/3`,
+    changedLines: { before: [], after: [5, 6, 8] },
+  },
+  {
+    id: 104, device: 'CR-BOS-02', type: 'Route Table',
+    description: 'BGP next-hop changed for 10.8.3.0/24 after policy update',
+    timestamp: '2026-04-05 11:15 UTC',
+    before: `10.0.0.0/8   via 10.0.0.1  [20/0]  BGP
+10.8.3.0/24  via 10.0.1.1  [20/0]  BGP
+172.16.0.0/12  via 10.0.0.1  [1/0]  STATIC`,
+    after: `10.0.0.0/8   via 10.0.0.1  [20/0]  BGP
+10.8.3.0/24  via 10.0.2.1  [20/0]  BGP
+172.16.0.0/12  via 10.0.0.1  [1/0]  STATIC`,
+    changedLines: { before: [2], after: [2] },
+  },
+  {
+    id: 105, device: 'DS-BOS-01', type: 'STP Table',
+    description: 'Gi0/2 transitioned from Designated to Root port (VLAN 10)',
+    timestamp: '2026-04-05 13:30 UTC',
+    before: `VLAN0010
+ Root ID  Priority 4106  Address 00aa.bbcc.dd01  Cost 4  Port Gi0/1
+ Bridge ID Priority 8202  Address 00aa.bbcc.dd02
+ Interface  Role  Sts  Cost  Prio.Nbr  Type
+ ---------  ----  ---  ----  --------  -------
+ Gi0/1      Root  FWD  4     128.1     P2p
+ Gi0/2      Desg  FWD  4     128.2     P2p
+ Gi0/3      Desg  FWD  4     128.3     P2p`,
+    after: `VLAN0010
+ Root ID  Priority 4106  Address 00aa.bbcc.dd01  Cost 4  Port Gi0/2
+ Bridge ID Priority 8202  Address 00aa.bbcc.dd02
+ Interface  Role  Sts  Cost  Prio.Nbr  Type
+ ---------  ----  ---  ----  --------  -------
+ Gi0/1      Altn  BLK  4     128.1     P2p
+ Gi0/2      Root  FWD  4     128.2     P2p
+ Gi0/3      Desg  FWD  4     128.3     P2p`,
+    changedLines: { before: [2, 6, 7], after: [2, 6, 7] },
+  },
+  {
+    id: 106, device: 'ER-BOS-07', type: 'Configuration File',
+    description: 'WAN interface QoS policy attachment changed',
+    timestamp: '2026-04-05 14:05 UTC',
+    before: `interface GigabitEthernet0/0
+ description WAN-Uplink-Primary
+ ip address 203.0.113.2 255.255.255.252
+ service-policy output LAN-QOS
+ no shutdown`,
+    after: `interface GigabitEthernet0/0
+ description WAN-Uplink-Primary
+ ip address 203.0.113.2 255.255.255.252
+ service-policy output WAN-QOS
+ no shutdown`,
+    changedLines: { before: [4], after: [4] },
+  },
+  {
+    id: 107, device: 'DS-BOS-03', type: 'NDP Table',
+    description: 'IPv6 neighbor entries refreshed; 2 new hosts discovered',
+    timestamp: '2026-04-05 16:22 UTC',
+    before: `IPv6 Address                  Age  Link-layer Addr   State  Interface
+fe80::1a2b:3c4d:5e6f:7a8b    12   00:1a:2b:3c:4d:5e  REACH  Eth0/1
+2001:db8:1::10               45   00:aa:bb:cc:dd:10  REACH  Eth0/2`,
+    after: `IPv6 Address                  Age  Link-layer Addr   State  Interface
+fe80::1a2b:3c4d:5e6f:7a8b    0    00:1a:2b:3c:4d:5e  REACH  Eth0/1
+2001:db8:1::10               0    00:aa:bb:cc:dd:10  REACH  Eth0/2
+2001:db8:1::20               0    00:aa:bb:cc:dd:20  REACH  Eth0/2
+fe80::2b3c:4d5e:6f7a:8b9c    0    00:2b:3c:4d:5e:6f  REACH  Eth0/3`,
+    changedLines: { before: [2, 3], after: [2, 3, 4, 5] },
+  },
+  {
+    id: 108, device: 'CR-BOS-02', type: 'Access Policy',
+    description: 'MGMT-ACCESS ACL: permit entry added for 10.20.5.0/24',
+    timestamp: '2026-04-05 18:44 UTC',
+    before: `ip access-list extended MGMT-ACCESS
+ 10 permit ip 10.20.1.0 0.0.0.255 any
+ 20 permit ip 10.20.2.0 0.0.0.255 any
+ 30 deny   ip any any log`,
+    after: `ip access-list extended MGMT-ACCESS
+ 10 permit ip 10.20.1.0 0.0.0.255 any
+ 20 permit ip 10.20.2.0 0.0.0.255 any
+ 25 permit ip 10.20.5.0 0.0.0.255 any
+ 30 deny   ip any any log`,
+    changedLines: { before: [], after: [4] },
+  },
+  {
+    id: 109, device: 'AS-BOS-02', type: 'MAC Table',
+    description: 'Stale MAC entries aged out after idle timeout on Gi0/5',
+    timestamp: '2026-04-05 20:11 UTC',
+    before: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------
+30    00:de:ad:be:ef:01  DYNAMIC  Gi0/5
+30    00:de:ad:be:ef:02  DYNAMIC  Gi0/5
+30    00:de:ad:be:ef:03  DYNAMIC  Gi0/5
+40    00:fe:ed:fa:ce:01  DYNAMIC  Gi0/6`,
+    after: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------
+30    00:de:ad:be:ef:01  DYNAMIC  Gi0/5
+40    00:fe:ed:fa:ce:01  DYNAMIC  Gi0/6`,
+    changedLines: { before: [3, 4, 5], after: [] },
+  },
+  {
+    id: 110, device: 'CR-BOS-01', type: 'NCT Table',
+    description: 'OSPF adjacency to DS-BOS-03 flapped; re-established',
+    timestamp: '2026-04-05 22:58 UTC',
+    before: `Neighbor ID    Pri  State       Dead Time  Address     Interface
+10.1.1.2       1    FULL/DR     00:00:38   10.1.1.2    Eth0/0
+10.1.3.1       1    FULL/DR     00:00:35   10.1.3.1    Eth0/2
+10.1.2.1       1    FULL/BDR    00:00:39   10.1.2.1    Eth0/1`,
+    after: `Neighbor ID    Pri  State       Dead Time  Address     Interface
+10.1.1.2       1    FULL/DR     00:00:38   10.1.1.2    Eth0/0
+10.1.3.1       1    FULL/DR     00:00:10   10.1.3.1    Eth0/2
+10.1.2.1       1    FULL/BDR    00:00:39   10.1.2.1    Eth0/1`,
+    changedLines: { before: [3], after: [3] },
+  },
+  // ── Last 7d (2026-03-31 – 2026-04-04) ─────────────────────────────────────
+  {
+    id: 111, device: 'DS-BOS-01', type: 'ARP Table',
+    description: 'Stale ARP entry for 10.10.3.99 removed after host decommission',
+    timestamp: '2026-04-02 09:15 UTC',
+    before: `10.10.3.1   00:cc:dd:ee:ff:01   Ethernet0/3   DYNAMIC
+10.10.3.50  00:cc:dd:ee:ff:50   Ethernet0/3   DYNAMIC
+10.10.3.99  00:cc:dd:ee:ff:99   Ethernet0/3   DYNAMIC`,
+    after: `10.10.3.1   00:cc:dd:ee:ff:01   Ethernet0/3   DYNAMIC
+10.10.3.50  00:cc:dd:ee:ff:50   Ethernet0/3   DYNAMIC`,
+    changedLines: { before: [3], after: [] },
+  },
+  {
+    id: 112, device: 'CR-BOS-02', type: 'Configuration File',
+    description: 'BGP neighbor 10.0.0.3 added for peering with new upstream',
+    timestamp: '2026-04-03 10:30 UTC',
+    before: `router bgp 65001
+ neighbor 10.0.0.1 remote-as 65100
+ neighbor 10.0.0.2 remote-as 65200
+ !
+ address-family ipv4
+  neighbor 10.0.0.1 activate
+  neighbor 10.0.0.2 activate`,
+    after: `router bgp 65001
+ neighbor 10.0.0.1 remote-as 65100
+ neighbor 10.0.0.2 remote-as 65200
+ neighbor 10.0.0.3 remote-as 65300
+ !
+ address-family ipv4
+  neighbor 10.0.0.1 activate
+  neighbor 10.0.0.2 activate
+  neighbor 10.0.0.3 activate`,
+    changedLines: { before: [], after: [4, 9] },
+  },
+  {
+    id: 113, device: 'AS-BOS-01', type: 'STP Table',
+    description: 'Topology change detected; Gi0/4 moved to blocking state (VLAN 20)',
+    timestamp: '2026-04-03 14:22 UTC',
+    before: `VLAN0020
+ Root ID  Priority 4116  Address 00aa.bbcc.dd11  Cost 4  Port Gi0/1
+ Interface  Role  Sts  Cost  Prio.Nbr
+ Gi0/1      Root  FWD  4     128.1
+ Gi0/4      Desg  FWD  4     128.4`,
+    after: `VLAN0020
+ Root ID  Priority 4116  Address 00aa.bbcc.dd11  Cost 4  Port Gi0/1
+ Interface  Role  Sts  Cost  Prio.Nbr
+ Gi0/1      Root  FWD  4     128.1
+ Gi0/4      Altn  BLK  4     128.4`,
+    changedLines: { before: [5], after: [5] },
+  },
+  {
+    id: 114, device: 'DS-BOS-03', type: 'Access Policy',
+    description: 'GUEST-RESTRICT ACL tightened; HTTP permit changed to deny',
+    timestamp: '2026-04-04 11:05 UTC',
+    before: `ip access-list extended GUEST-RESTRICT
+ 10 permit tcp 192.168.100.0 0.0.0.255 any eq 80
+ 20 permit tcp 192.168.100.0 0.0.0.255 any eq 443
+ 30 deny   ip any any`,
+    after: `ip access-list extended GUEST-RESTRICT
+ 10 deny   tcp 192.168.100.0 0.0.0.255 any eq 80
+ 20 permit tcp 192.168.100.0 0.0.0.255 any eq 443
+ 30 deny   ip any any`,
+    changedLines: { before: [2], after: [2] },
+  },
+  {
+    id: 115, device: 'ER-BOS-07', type: 'Route Table',
+    description: 'Static route for 10.99.0.0/16 added for new branch office',
+    timestamp: '2026-04-04 16:48 UTC',
+    before: `10.0.0.0/8    via 10.0.0.1  [20/0]  BGP
+172.16.0.0/12  via 10.0.0.1  [1/0]  STATIC`,
+    after: `10.0.0.0/8    via 10.0.0.1  [20/0]  BGP
+10.99.0.0/16  via 203.0.113.1  [1/0]  STATIC
+172.16.0.0/12  via 10.0.0.1  [1/0]  STATIC`,
+    changedLines: { before: [], after: [2] },
+  },
+  // ── Last 30d (2026-03-01 – 2026-03-30) ────────────────────────────────────
+  {
+    id: 116, device: 'CR-BOS-01', type: 'Configuration File',
+    description: 'NTP server list updated; secondary peer added',
+    timestamp: '2026-03-15 08:12 UTC',
+    before: `ntp server 10.20.1.1 prefer`,
+    after: `ntp server 10.20.1.1 prefer
+ntp server 10.20.1.2`,
+    changedLines: { before: [], after: [2] },
+  },
+  {
+    id: 117, device: 'DS-BOS-02', type: 'NDP Table',
+    description: 'New IPv6 host 2001:db8:2::50 discovered on Eth0/3',
+    timestamp: '2026-03-18 11:44 UTC',
+    before: `IPv6 Address                  Age  Link-layer Addr   State  Interface
+2001:db8:2::10               30   00:bb:cc:dd:ee:10  REACH  Eth0/3`,
+    after: `IPv6 Address                  Age  Link-layer Addr   State  Interface
+2001:db8:2::10               0    00:bb:cc:dd:ee:10  REACH  Eth0/3
+2001:db8:2::50               0    00:bb:cc:dd:ee:50  REACH  Eth0/3`,
+    changedLines: { before: [2], after: [2, 3] },
+  },
+  {
+    id: 118, device: 'AS-BOS-01', type: 'NCT Table',
+    description: 'LLDP neighbor on Gi0/2 changed from DS-BOS-01 to DS-BOS-04',
+    timestamp: '2026-03-22 09:33 UTC',
+    before: `Local Intf  Capability  Platform      Neighbor ID
+Gi0/1       R S         WS-C3750    CR-BOS-01
+Gi0/2       S           WS-C3560    DS-BOS-01
+Gi0/3       S           WS-C3560    DS-BOS-02`,
+    after: `Local Intf  Capability  Platform      Neighbor ID
+Gi0/1       R S         WS-C3750    CR-BOS-01
+Gi0/2       S           WS-C3560    DS-BOS-04
+Gi0/3       S           WS-C3560    DS-BOS-02`,
+    changedLines: { before: [3], after: [3] },
+  },
+  {
+    id: 119, device: 'CR-BOS-02', type: 'MAC Table',
+    description: 'MAC table flushed on VLAN 30 after trunk reconfiguration',
+    timestamp: '2026-03-25 15:20 UTC',
+    before: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------
+30    00:11:22:33:44:01  DYNAMIC  Gi0/8
+30    00:11:22:33:44:02  DYNAMIC  Gi0/8
+30    00:11:22:33:44:03  DYNAMIC  Gi0/8`,
+    after: `VLAN  MAC Address        Type     Ports
+----  -----------------  -------  ---------`,
+    changedLines: { before: [3, 4, 5], after: [] },
+  },
+  {
+    id: 120, device: 'DS-BOS-01', type: 'Access Policy',
+    description: 'SERVER-PROTECT policy applied to Eth0/5 inbound',
+    timestamp: '2026-03-28 10:05 UTC',
+    before: `interface Ethernet0/5
+ description Server-Segment-A
+ ip address 10.30.5.1 255.255.255.0
+ no shutdown`,
+    after: `interface Ethernet0/5
+ description Server-Segment-A
+ ip address 10.30.5.1 255.255.255.0
+ ip access-group SERVER-PROTECT in
+ no shutdown`,
+    changedLines: { before: [], after: [4] },
+  },
+]
+
+const RAW_CHANGE_TYPES = ['All', 'Configuration File', 'Route Table', 'ARP Table', 'MAC Table', 'NDP Table', 'STP Table', 'NCT Table', 'Access Policy']
+
 const TIME_OPTIONS = [
   { value: 'last-24h', label: 'Last 24 hours' },
   { value: 'last-7d', label: 'Last 7 days' },
@@ -256,17 +558,21 @@ const TIME_OPTIONS = [
 const CHANGE_TYPES = ['All', 'NTP', 'VLAN', 'Logging', 'BGP Policy', 'Static Route', 'ACL', 'OSPF', 'QoS Policy']
 
 export default function ChangeAnalysis({ filter }) {
+  const isSidebar = filter === 'sidebar'
+  const sourceChanges = isSidebar ? RAW_CHANGES : CHANGES
+  const sourceTypes = isSidebar ? RAW_CHANGE_TYPES : CHANGE_TYPES
+
   const [selected, setSelected] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [diffH, setDiffH] = useState(null)
   const [sortKey, setSortKey] = useState('timestamp')
   const [sortDir, setSortDir] = useState('asc')
   const [query, setQuery] = useState('')
-  const [timeFilter, setTimeFilter] = useState(filter ?? 'last-24h')
+  const [timeFilter, setTimeFilter] = useState('last-24h')
   const [changeTypeFilter, setChangeTypeFilter] = useState('all')
 
   const filteredChanges = (() => {
-    let result = CHANGES
+    let result = sourceChanges
     if (timeFilter === 'last-24h') result = result.filter(c => c.timestamp >= '2026-04-05')
     else if (timeFilter === 'last-7d') result = result.filter(c => c.timestamp >= '2026-03-31')
     if (changeTypeFilter !== 'all') result = result.filter(c => c.type === changeTypeFilter)
@@ -360,7 +666,7 @@ export default function ChangeAnalysis({ filter }) {
             onChange={e => { setChangeTypeFilter(e.target.value); setSelected(null) }}
             style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
           >
-            {CHANGE_TYPES.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
+            {sourceTypes.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
           </select>
           {/* Search bar */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
