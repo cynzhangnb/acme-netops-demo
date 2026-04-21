@@ -897,11 +897,48 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
               /* ── Empty state ── */
               <div style={{
                 flex: 1, display: 'flex', flexDirection: 'column',
-                justifyContent: 'flex-end', padding: '20px 16px 28px',
+                padding: '20px 16px 28px',
               }}>
+                {/* ── Illustration ── */}
+                <div style={{
+                  flex: 1, display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', paddingBottom: 16,
+                }}>
+                  {/* Network topology icon — Claude outlined style */}
+                  <svg width="72" height="72" viewBox="0 0 72 72" fill="none" style={{ marginBottom: 14, display: 'block' }}>
+                    {/* Edges first so nodes sit on top */}
+                    <line x1="36" y1="20" x2="18" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
+                    <line x1="36" y1="20" x2="54" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
+                    <line x1="18" y1="40" x2="36" y2="55" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
+                    <line x1="54" y1="40" x2="36" y2="55" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
+                    <line x1="18" y1="40" x2="54" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3"/>
+                    {/* Top node (router / core) */}
+                    <rect x="27" y="11" width="18" height="18" rx="4" stroke="#c8c8c8" strokeWidth="1.5"/>
+                    <line x1="31" y1="17" x2="41" y2="17" stroke="#c8c8c8" strokeWidth="1.25" strokeLinecap="round"/>
+                    <line x1="31" y1="21" x2="37" y2="21" stroke="#c8c8c8" strokeWidth="1.25" strokeLinecap="round"/>
+                    {/* Left node */}
+                    <circle cx="18" cy="40" r="7.5" stroke="#c8c8c8" strokeWidth="1.5"/>
+                    <circle cx="18" cy="40" r="3" stroke="#c8c8c8" strokeWidth="1.25"/>
+                    {/* Right node */}
+                    <circle cx="54" cy="40" r="7.5" stroke="#c8c8c8" strokeWidth="1.5"/>
+                    <circle cx="54" cy="40" r="3" stroke="#c8c8c8" strokeWidth="1.25"/>
+                    {/* Bottom node (switch) */}
+                    <rect x="27" y="47" width="18" height="16" rx="4" stroke="#c8c8c8" strokeWidth="1.5"/>
+                    <line x1="31" y1="52" x2="41" y2="52" stroke="#c8c8c8" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="31" y1="56" x2="38" y2="56" stroke="#c8c8c8" strokeWidth="1.1" strokeLinecap="round"/>
+                  </svg>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6, letterSpacing: '-0.01em' }}>
+                    Network AI
+                  </div>
+                  <div style={{ fontSize: 12.5, color: '#888', lineHeight: 1.5, textAlign: 'center', maxWidth: 200 }}>
+                    Ask questions about your network or open a map to get started.
+                  </div>
+                </div>
+
+                {/* ── Prompts ── */}
                 <div style={{
                   fontSize: 13, fontWeight: 600, color: '#555',
-                  letterSpacing: '0.01em', marginBottom: 8, paddingLeft: 2,
+                  letterSpacing: '0.01em', marginBottom: 6, paddingLeft: 10,
                 }}>
                   Try asking
                 </div>
