@@ -100,16 +100,17 @@ function MapDotGrid() {
 }
 
 /* ── Map toolbar drawing tools ───────────────────────────────────────────── */
+/* All icons: 16×16, viewBox 0 0 16 16, strokeWidth 1.5 — matches sidebar icon weight */
 const MAP_TOOLS = [
   {
     id: 'page',
     label: 'Note',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M3 1.5H9L12 4.5V13.5H3V1.5Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" strokeLinecap="round"/>
-        <path d="M9 1.5V4.5H12" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
-        <line x1="5" y1="7" x2="10" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
-        <line x1="5" y1="9.5" x2="8.5" y2="9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3.5 1.5H9.5L12.5 4.5V14.5H3.5V1.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+        <path d="M9.5 1.5V4.5H12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <line x1="5.5" y1="7.5" x2="10.5" y2="7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="5.5" y1="10" x2="8.5" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -117,12 +118,12 @@ const MAP_TOOLS = [
     id: 'table',
     label: 'Table',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <rect x="1.5" y="1.5" width="12" height="12" rx="1.25" stroke="currentColor" strokeWidth="1.25"/>
-        <line x1="1.5" y1="5.5" x2="13.5" y2="5.5" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="1.5" y1="9.5" x2="13.5" y2="9.5" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="5.5" y1="1.5" x2="5.5" y2="13.5" stroke="currentColor" strokeWidth="1.1"/>
-        <line x1="9.5" y1="1.5" x2="9.5" y2="13.5" stroke="currentColor" strokeWidth="1.1"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="1.75" y="1.75" width="12.5" height="12.5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="1.75" y1="5.75" x2="14.25" y2="5.75" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="1.75" y1="10.25" x2="14.25" y2="10.25" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="6" y1="1.75" x2="6" y2="14.25" stroke="currentColor" strokeWidth="1.5"/>
+        <line x1="10.25" y1="1.75" x2="10.25" y2="14.25" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
     ),
   },
@@ -130,8 +131,8 @@ const MAP_TOOLS = [
     id: 'rect',
     label: 'Rectangle',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <rect x="2" y="3" width="11" height="9" rx="1.25" stroke="currentColor" strokeWidth="1.25"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="3.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
     ),
   },
@@ -139,8 +140,8 @@ const MAP_TOOLS = [
     id: 'ellipse',
     label: 'Ellipse',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <circle cx="7.5" cy="7.5" r="5.25" stroke="currentColor" strokeWidth="1.25"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <ellipse cx="8" cy="8" rx="6" ry="5" stroke="currentColor" strokeWidth="1.5"/>
       </svg>
     ),
   },
@@ -148,8 +149,8 @@ const MAP_TOOLS = [
     id: 'line',
     label: 'Line',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <line x1="2" y1="13" x2="13" y2="2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <line x1="2.5" y1="13.5" x2="13.5" y2="2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -157,9 +158,9 @@ const MAP_TOOLS = [
     id: 'arrow',
     label: 'Arrow',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <line x1="2.5" y1="12.5" x2="11.5" y2="3.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-        <path d="M11.5 3.5H7.5M11.5 3.5V7.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <line x1="3" y1="13" x2="12" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M12 4H8M12 4V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
   },
@@ -167,9 +168,9 @@ const MAP_TOOLS = [
     id: 'text',
     label: 'Text',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M2.5 3.5H12.5M7.5 3.5V12.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-        <path d="M5.5 12.5H9.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2.5 4H13.5M8 4V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M5.5 13H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -177,10 +178,10 @@ const MAP_TOOLS = [
     id: 'link',
     label: 'Link',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M6 5.5H4.5A2.5 2.5 0 0 0 4.5 10.5H6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-        <path d="M9 5.5H10.5A2.5 2.5 0 0 1 10.5 10.5H9" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
-        <line x1="6" y1="8" x2="9" y2="8" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M6.5 6H5A3 3 0 0 0 5 12H6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M9.5 6H11A3 3 0 0 1 11 12H9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="6" y1="9" x2="10" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -188,9 +189,9 @@ const MAP_TOOLS = [
     id: 'pen',
     label: 'Pen',
     icon: (
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-        <path d="M10.5 2L13 4.5L5.5 12L2.5 12.5L3 9.5L10.5 2Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" strokeLinecap="round"/>
-        <line x1="8.5" y1="4" x2="11" y2="6.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M11 2L14 5L6 13L2.5 13.5L3 10L11 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/>
+        <line x1="9" y1="4" x2="12" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ),
   },
@@ -804,16 +805,16 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                           <div style={{ height: 34, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fff', gap: 1 }}>
                             {MAP_TOOLS.map(tool => (
                               <button key={tool.id} title={tool.label} onClick={() => setActiveTool(tool.id)}
-                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, border: 'none', borderRadius: 6, background: activeTool === tool.id ? '#e8e8e8' : 'transparent', color: activeTool === tool.id ? '#111' : '#888', cursor: 'pointer', transition: 'background 0.08s, color 0.08s', flexShrink: 0 }}
-                                onMouseEnter={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = '#f2f2f2'; e.currentTarget.style.color = '#333' } }}
-                                onMouseLeave={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#888' } }}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, border: 'none', borderRadius: 6, background: activeTool === tool.id ? '#e8e8e8' : 'transparent', color: activeTool === tool.id ? '#111' : '#2e2c28', cursor: 'pointer', transition: 'background 0.08s, color 0.08s', flexShrink: 0 }}
+                                onMouseEnter={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = '#f2f2f2'; e.currentTarget.style.color = '#111' } }}
+                                onMouseLeave={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2c28' } }}
                               >{tool.icon}</button>
                             ))}
                             <div style={{ flex: 1 }} />
                             <button onClick={handleMapSave}
-                              style={{ background: 'none', border: 'none', padding: '0 2px', fontSize: 12, fontWeight: 500, cursor: 'pointer', color: mapSaveState === 'saved' ? '#1a7a3f' : '#555', transition: 'color 0.15s' }}
+                              style={{ background: 'none', border: 'none', padding: '0 2px', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: mapSaveState === 'saved' ? '#1a7a3f' : '#2e2c28', transition: 'color 0.15s' }}
                               onMouseEnter={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#111' }}
-                              onMouseLeave={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#555' }}
+                              onMouseLeave={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#2e2c28' }}
                             >{mapSaveState === 'saved' ? 'Saved' : 'Save'}</button>
                           </div>
                         )}
