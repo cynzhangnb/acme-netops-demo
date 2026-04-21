@@ -340,6 +340,12 @@ export default function ChangeAnalysis({ filter }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         {/* Filter bar */}
         <div style={{ padding: '9px 16px 9px 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Event count — left anchor */}
+          <div style={{ fontSize: 12, color: '#444', fontWeight: 500, flexShrink: 0 }}>
+            {queriedChanges.length} event{queriedChanges.length !== 1 ? 's' : ''}
+          </div>
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
           {/* Time dropdown */}
           <select
             value={timeFilter}
@@ -356,11 +362,8 @@ export default function ChangeAnalysis({ filter }) {
           >
             {CHANGE_TYPES.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
           </select>
-          <div style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>
-            {queriedChanges.length} event{queriedChanges.length !== 1 ? 's' : ''}
-          </div>
           {/* Search bar */}
-          <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round"
               style={{ position: 'absolute', left: 8, pointerEvents: 'none' }}>
