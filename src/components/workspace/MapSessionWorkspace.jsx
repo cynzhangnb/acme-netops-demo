@@ -42,10 +42,10 @@ function DeleteIcon() {
 }
 function ShareIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-      <polyline points="16 6 12 2 8 6"/>
-      <line x1="12" y1="2" x2="12" y2="15"/>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 16v4.25a.75.75 0 0 0 .75.75h14.5a.75.75 0 0 0 .75-.75V16"/>
+      <polyline points="16 7 12 3 8 7"/>
+      <line x1="12" y1="3" x2="12" y2="16"/>
     </svg>
   )
 }
@@ -76,6 +76,14 @@ function CloseTabIcon() {
       strokeWidth="2.5" strokeLinecap="round">
       <line x1="18" y1="6" x2="6" y2="18"/>
       <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  )
+}
+function SplitScreenIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="18" rx="2"/>
+      <line x1="12" y1="3" x2="12" y2="21"/>
     </svg>
   )
 }
@@ -189,7 +197,7 @@ const MAP_TOOLS = [
 ]
 
 /* ── Map Session Workspace ────────────────────────────────────────────────── */
-export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false }) {
+export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllTabsClosed, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false }) {
   const [sessionName, setSessionName]   = useState('')
   const [nameOverride, setNameOverride] = useState(null)
 
@@ -221,6 +229,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
   const [activeTool, setActiveTool] = useState('select')
   const [mapSaveState, setMapSaveState] = useState('idle')
   const [loadingTabId, setLoadingTabId] = useState(null)
+  const [splitMode, setSplitMode] = useState(false)
   function handleMapSave() {
     setMapSaveState('saved')
     setTimeout(() => setMapSaveState('idle'), 1600)
@@ -364,6 +373,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
     setMapTabs(remaining)
     if (activeMapTab === id) setActiveMapTab(remaining[0]?.id ?? null)
     /* Keep artifact in registry so we can re-open it from the tile */
+    /* When the last tab is closed, go back to the home page */
+    if (remaining.length === 0) onAllTabsClosed?.()
   }
 
   function handleResizeStart(e) {
@@ -700,7 +711,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                 padding: '0 8px', gap: 2,
                 borderBottom: '1px solid #e8e8e8', background: '#fff', flexShrink: 0,
               }}>
-                {mapTabs.map(tab => {
+                {/* Tab chips — hidden in split mode (mini-labels inside panes serve that role) */}
+                {!splitMode && mapTabs.map(tab => {
                   const isActive = tab.id === activeMapTab
                   const isLoading = tab.id === loadingTabId
                   return (
@@ -744,113 +756,107 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                     </div>
                   )
                 })}
-                {/* Spacer + Share/AI — only visible when no session header yet */}
-                {!sessionActive && (
-                  <>
-                    <div style={{ flex: 1 }} />
-                    {ShareAndAIButtons}
-                  </>
+                {/* Spacer */}
+                <div style={{ flex: 1 }} />
+                {/* Split view — only when 2+ tabs */}
+                {mapTabs.length >= 2 && (
+                  <button
+                    onClick={() => setSplitMode(v => !v)}
+                    title="Split view"
+                    style={{
+                      width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: 'none', borderRadius: 5, cursor: 'pointer', flexShrink: 0,
+                      background: splitMode ? '#e8e8e8' : 'transparent',
+                      color: splitMode ? '#111' : '#2e2c28',
+                      transition: 'background 0.1s, color 0.1s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = splitMode ? '#e0e0e0' : '#f0f0f0'; e.currentTarget.style.color = '#111' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = splitMode ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = splitMode ? '#111' : '#2e2c28' }}
+                  >
+                    <SplitScreenIcon />
+                  </button>
                 )}
+                {/* Share/AI — only visible when no session header yet */}
+                {!sessionActive && ShareAndAIButtons}
               </div>
 
-              {/* Map canvas — topology, changeAnalysis, or dot-grid depending on active tab */}
+              {/* Map canvas — single or split view */}
               {(() => {
-                const artifact = mapArtifacts[activeMapTab]
-                const isMapLoading = loadingTabId === activeMapTab
+                /* Helper: render one canvas pane for a given tabId */
+                const renderPane = (tabId, opts = {}) => {
+                  const artifact = mapArtifacts[tabId]
+                  const isLoading = loadingTabId === tabId
+                  const style = opts.style ?? { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }
 
-                /* ── Loading state — shown while map is opening ── */
-                if (isMapLoading) {
-                  return (
-                    <div style={{
-                      flex: 1, position: 'relative', overflow: 'hidden',
-                      background: '#f8f8f8',
-                      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
-                      backgroundSize: '22px 22px',
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center', gap: 14,
-                    }}>
-                      {/* Spinner ring */}
-                      <div style={{
-                        width: 32, height: 32, flexShrink: 0,
-                        border: '2.5px solid #e0e0e0',
-                        borderTopColor: '#aaa',
-                        borderRadius: '50%',
-                        animation: 'spin 0.75s linear infinite',
-                      }} />
-                      <span style={{ fontSize: 12, color: '#aaa', letterSpacing: '0.01em' }}>
-                        Loading map…
-                      </span>
-                    </div>
-                  )
+                  if (isLoading) {
+                    return (
+                      <div key={tabId} style={{ ...style, background: '#f8f8f8', backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)', backgroundSize: '22px 22px', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                        <div style={{ width: 32, height: 32, flexShrink: 0, border: '2.5px solid #e0e0e0', borderTopColor: '#aaa', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
+                        <span style={{ fontSize: 12, color: '#aaa' }}>Loading map…</span>
+                      </div>
+                    )
+                  }
+                  if (artifact?.type === 'topology') {
+                    return (
+                      <div key={tabId} style={style}>
+                        {/* Toolbar — only in single mode (avoid doubling) */}
+                        {!opts.hideToolbar && (
+                          <div style={{ height: 34, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fff', gap: 1 }}>
+                            {MAP_TOOLS.map(tool => (
+                              <button key={tool.id} title={tool.label} onClick={() => setActiveTool(tool.id)}
+                                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, border: 'none', borderRadius: 6, background: activeTool === tool.id ? '#e8e8e8' : 'transparent', color: activeTool === tool.id ? '#111' : '#888', cursor: 'pointer', transition: 'background 0.08s, color 0.08s', flexShrink: 0 }}
+                                onMouseEnter={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = '#f2f2f2'; e.currentTarget.style.color = '#333' } }}
+                                onMouseLeave={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#888' } }}
+                              >{tool.icon}</button>
+                            ))}
+                            <div style={{ flex: 1 }} />
+                            <button onClick={handleMapSave}
+                              style={{ background: 'none', border: 'none', padding: '0 2px', fontSize: 12, fontWeight: 500, cursor: 'pointer', color: mapSaveState === 'saved' ? '#1a7a3f' : '#555', transition: 'color 0.15s' }}
+                              onMouseEnter={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#111' }}
+                              onMouseLeave={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#555' }}
+                            >{mapSaveState === 'saved' ? 'Saved' : 'Save'}</button>
+                          </div>
+                        )}
+                        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                          <TopologyMap />
+                        </div>
+                      </div>
+                    )
+                  }
+                  if (artifact?.type === 'changeAnalysis') {
+                    return <div key={tabId} style={style}><ChangeAnalysisPage embedded={true} /></div>
+                  }
+                  return <MapDotGrid key={tabId} />
                 }
 
-                if (artifact?.type === 'topology') {
+                /* ── Split mode: first two tabs side by side ── */
+                if (splitMode && mapTabs.length >= 2) {
+                  const [leftTab, rightTab] = mapTabs
                   return (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      {/* ── Map toolbar ── */}
-                      <div style={{
-                        height: 34, flexShrink: 0,
-                        display: 'flex', alignItems: 'center',
-                        padding: '0 12px',
-                        borderBottom: '1px solid #ebebeb',
-                        background: '#fff',
-                        gap: 1,
-                      }}>
-                        {/* Drawing tools */}
-                        {MAP_TOOLS.map(tool => (
-                          <button
-                            key={tool.id}
-                            title={tool.label}
-                            onClick={() => setActiveTool(tool.id)}
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              width: 28, height: 28, border: 'none', borderRadius: 6,
-                              background: activeTool === tool.id ? '#e8e8e8' : 'transparent',
-                              color: activeTool === tool.id ? '#111' : '#888',
-                              cursor: 'pointer', transition: 'background 0.08s, color 0.08s',
-                              flexShrink: 0,
-                            }}
-                            onMouseEnter={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = '#f2f2f2'; e.currentTarget.style.color = '#333' } }}
-                            onMouseLeave={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#888' } }}
-                          >
-                            {tool.icon}
-                          </button>
-                        ))}
-
-                        {/* Spacer */}
-                        <div style={{ flex: 1 }} />
-
-                        {/* Save — flat text only */}
-                        <button
-                          onClick={handleMapSave}
-                          style={{
-                            background: 'none', border: 'none', padding: '0 2px',
-                            fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                            color: mapSaveState === 'saved' ? '#1a7a3f' : '#555',
-                            transition: 'color 0.15s',
-                          }}
-                          onMouseEnter={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#111' }}
-                          onMouseLeave={e => { if (mapSaveState === 'idle') e.currentTarget.style.color = '#555' }}
-                        >
-                          {mapSaveState === 'saved' ? 'Saved' : 'Save'}
-                        </button>
+                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                      {/* Left pane */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+                        {/* Mini tab label */}
+                        <div style={{ height: 30, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fafafa', fontSize: 11.5, fontWeight: 500, color: '#555', flexShrink: 0 }}>
+                          {leftTab.name}
+                        </div>
+                        {renderPane(leftTab.id, { hideToolbar: true, style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 } })}
                       </div>
-
-                      {/* Map canvas */}
-                      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                        <TopologyMap />
+                      {/* Divider */}
+                      <div style={{ width: 1, flexShrink: 0, background: '#e8e8e8' }} />
+                      {/* Right pane */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+                        <div style={{ height: 30, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fafafa', fontSize: 11.5, fontWeight: 500, color: '#555', flexShrink: 0 }}>
+                          {rightTab.name}
+                        </div>
+                        {renderPane(rightTab.id, { hideToolbar: true, style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 } })}
                       </div>
                     </div>
                   )
                 }
-                if (artifact?.type === 'changeAnalysis') {
-                  return (
-                    <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                      <ChangeAnalysisPage embedded={true} />
-                    </div>
-                  )
-                }
-                return <MapDotGrid />
+
+                /* ── Normal single-tab mode ── */
+                return renderPane(activeMapTab)
               })()}
             </>
           )}
@@ -904,11 +910,23 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                   flex: 1, display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', paddingBottom: 16,
                 }}>
-                  {/* AI icon — same as the AI pane button, scaled up */}
-                  <svg width="60" height="60" viewBox="0 0 16 16" fill="none" style={{ marginBottom: 14, display: 'block' }}>
-                    <rect x="0.75" y="0.75" width="14.5" height="14.5" rx="1.2" stroke="#c8c8c8" strokeWidth="1.5"/>
-                    <path d="M9.59998 10.6667V9.6H10.1333V5.86667H9.59998V4.8H11.7333V5.86667H11.2V9.6H11.7333V10.6667H9.59998Z" fill="#c8c8c8"/>
-                    <path d="M7.73363 10.6667H8.80029L6.93336 4.8H5.33336L3.46851 10.6667H4.53453L4.85549 9.6H7.40381L7.73363 10.6667ZM5.17645 8.53333L6.04493 5.64741L6.18141 5.64613L7.074 8.53339L5.17645 8.53333Z" fill="#c8c8c8"/>
+                  {/* NB Workspace icon — network hub with satellite nodes */}
+                  <svg width="64" height="64" viewBox="0 0 44 44" fill="none" style={{ marginBottom: 14, display: 'block' }}>
+                    <circle cx="22" cy="22" r="15" stroke="#ccc" strokeWidth="1" strokeDasharray="2.5 3"/>
+                    <line x1="22" y1="22" x2="22" y2="7" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="22" y1="22" x2="34.990" y2="14.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="22" y1="22" x2="34.990" y2="29.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="22" y1="22" x2="22" y2="37" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="22" y1="22" x2="9.010" y2="29.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <line x1="22" y1="22" x2="9.010" y2="14.5" stroke="#ccc" strokeWidth="1.1" strokeLinecap="round"/>
+                    <circle cx="22" cy="7" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="34.990" cy="14.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="34.990" cy="29.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="22" cy="37" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="9.010" cy="29.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="9.010" cy="14.5" r="2.6" fill="#fff" stroke="#bbb" strokeWidth="1.3"/>
+                    <circle cx="22" cy="22" r="5" fill="#fff" stroke="#aaa" strokeWidth="1.6"/>
+                    <circle cx="22" cy="22" r="2" fill="#bbb"/>
                   </svg>
                   <div style={{ fontSize: 12.5, color: '#888', lineHeight: 1.5, textAlign: 'center', maxWidth: 200 }}>
                     Ask questions about your network or open a map to get started.

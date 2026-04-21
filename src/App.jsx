@@ -726,6 +726,7 @@ export default function App() {
               <MapSessionWorkspace
                 onSessionNameChange={setCurrentSessionName}
                 onNew={() => navigate(() => { setShowHomeInsights(true); setViewMode('home'); setHomeSessionKey(0) })}
+                onAllTabsClosed={() => navigate(() => { setShowHomeInsights(true); setViewMode('home'); setHomeSessionKey(0) })}
                 sessions={sessions}
                 onSwitchSession={handleSelectSession}
                 onDeleteSession={handleDeleteSession}
