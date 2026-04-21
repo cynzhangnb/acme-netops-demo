@@ -38,29 +38,93 @@ const FAKE_SESSIONS = [
 ]
 
 /* ── Session History Pane ────────────────────────────────────────────────── */
-function SessionHistoryPane({ onClose, currentSessionName, onSelectSession }) {
+function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinnedIds = new Set(), onTogglePin }) {
+  const [hoveredId, setHoveredId] = useState(null)
+
+  const sessions = FAKE_SESSIONS.filter(s => !s.current)
+  const pinned   = sessions.filter(s => pinnedIds.has(s.id))
+  const recent   = sessions.filter(s => !pinnedIds.has(s.id))
+
+  const renderRow = (s) => {
+    const isInteractive = s.id === 's1' || s.id === 's2'
+    const isPinned      = pinnedIds.has(s.id)
+    const isHovered     = hoveredId === s.id
+    return (
+      <div
+        key={s.id}
+        onClick={() => { if (!isInteractive) return; onSelectSession?.(s.id); onClose() }}
+        onMouseEnter={() => setHoveredId(s.id)}
+        onMouseLeave={() => setHoveredId(null)}
+        style={{
+          display: 'flex', alignItems: 'center',
+          padding: '5px 8px 5px 14px',
+          /* no borderBottom — dividers removed; only pinned/recent separator remains */
+          cursor: isInteractive ? 'pointer' : 'default',
+          background: isHovered ? '#f0f0f0' : 'transparent',
+          transition: 'background 0.1s',
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {s.name}
+        </span>
+
+        {/* Right slot — fixed width so nothing shifts on hover.
+            Time fades out, pin button fades in via opacity only (no mount/unmount). */}
+        <div style={{ position: 'relative', flexShrink: 0, marginLeft: 8, minWidth: 52, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <span style={{
+            fontSize: 11, color: '#666',
+            opacity: isHovered ? 0 : 1,
+            transition: 'opacity 0.12s',
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            {s.ago}
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); onTogglePin?.(s.id) }}
+            title={isPinned ? 'Unpin' : 'Pin session'}
+            style={{
+              position: 'absolute', right: -2,
+              width: 20, height: 20,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
+              color: '#6b7280',
+              opacity: isHovered ? 1 : 0,
+              pointerEvents: isHovered ? 'auto' : 'none',
+              transition: 'opacity 0.12s, background 0.1s, color 0.1s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            {isPinned
+              ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
+              : <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.59,13.31,30,11.9,20,2,18.69,3.42,19.87,4.6,8.38,14.32,6.66,12.61,5.25,14l5.66,5.68L2,28.58,3.41,30l8.91-8.91L18,26.75l1.39-1.42-1.71-1.71L27.4,12.13ZM16.26,22.2,9.8,15.74,21.29,6,26,10.71Z"/></svg>
+            }
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
-      width: 264,
+      width: 280, flexShrink: 0,
       background: '#fff',
       display: 'flex', flexDirection: 'column',
+      height: '100%',
       border: '1px solid #e8e8e8',
       borderRadius: 10,
       boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
-      maxHeight: 'calc(100vh - 100px)',
       overflow: 'hidden',
     }}>
-      {/* Header */}
-      <div style={{
-        height: 44, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 14px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
-      }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Session History</span>
+      {/* Header — identical to Network/Inventory pane */}
+      <div style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Sessions</span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: 4, padding: 0 }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#555' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#aaa' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -70,54 +134,17 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession }) {
 
       {/* Session list */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
-        {FAKE_SESSIONS.map((s) => {
-          const displayName = s.current ? (currentSessionName || 'New Session') : s.name
-          const isNewEmpty = s.current && displayName === 'New Session'
-          const isInteractive = s.id === 's1' || s.id === 's2'
-          return (
-            <div
-              key={s.id}
-              onClick={() => {
-                if (s.current || !isInteractive) return
-                onSelectSession?.(s.id)
-                onClose()
-              }}
-              style={{
-                padding: '10px 14px',
-                borderBottom: '1px solid #f5f5f5',
-                cursor: s.current || !isInteractive ? 'default' : 'pointer',
-                background: s.current ? '#f7f9ff' : 'transparent',
-                position: 'relative',
-              }}
-              onMouseEnter={e => { if (!s.current && isInteractive) e.currentTarget.style.background = '#f8f8f8' }}
-              onMouseLeave={e => { if (!s.current && isInteractive) e.currentTarget.style.background = 'transparent' }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: s.preview && !isNewEmpty ? 3 : 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                  {s.current && (
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
-                  )}
-                  <span style={{ fontSize: 12, fontWeight: s.current ? 600 : 500, color: s.current ? '#111' : '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {displayName}
-                  </span>
-                </div>
-                <span style={{ fontSize: 10, color: '#bbb', flexShrink: 0, marginLeft: 8 }}>{s.ago}</span>
-              </div>
-              {s.preview && !isNewEmpty && (
-                <div style={{ fontSize: 11, color: '#888', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingLeft: s.current ? 12 : 0 }}>
-                  {s.preview}
-                </div>
-              )}
-              {s.artifacts > 0 && (
-                <div style={{ marginTop: 5, paddingLeft: s.current ? 12 : 0 }}>
-                  <span style={{ fontSize: 10, color: '#999', background: '#f0f0f0', borderRadius: 3, padding: '1px 6px' }}>
-                    {s.artifacts} artifact{s.artifacts !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              )}
+        {/* Pinned section */}
+        {pinned.length > 0 && (
+          <>
+            <div style={{ padding: '5px 14px 3px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Pinned
             </div>
-          )
-        })}
+            {pinned.map(renderRow)}
+            {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px' }} />}
+          </>
+        )}
+        {recent.map(renderRow)}
       </div>
     </div>
   )
@@ -204,7 +231,7 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '5px 14px',
               borderBottom: i < MAP_INSTANCES.length - 1 ? '1px solid #f5f5f5' : 'none',
-              background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#fafafa' : 'transparent',
+              background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#f0f0f0' : 'transparent',
               transition: 'background 0.15s',
               cursor: 'grab',
               userSelect: 'none',
@@ -333,7 +360,7 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                   borderBottom: '1px solid #f5f5f5',
                   background: 'transparent', transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: '#bbb' }}>
@@ -363,7 +390,7 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                     borderBottom: '1px solid #f5f5f5',
                     cursor: dragging ? 'grabbing' : 'grab',
                     userSelect: 'none',
-                    background: hoveredId === d.id ? '#fafafa' : 'transparent',
+                    background: hoveredId === d.id ? '#f0f0f0' : 'transparent',
                     transition: 'background 0.12s',
                   }}
                 >
@@ -552,7 +579,7 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
           borderBottom: '1px solid #f5f5f5',
           cursor: isFolder ? 'pointer' : 'grab',
           userSelect: 'none',
-          background: hovered ? '#fafafa' : 'transparent',
+          background: hovered ? '#f0f0f0' : 'transparent',
           color: '#222',
         }}
       >
@@ -703,6 +730,15 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   const [draggingReport, setDraggingReport] = useState(null)  // { id, label }
   const [draggingDevice, setDraggingDevice] = useState(null)  // device object
   const [isDragOver, setIsDragOver]         = useState(false)
+  const [pinnedSessionIds, setPinnedSessionIds] = useState(new Set())
+
+  function toggleSessionPin(id) {
+    setPinnedSessionIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   function handleSelectSession(id) {
     onOpenSession?.(id)
@@ -824,8 +860,8 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         currentSessionName={currentSessionName}
         activeSessionListId={activeSessionListId}
         onSelectSession={handleSelectSession}
-        onShowHistory={handleHistoryToggle}
-        historyActive={showHistory}
+        pinnedIds={pinnedSessionIds}
+        onTogglePin={toggleSessionPin}
       />
 
       {/* ── Pinned network pane — part of flex flow ── */}
@@ -859,6 +895,32 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
       {/* ── Content area (position:relative so floats are relative to it) ── */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+
+        {/* History button — top-left of home screen, only when sidebar is collapsed */}
+        {!sidebarExpanded && activeView === 'home' && (
+          <button
+            onClick={handleHistoryToggle}
+            title="Session history"
+            style={{
+              position: 'absolute', left: 8, top: 8, zIndex: 50,
+              width: 30, height: 30, borderRadius: 7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: showHistory ? '#ece9e2' : 'transparent',
+              border: '1px solid',
+              borderColor: showHistory ? '#ddd9d0' : 'transparent',
+              cursor: 'pointer', color: '#555',
+              transition: 'background 0.12s, border-color 0.12s, color 0.12s',
+            }}
+            onMouseEnter={e => { if (!showHistory) { e.currentTarget.style.background = '#f0ede7'; e.currentTarget.style.borderColor = '#e5e1db'; e.currentTarget.style.color = '#222' } }}
+            onMouseLeave={e => { if (!showHistory) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#555' } }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <polyline points="12 7 12 12 15.5 15.5"/>
+            </svg>
+          </button>
+        )}
 
         {/* Floating network pane */}
         {networkPaneOpen && !networkPinned && (
@@ -924,11 +986,13 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
               onClick={() => setShowHistory(false)}
               style={{ position: 'absolute', inset: 0, zIndex: 199 }}
             />
-            <div style={{ position: 'absolute', left: 8, top: 8, zIndex: 200 }}>
+            <div style={{ position: 'absolute', left: 8, top: 8, height: 'calc(100% - 16px)', zIndex: 200 }}>
               <SessionHistoryPane
                 onClose={() => setShowHistory(false)}
                 currentSessionName={currentSessionName}
                 onSelectSession={handleSelectSession}
+                pinnedIds={pinnedSessionIds}
+                onTogglePin={toggleSessionPin}
               />
             </div>
           </>

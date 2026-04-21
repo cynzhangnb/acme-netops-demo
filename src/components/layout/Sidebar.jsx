@@ -240,20 +240,15 @@ export default function Sidebar({
   currentSessionName,
   activeSessionListId = null,
   onSelectSession,
-  onShowHistory,
-  historyActive,
+  pinnedIds = new Set(),
+  onTogglePin,
 }) {
   const [sessionsOpen, setSessionsOpen] = useState(true)
   const [hoveredSessionId, setHoveredSessionId] = useState(null)
-  const [pinnedIds, setPinnedIds] = useState(new Set())
 
   function togglePin(e, id) {
     e.stopPropagation()
-    setPinnedIds(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
+    onTogglePin?.(id)
   }
   /* During the width animation we keep overflow:hidden so labels don't bleed.
      After the transition settles, we switch to overflow:visible so tooltips
@@ -392,19 +387,7 @@ export default function Sidebar({
       {/* ── Sessions section ──────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
 
-        {/* When collapsed: history icon button */}
-        {!expanded && (
-          <div style={{ padding: '0 5px', flexShrink: 0 }}>
-            <SideNavItem
-              icon={<HistoryIcon />}
-              label="Sessions"
-              active={historyActive}
-              onClick={onShowHistory}
-              expanded={false}
-              showTooltip={showTooltip}
-            />
-          </div>
-        )}
+        {/* History entry point moved to top-left of home page (collapsed mode) */}
 
         {/* When expanded: plain section label + session list */}
         {expanded && (
@@ -472,12 +455,12 @@ export default function Sidebar({
                         flexShrink: 0, width: 20, height: 20,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
-                        color: isPinned ? '#6b7280' : '#9ca3af',
+                        color: isPinned ? '#6b7280' : '#6b7280',
                         opacity: isPinned || isHovered ? 1 : 0,
                         transition: 'opacity 0.1s, color 0.1s, background 0.1s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = isPinned ? '#6b7280' : '#9ca3af' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
                     >
                       {isPinned ? <PinFilledIcon /> : <PinOutlineIcon />}
                     </button>

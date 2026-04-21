@@ -817,6 +817,46 @@ function ReportArtifact({ label }) {
   )
 }
 
+const MAP_TOOLS = [
+  { id: 'page',    label: 'Note',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-5-6z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg> },
+  { id: 'table',   label: 'Table',     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg> },
+  { id: 'rect',    label: 'Rectangle', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/></svg> },
+  { id: 'ellipse', label: 'Ellipse',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="12" rx="9" ry="7"/></svg> },
+  { id: 'line',    label: 'Line',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="4" y1="20" x2="20" y2="4"/></svg> },
+  { id: 'arrow',   label: 'Arrow',     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="19" x2="19" y2="5"/><polyline points="9 5 19 5 19 15"/></svg> },
+  { id: 'text',    label: 'Text',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="12" y1="7" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg> },
+  { id: 'link',    label: 'Link',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 8H8a4 4 0 0 0 0 8h2"/><path d="M14 8h2a4 4 0 0 1 0 8h-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg> },
+  { id: 'pen',     label: 'Pen',       icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3l4 4L8 19l-5 1 1-5L17 3z"/><line x1="15" y1="5" x2="19" y2="9"/></svg> },
+]
+
+function TopologyWithToolbar({ highlight, onTopologyNodeAction, onClearOverlay }) {
+  const [activeTool, setActiveTool] = useState('select')
+  const [saveState, setSaveState]   = useState('idle')
+  function handleSave() { setSaveState('saved'); setTimeout(() => setSaveState('idle'), 1600) }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ height: 34, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fff', gap: 1 }}>
+        {MAP_TOOLS.map(tool => (
+          <button key={tool.id} title={tool.label} onClick={() => setActiveTool(tool.id)}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, border: 'none', borderRadius: 6, background: activeTool === tool.id ? '#e8e8e8' : 'transparent', color: activeTool === tool.id ? '#111' : '#2e2c28', cursor: 'pointer', transition: 'background 0.08s, color 0.08s', flexShrink: 0 }}
+            onMouseEnter={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = '#f2f2f2'; e.currentTarget.style.color = '#111' } }}
+            onMouseLeave={e => { if (activeTool !== tool.id) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#2e2c28' } }}
+          >{tool.icon}</button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button onClick={handleSave}
+          style={{ background: 'none', border: 'none', padding: '0 2px', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: saveState === 'saved' ? '#1a7a3f' : '#2e2c28', transition: 'color 0.15s' }}
+          onMouseEnter={e => { if (saveState === 'idle') e.currentTarget.style.color = '#111' }}
+          onMouseLeave={e => { if (saveState === 'idle') e.currentTarget.style.color = '#2e2c28' }}
+        >{saveState === 'saved' ? 'Saved' : 'Save'}</button>
+      </div>
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <TopologyMap highlight={highlight} widgetMode={false} onNodeAction={onTopologyNodeAction} onClearOverlay={onClearOverlay} />
+      </div>
+    </div>
+  )
+}
+
 function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction, onClearOverlay, changesMapOverlay, overlayCollapsedPref, onOverlayToggle }) {
   if (!artifact) return null
 
@@ -830,7 +870,7 @@ function ArtifactContent({ artifact, highlight, widgetMode, onTopologyNodeAction
   }
 
   switch (artifact.type) {
-    case 'topology':      return <TopologyMap highlight={highlight} widgetMode={false} onNodeAction={onTopologyNodeAction} onClearOverlay={onClearOverlay} />
+    case 'topology':      return <TopologyWithToolbar highlight={highlight} onTopologyNodeAction={onTopologyNodeAction} onClearOverlay={onClearOverlay} />
     case 'chart':         return <TrafficChart />
     case 'table':         return <DeviceTable />
     case 'voicePath':     return <VoicePath widgetMode={widgetMode} onNodeAction={onTopologyNodeAction} />

@@ -11,9 +11,9 @@ const NETWORK_PROMPT_KEYWORDS  = ['boston data center', 'help me understand my n
 /* ── Icons for the lifted session header ─────────────────────────────────── */
 function PlusIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <line x1="7" y1="1.5" x2="7" y2="12.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <line x1="1.5" y1="7" x2="12.5" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5"  y1="12" x2="19" y2="12"/>
     </svg>
   )
 }
@@ -122,6 +122,7 @@ export default function AIWorkspace({
   const [editValue,       setEditValue]       = useState('')
   const [showMenu,        setShowMenu]        = useState(false)
   const [showSessions,    setShowSessions]    = useState(false)
+  const [nameAreaHovered, setNameAreaHovered] = useState(false)
 
   const [hoveredSessionId, setHoveredSessionId] = useState(null)
   const headerRef    = useRef(null)
@@ -330,23 +331,28 @@ export default function AIWorkspace({
             }}
           />
         ) : (
-          /* Session name + chevron — independent hover shapes (no connected pill) */
+          /* Session name + chevron — shared hover zone highlights both */
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1 }}>
 
+            {/* Shared hover wrapper */}
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 0, maxWidth: '40%' }}
+              onMouseEnter={() => setNameAreaHovered(true)}
+              onMouseLeave={() => setNameAreaHovered(false)}
+            >
             {/* Name — opens sessions list */}
             <span
               onClick={() => { setShowSessions(s => !s); setShowMenu(false) }}
               className={sessionJustActivated ? 'session-name-enter' : ''}
-              onMouseEnter={e => { if (!showSessions) e.currentTarget.style.background = '#f0f0f0' }}
-              onMouseLeave={e => { if (!showSessions) e.currentTarget.style.background = 'transparent' }}
               style={{
                 fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
-                cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
-                padding: '3px 6px 3px 10px',
-                borderRadius: 6,
-                background: showSessions ? '#e8e8e8' : 'transparent',
+                cursor: 'pointer', userSelect: 'none', flex: 1, minWidth: 0,
+                height: 26, padding: '0 4px 0 10px',
+                borderRadius: '6px 0 0 6px',
+                display: 'flex', alignItems: 'center',
+                background: showSessions ? '#e8e8e8' : (nameAreaHovered ? '#f0f0f0' : 'transparent'),
                 transition: 'background 0.12s',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}
             >
               {sessionName}
@@ -359,14 +365,12 @@ export default function AIWorkspace({
             >
               <button
                 onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
-                onMouseEnter={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : '#f0f0f0'; e.currentTarget.style.color = '#555' }}
-                onMouseLeave={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = showMenu ? '#555' : '#aaa' }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   height: 26, padding: '0 5px', border: 'none',
-                  borderRadius: 6,
-                  background: showMenu ? '#e8e8e8' : 'transparent',
-                  color: showMenu ? '#555' : '#aaa',
+                  borderRadius: '0 6px 6px 0',
+                  background: showMenu ? '#e8e8e8' : (nameAreaHovered ? '#f0f0f0' : 'transparent'),
+                  color: (nameAreaHovered || showMenu) ? '#555' : '#aaa',
                   cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
                 }}
               >
@@ -399,6 +403,7 @@ export default function AIWorkspace({
                 </div>
               )}
             </div>
+            </div>{/* end shared hover wrapper */}
           </div>
         )}
 
@@ -513,10 +518,10 @@ export default function AIWorkspace({
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
                 transition: 'background 0.1s, color 0.1s', flexShrink: 0, marginRight: 2,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#1a1a1a' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
             >
-              + New
+              <PlusIcon />&nbsp;New
             </button>
           )}
 
@@ -526,17 +531,17 @@ export default function AIWorkspace({
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
               height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
-              background: 'transparent', color: '#444',
+              background: 'transparent', color: '#1a1a1a',
               fontSize: 12, fontWeight: 500,
               cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 16v4.25a.75.75 0 0 0 .75.75h14.5a.75.75 0 0 0 .75-.75V16"/>
-              <polyline points="16 7 12 3 8 7"/>
-              <line x1="12" y1="3" x2="12" y2="16"/>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+              <polyline points="16 10 12 6 8 10"/>
+              <line x1="12" y1="6" x2="12" y2="16"/>
             </svg>
             Share
           </button>
@@ -628,10 +633,10 @@ export default function AIWorkspace({
                     onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2.5 10v3.5a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5V10"/>
-                      <polyline points="10.5 4.5 8 2 5.5 4.5"/>
-                      <line x1="8" y1="2" x2="8" y2="10.5"/>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+                      <polyline points="16 10 12 6 8 10"/>
+                      <line x1="12" y1="6" x2="12" y2="16"/>
                     </svg>
                     Share
                   </button>
