@@ -477,19 +477,19 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
         )}
       </div>
 
-      {/* AI toggle — active state fills full row height and bleeds flush to the right edge */}
+      {/* AI toggle — always a 40×40 square flush to the right edge of the header */}
       <button
         onClick={() => setShowAiPane(v => !v)}
         title={showAiPane ? 'Hide AI pane' : 'Show AI pane'}
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           padding: 0,
-          alignSelf: showAiPane ? 'stretch' : 'center',
-          height: showAiPane ? 'auto' : 28,
-          width: 36,
+          alignSelf: 'stretch',
+          height: 'auto',
+          width: 40,
           border: 'none',
           borderLeft: showAiPane ? '1px solid #e0e0e0' : 'none',
-          borderRadius: showAiPane ? 0 : 5,
+          borderRadius: 0,
           background: showAiPane ? '#e8e8e8' : 'transparent',
           color: showAiPane ? '#111' : '#333',
           cursor: 'pointer',
@@ -904,32 +904,12 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                   flex: 1, display: 'flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', paddingBottom: 16,
                 }}>
-                  {/* Network topology icon — Claude outlined style */}
-                  <svg width="72" height="72" viewBox="0 0 72 72" fill="none" style={{ marginBottom: 14, display: 'block' }}>
-                    {/* Edges first so nodes sit on top */}
-                    <line x1="36" y1="20" x2="18" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
-                    <line x1="36" y1="20" x2="54" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
-                    <line x1="18" y1="40" x2="36" y2="55" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
-                    <line x1="54" y1="40" x2="36" y2="55" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round"/>
-                    <line x1="18" y1="40" x2="54" y2="40" stroke="#d8d8d8" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3"/>
-                    {/* Top node (router / core) */}
-                    <rect x="27" y="11" width="18" height="18" rx="4" stroke="#c8c8c8" strokeWidth="1.5"/>
-                    <line x1="31" y1="17" x2="41" y2="17" stroke="#c8c8c8" strokeWidth="1.25" strokeLinecap="round"/>
-                    <line x1="31" y1="21" x2="37" y2="21" stroke="#c8c8c8" strokeWidth="1.25" strokeLinecap="round"/>
-                    {/* Left node */}
-                    <circle cx="18" cy="40" r="7.5" stroke="#c8c8c8" strokeWidth="1.5"/>
-                    <circle cx="18" cy="40" r="3" stroke="#c8c8c8" strokeWidth="1.25"/>
-                    {/* Right node */}
-                    <circle cx="54" cy="40" r="7.5" stroke="#c8c8c8" strokeWidth="1.5"/>
-                    <circle cx="54" cy="40" r="3" stroke="#c8c8c8" strokeWidth="1.25"/>
-                    {/* Bottom node (switch) */}
-                    <rect x="27" y="47" width="18" height="16" rx="4" stroke="#c8c8c8" strokeWidth="1.5"/>
-                    <line x1="31" y1="52" x2="41" y2="52" stroke="#c8c8c8" strokeWidth="1.1" strokeLinecap="round"/>
-                    <line x1="31" y1="56" x2="38" y2="56" stroke="#c8c8c8" strokeWidth="1.1" strokeLinecap="round"/>
+                  {/* AI icon — same as the AI pane button, scaled up */}
+                  <svg width="60" height="60" viewBox="0 0 16 16" fill="none" style={{ marginBottom: 14, display: 'block' }}>
+                    <rect x="0.75" y="0.75" width="14.5" height="14.5" rx="1.2" stroke="#c8c8c8" strokeWidth="1.5"/>
+                    <path d="M9.59998 10.6667V9.6H10.1333V5.86667H9.59998V4.8H11.7333V5.86667H11.2V9.6H11.7333V10.6667H9.59998Z" fill="#c8c8c8"/>
+                    <path d="M7.73363 10.6667H8.80029L6.93336 4.8H5.33336L3.46851 10.6667H4.53453L4.85549 9.6H7.40381L7.73363 10.6667ZM5.17645 8.53333L6.04493 5.64741L6.18141 5.64613L7.074 8.53339L5.17645 8.53333Z" fill="#c8c8c8"/>
                   </svg>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 6, letterSpacing: '-0.01em' }}>
-                    Network AI
-                  </div>
                   <div style={{ fontSize: 12.5, color: '#888', lineHeight: 1.5, textAlign: 'center', maxWidth: 200 }}>
                     Ask questions about your network or open a map to get started.
                   </div>
