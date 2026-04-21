@@ -6,6 +6,7 @@ import MessageBubble from './MessageBubble'
 import SkeletonMessage from './SkeletonMessage'
 import TopologyMap from '../artifacts/TopologyMap'
 import ChangeAnalysisPage from '../changeanalysis/ChangeAnalysisPage'
+import { DevicePropertiesPane, buildDeviceProperties, buildConfigPaneState, ConfigWorkspacePane } from '../artifacts/ArtifactPane'
 // NewSessionButton removed — replaced with inline + New Session
 
 /* ── Header icons ─────────────────────────────────────────────────────────── */
@@ -239,6 +240,24 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   /* AI pane state */
   const [hoverPrompt, setHoverPrompt] = useState(null)  /* display-only preview on hover */
   const [inputValue, setInputValue]   = useState('')
+
+  /* Config + properties panel state (same panels as in ArtifactPane) */
+  const [configPane, setConfigPane]         = useState(null)
+  const [propertiesPane, setPropertiesPane] = useState(null)
+
+  function handleMapNodeAction(action) {
+    if (!action) return
+    if (action.actionId === 'view-config') {
+      setPropertiesPane(null)
+      setConfigPane(buildConfigPaneState(action.node))
+      return
+    }
+    if (action.actionId === 'view-properties') {
+      setConfigPane(null)
+      setPropertiesPane(buildDeviceProperties(action.node))
+      return
+    }
+  }
 
   /* AI pane visibility + resize — hidden by default when a map is opened directly */
   const [showAiPane, setShowAiPane] = useState(false)
@@ -818,8 +837,34 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                             >{mapSaveState === 'saved' ? 'Saved' : 'Save'}</button>
                           </div>
                         )}
-                        <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                          <TopologyMap />
+                        <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex' }}>
+                          <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+                            <TopologyMap onNodeAction={handleMapNodeAction} />
+                          </div>
+                          {configPane && (
+                            <>
+                              <div style={{ width: 1, flexShrink: 0, background: '#e8e6e1' }} />
+                              <ConfigWorkspacePane
+                                state={configPane}
+                                onClose={() => setConfigPane(null)}
+                                onEnterCompare={() => {}}
+                                onSetDock={() => {}}
+                                onSearchChange={q => setConfigPane(p => ({ ...p, searchQuery: q, activeMatchIndex: 0 }))}
+                                onPrevMatch={() => setConfigPane(p => ({ ...p, activeMatchIndex: Math.max(0, p.activeMatchIndex - 1) }))}
+                                onNextMatch={() => setConfigPane(p => ({ ...p, activeMatchIndex: p.activeMatchIndex + 1 }))}
+                                onCloseCompareSide={() => {}}
+                              />
+                            </>
+                          )}
+                          {propertiesPane && (
+                            <>
+                              <div style={{ width: 1, flexShrink: 0, background: '#e8e6e1' }} />
+                              <DevicePropertiesPane
+                                data={propertiesPane}
+                                onClose={() => setPropertiesPane(null)}
+                              />
+                            </>
+                          )}
                         </div>
                       </div>
                     )

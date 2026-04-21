@@ -622,7 +622,7 @@ function DevicePropertiesPane({ data, onClose, embedded = false }) {
   )
 }
 
-export { DevicePropertiesPane }
+export { DevicePropertiesPane, buildDeviceProperties, buildConfigPaneState, ConfigWorkspacePane }
 
 export function buildUSBOSR1Properties() {
   return {
