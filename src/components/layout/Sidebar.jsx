@@ -133,7 +133,7 @@ function PinFilledIcon() {
 }
 function UserIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#555"
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
       <circle cx="12" cy="7" r="4"/>
@@ -254,6 +254,33 @@ export default function Sidebar({
   const [deletedIds,        setDeletedIds]        = useState(new Set())
   const [menuPos,           setMenuPos]           = useState(null)
   const menuRef = useRef(null)
+
+  /* Account menu */
+  const [accountMenuOpen,   setAccountMenuOpen]   = useState(false)
+  const [accountMenuPos,    setAccountMenuPos]    = useState(null)
+  const [userBtnHovered,    setUserBtnHovered]    = useState(false)
+  const accountMenuRef = useRef(null)
+  const userBtnRef     = useRef(null)
+
+  useEffect(() => {
+    if (!accountMenuOpen) return
+    const handler = e => {
+      const path = e.composedPath ? e.composedPath() : []
+      if (!path.includes(accountMenuRef.current) && !path.includes(userBtnRef.current)) {
+        setAccountMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [accountMenuOpen])
+
+  function toggleAccountMenu(e) {
+    e.stopPropagation()
+    if (accountMenuOpen) { setAccountMenuOpen(false); return }
+    const rect = userBtnRef.current.getBoundingClientRect()
+    setAccountMenuPos({ bottom: window.innerHeight - rect.top + 4, left: rect.left })
+    setAccountMenuOpen(true)
+  }
 
   /* Close overflow menu on outside click */
   useEffect(() => {
@@ -575,11 +602,144 @@ export default function Sidebar({
       </div>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <div style={{ padding: '8px 0', borderTop: '1px solid #ebebeb', flexShrink: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 32 }}>
-          <UserIcon />
-        </div>
+      <div style={{ borderTop: '1px solid #ebebeb', flexShrink: 0 }}>
+        <button
+          ref={userBtnRef}
+          onClick={toggleAccountMenu}
+          onMouseEnter={() => setUserBtnHovered(true)}
+          onMouseLeave={() => setUserBtnHovered(false)}
+          style={{
+            display: 'flex', alignItems: 'center',
+            width: '100%', height: 36,
+            padding: '0 6px',
+            background: accountMenuOpen || userBtnHovered ? '#f0ede7' : 'transparent',
+            border: 'none', borderRadius: 0, cursor: 'pointer',
+            transition: 'background 0.12s',
+          }}
+        >
+          {/* Icon — matches other nav icon alignment */}
+          <span style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 22, flexShrink: 0, color: '#1a1a1a',
+          }}>
+            <UserIcon />
+          </span>
+
+          {/* "Account" label — fades in when expanded */}
+          <span style={{
+            fontSize: 13, color: '#1a1a1a', fontWeight: 400,
+            whiteSpace: 'nowrap', overflow: 'hidden',
+            maxWidth: expanded ? 160 : 0,
+            opacity: expanded ? 1 : 0,
+            marginLeft: expanded ? 7 : 0,
+            transition: 'max-width 0.22s ease, opacity 0.16s ease, margin-left 0.22s ease',
+            lineHeight: 1.3,
+          }}>
+            Account
+          </span>
+        </button>
       </div>
+
+      {/* Account menu — fixed position, opens above footer button */}
+      {accountMenuOpen && accountMenuPos && (
+        <div
+          ref={accountMenuRef}
+          style={{
+            position: 'fixed',
+            bottom: accountMenuPos.bottom,
+            left: accountMenuPos.left,
+            zIndex: 1200,
+            background: '#fff',
+            border: '1px solid #e5e5e5',
+            borderRadius: 10,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 1.5px 6px rgba(0,0,0,0.07)',
+            minWidth: 220,
+            overflow: 'hidden',
+            padding: '4px 0',
+          }}
+        >
+          {/* Email header — compact, tight, gray */}
+          <div style={{
+            padding: '7px 14px 5px',
+            fontSize: 11.5, color: '#555', fontWeight: 400,
+          }}>
+            cynthia.zhang@netbrain.com
+          </div>
+
+          {/* Divider after email */}
+          <div style={{ height: 1, background: '#f0f0f0', margin: '3px 0' }} />
+
+          {/* Menu items */}
+          {[
+            {
+              label: 'User Profile',
+              icon: (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              ),
+            },
+            {
+              label: 'Get Help',
+              icon: (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+              ),
+            },
+            {
+              label: 'Open Support Ticket',
+              icon: (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              ),
+            },
+          ].map(({ label, icon }) => (
+            <div
+              key={label}
+              onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f5f4f1'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 9,
+                padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+                cursor: 'pointer', background: 'transparent',
+              }}
+            >
+              <span style={{ color: '#555', display: 'flex' }}>{icon}</span>
+              {label}
+            </div>
+          ))}
+
+          {/* Divider before log out */}
+          <div style={{ height: 1, background: '#f0f0f0', margin: '3px 0' }} />
+
+          {/* Log out */}
+          <div
+            onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f5f4f1'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9,
+              padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+              cursor: 'pointer', background: 'transparent',
+            }}
+          >
+            <span style={{ color: '#555', display: 'flex' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </span>
+            Log out
+          </div>
+        </div>
+      )}
 
       {/* Session overflow menu — fixed to escape sidebar overflow */}
       {openMenuId && menuPos && (

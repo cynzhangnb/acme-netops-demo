@@ -361,6 +361,12 @@ function PinIcon({ pinned }) {
 function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
   const [hoveredId, setHoveredId]   = useState(null)
   const [openingId, setOpeningId]   = useState(null)
+  const [search,    setSearch]      = useState('')
+
+  const query = search.trim().toLowerCase()
+  const filteredMaps = query
+    ? MAP_INSTANCES.filter(m => m.name.toLowerCase().includes(query))
+    : MAP_INSTANCES
 
   function handleOpen(e, map) {
     e.stopPropagation()
@@ -371,8 +377,34 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
   }
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
-      {MAP_INSTANCES.map((map, i) => {
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Search */}
+      <div style={{ padding: '5px 10px', flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          padding: '3px 8px',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search maps…"
+            style={{
+              flex: 1, border: 'none', outline: 'none', background: 'transparent',
+              fontSize: 12, color: '#222',
+            }}
+          />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
+      {filteredMaps.length === 0 && (
+        <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa' }}>No maps found</div>
+      )}
+      {filteredMaps.map((map, i) => {
         const isOpening = openingId === map.id
         return (
           <div
@@ -425,6 +457,7 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
           </div>
         )
       })}
+      </div>
     </div>
   )
 }
@@ -563,7 +596,7 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                     onMouseEnter={e => { e.currentTarget.style.color = '#1a56a0' }}
                     onMouseLeave={e => { e.currentTarget.style.color = '#378ADD' }}
                   >
-                    Open in map
+                    Open
                   </span>
                 </div>
               ))}
@@ -631,7 +664,7 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
       </div>
 
       {/* Tab switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', height: 40, padding: '0 10px', gap: 3, borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', height: 40, padding: '0 10px', gap: 3, flexShrink: 0 }}>
         {NETWORK_TABS.map(t => {
           const active = tab === t.toLowerCase()
           return (
