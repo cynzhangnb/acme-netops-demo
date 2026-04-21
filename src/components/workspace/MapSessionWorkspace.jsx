@@ -393,9 +393,9 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
   const displayName = nameOverride ?? sessionName
   const activeTabName = mapTabs.find(t => t.id === activeMapTab)?.name ?? 'Workspace'
 
-  /* Share + AI (+ New Session when active) — in session header or tab bar */
+  /* Share + AI toggle (+ New Session when active) — in session header or tab bar */
   const ShareAndAIButtons = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+    <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, flexShrink: 0, alignSelf: 'stretch' }}>
       {/* + New — only once a session exists */}
       {sessionActive && (
         <button
@@ -403,7 +403,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
           style={{
             display: 'inline-flex', alignItems: 'center',
             height: 26, padding: '0 9px', border: 'none', borderRadius: 5,
-            background: 'transparent', color: '#444',
+            background: 'transparent', color: '#444', alignSelf: 'center',
             fontSize: 12, fontWeight: 500, cursor: 'pointer',
             transition: 'background 0.1s', flexShrink: 0, marginRight: 2,
           }}
@@ -413,7 +413,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
           + New
         </button>
       )}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', alignSelf: 'center' }}>
         <button
           onClick={() => { setShowShareMenu(m => !m); setShowMenu(false); setShowSessions(false) }}
           title={sessionActive ? 'Share' : 'Share this artifact'}
@@ -429,11 +429,6 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
         >
           <ShareIcon />
           Share
-          {sessionActive && (
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ marginLeft: 1, opacity: 0.6 }}>
-              <polyline points="2,4 6,8 10,4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}
         </button>
 
         {showShareMenu && (
@@ -482,18 +477,32 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
         )}
       </div>
 
+      {/* AI toggle — active state fills full row height and bleeds flush to the right edge */}
       <button
         onClick={() => setShowAiPane(v => !v)}
         title={showAiPane ? 'Hide AI pane' : 'Show AI pane'}
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          width: 28, height: 28, border: 'none', borderRadius: 5,
-          background: showAiPane ? '#f0f0f0' : 'transparent', color: '#333',
-          cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
-          marginRight: 6,
+          padding: 0,
+          alignSelf: showAiPane ? 'stretch' : 'center',
+          height: showAiPane ? 'auto' : 28,
+          width: 36,
+          border: 'none',
+          borderLeft: showAiPane ? '1px solid #e0e0e0' : 'none',
+          borderRadius: showAiPane ? 0 : 5,
+          background: showAiPane ? '#e8e8e8' : 'transparent',
+          color: showAiPane ? '#111' : '#333',
+          cursor: 'pointer',
+          transition: 'background 0.1s, color 0.1s',
+          marginRight: -8,
+          flexShrink: 0,
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
-        onMouseLeave={e => { e.currentTarget.style.background = showAiPane ? '#f0f0f0' : 'transparent' }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = showAiPane ? '#dedede' : '#f0f0f0'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = showAiPane ? '#e8e8e8' : 'transparent'
+        }}
       >
         <AIPaneIcon />
       </button>
@@ -522,10 +531,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
           transition: 'opacity 260ms ease 120ms',
         }}>
           {/* ── Left: session name + chevron ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 0, minWidth: 0, flex: 1 }}
-            onMouseEnter={() => setNameAreaHovered(true)}
-            onMouseLeave={() => setNameAreaHovered(false)}
-          >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1 }}>
             {isEditingName ? (
               <input
                 ref={renameInputRef}
@@ -548,13 +554,15 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                 <span
                   className={sessionJustActivated ? 'session-name-enter' : ''}
                   onClick={() => { setShowSessions(s => !s); setShowMenu(false); setShowShareMenu(false) }}
+                  onMouseEnter={e => { if (!showSessions) e.currentTarget.style.background = '#f0f0f0' }}
+                  onMouseLeave={e => { if (!showSessions) e.currentTarget.style.background = 'transparent' }}
                   style={{
                     fontSize: 13, fontWeight: 500, color: '#111', letterSpacing: '-0.01em',
                     cursor: 'pointer', userSelect: 'none', maxWidth: 260, minWidth: 0,
                     padding: '3px 6px 3px 10px',
-                    borderRadius: showSessions || nameAreaHovered || showMenu ? '6px 0 0 6px' : 5,
-                    background: showSessions ? '#e8e8e8' : nameAreaHovered || showMenu ? '#f0f0f0' : 'transparent',
-                    transition: 'background 0.12s, border-radius 0.12s',
+                    borderRadius: 6,
+                    background: showSessions ? '#e8e8e8' : 'transparent',
+                    transition: 'background 0.12s',
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
                   }}
                 >
@@ -565,13 +573,15 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <button
                     onClick={e => { e.stopPropagation(); setShowMenu(m => !m); setShowSessions(false) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : '#f0f0f0'; e.currentTarget.style.color = '#555' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = showMenu ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = showMenu ? '#555' : '#aaa' }}
                     style={{
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       height: 26, padding: '0 5px', border: 'none',
-                      borderRadius: showMenu || nameAreaHovered ? '0 6px 6px 0' : 4,
-                      background: showMenu ? '#e8e8e8' : nameAreaHovered ? '#f0f0f0' : 'transparent',
-                      color: showMenu || nameAreaHovered ? '#555' : '#aaa',
-                      cursor: 'pointer', transition: 'background 0.1s, color 0.1s, border-radius 0.12s',
+                      borderRadius: 6,
+                      background: showMenu ? '#e8e8e8' : 'transparent',
+                      color: showMenu ? '#555' : '#aaa',
+                      cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
                     }}
                   >
                     <ChevronIcon />
@@ -914,7 +924,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, sessio
               </div>
             ) : (
               /* ── Message list ── */
-              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 8px' }} className="scrollbar-thin">
+              <div style={{ flex: 1, overflowY: 'auto', padding: '20px 6px 8px' }} className="scrollbar-thin">
                 {messages.map(msg => (
                   <MessageBubble
                     key={msg.id}
