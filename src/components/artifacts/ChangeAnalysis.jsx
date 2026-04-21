@@ -247,6 +247,14 @@ function SortIcon({ active, dir }) {
   )
 }
 
+const TIME_OPTIONS = [
+  { value: 'last-24h', label: 'Last 24 hours' },
+  { value: 'last-7d', label: 'Last 7 days' },
+  { value: 'last-30d', label: 'Last 30 days' },
+]
+
+const CHANGE_TYPES = ['All', 'NTP', 'VLAN', 'Logging', 'BGP Policy', 'Static Route', 'ACL', 'OSPF', 'QoS Policy']
+
 export default function ChangeAnalysis({ filter }) {
   const [selected, setSelected] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -254,12 +262,17 @@ export default function ChangeAnalysis({ filter }) {
   const [sortKey, setSortKey] = useState('timestamp')
   const [sortDir, setSortDir] = useState('asc')
   const [query, setQuery] = useState('')
+  const [timeFilter, setTimeFilter] = useState(filter ?? 'last-24h')
+  const [changeTypeFilter, setChangeTypeFilter] = useState('all')
 
-  const filteredChanges = filter === 'last-24h'
-    ? CHANGES.filter(c => c.timestamp >= '2026-04-05')
-    : CHANGES
-  const deviceCount = new Set(filteredChanges.map(change => change.device)).size
-  const timeLabel = filter === 'last-24h' ? 'Last 24 hours' : 'Last 7 days'
+  const filteredChanges = (() => {
+    let result = CHANGES
+    if (timeFilter === 'last-24h') result = result.filter(c => c.timestamp >= '2026-04-05')
+    else if (timeFilter === 'last-7d') result = result.filter(c => c.timestamp >= '2026-03-31')
+    if (changeTypeFilter !== 'all') result = result.filter(c => c.type === changeTypeFilter)
+    return result
+  })()
+
   const isResizing = useRef(false)
   const startData = useRef({})
   const containerRef = useRef(null)
@@ -268,8 +281,6 @@ export default function ChangeAnalysis({ filter }) {
     const t = setTimeout(() => setIsLoading(false), 1400)
     return () => clearTimeout(t)
   }, [])
-
-  useEffect(() => { setSelected(null) }, [filter])
 
   // Set default diffH to 70% of container height after mount
   useEffect(() => {
@@ -327,10 +338,26 @@ export default function ChangeAnalysis({ filter }) {
 
       {/* Table — fills remaining space */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-        {/* Table header */}
-        <div style={{ padding: '10px 16px 10px 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 400, color: '#111' }}>
-            {queriedChanges.length} change event{queriedChanges.length !== 1 ? 's' : ''} across {new Set(queriedChanges.map(c => c.device)).size} device{new Set(queriedChanges.map(c => c.device)).size !== 1 ? 's' : ''}
+        {/* Filter bar */}
+        <div style={{ padding: '9px 16px 9px 20px', borderBottom: '1px solid #e8e8e8', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Time dropdown */}
+          <select
+            value={timeFilter}
+            onChange={e => { setTimeFilter(e.target.value); setSelected(null) }}
+            style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+          >
+            {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          {/* Change Type dropdown */}
+          <select
+            value={changeTypeFilter}
+            onChange={e => { setChangeTypeFilter(e.target.value); setSelected(null) }}
+            style={{ height: 28, padding: '0 24px 0 8px', border: '1px solid #e0e0e0', borderRadius: 6, fontSize: 12, color: '#222', background: '#fafafa', outline: 'none', cursor: 'pointer', appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+          >
+            {CHANGE_TYPES.map(t => <option key={t} value={t === 'All' ? 'all' : t}>{t === 'All' ? 'All Change Types' : t}</option>)}
+          </select>
+          <div style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>
+            {queriedChanges.length} event{queriedChanges.length !== 1 ? 's' : ''}
           </div>
           {/* Search bar */}
           <div style={{ marginLeft: 'auto', position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -348,7 +375,7 @@ export default function ChangeAnalysis({ filter }) {
                 paddingLeft: 28, paddingRight: 10, height: 28,
                 border: '1px solid #e0e0e0', borderRadius: 6,
                 fontSize: 12, color: '#222', background: '#fafafa',
-                outline: 'none', width: 200,
+                outline: 'none', width: 180,
               }}
               onFocus={e => { e.currentTarget.style.borderColor = '#378ADD'; e.currentTarget.style.background = '#fff' }}
               onBlur={e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.background = '#fafafa' }}

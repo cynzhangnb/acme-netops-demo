@@ -236,6 +236,7 @@ export default function Sidebar({
   networkActive,
   onGoInventory,
   inventoryActive,
+  onGoChangeAnalysis,
   sessions = [],
   currentSessionName,
   activeSessionListId = null,
@@ -375,7 +376,7 @@ export default function Sidebar({
         <SideNavItem
           icon={<ChangeAnalysisIcon />}
           label="Change Analysis"
-          onClick={() => {}}
+          onClick={onGoChangeAnalysis}
           expanded={expanded}
           showTooltip={showTooltip}
         />
