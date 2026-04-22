@@ -187,7 +187,12 @@ export default function AIWorkspace({
     }, 380) // matches the CSS transition duration
   }, [artifacts, addArtifact, setActiveArtifactId])
 
-  /* ── Open artifact from outside (e.g. drag-drop from network pane) ──────── */
+  /* ── Open artifact from outside (e.g. network pane, CA sidebar) ──────────── */
+  // suppressTransitionRef: set true before the state changes so the render that
+  // applies them reads 'none' for the width transition — no slide-in animation.
+  // Reset via requestAnimationFrame after the browser has painted the new layout.
+  const suppressTransitionRef = useRef(false)
+
   // Guard ref: prevents the same _key from being processed twice (React 18 Strict Mode
   // double-fires effects; without this, two identical tabs would be created).
   const lastExternalKeyRef = useRef(null)
@@ -196,8 +201,27 @@ export default function AIWorkspace({
     if (externalArtifact._key === lastExternalKeyRef.current) return
     lastExternalKeyRef.current = externalArtifact._key
     const { _key, ...artifactRef } = externalArtifact
-    handleOpenArtifact(artifactRef)
-  }, [externalArtifact])
+
+    // If already open, just switch to it (no animation needed)
+    const existing = artifacts.find(a => a.type === artifactRef.type && a.label === artifactRef.label)
+    if (existing) {
+      setActiveArtifactId(existing.id)
+      setLocalViewMode('split')
+      return
+    }
+
+    // New external artifact: open instantly as a tab with a skeleton loading overlay.
+    // 1. Suppress the width CSS transition for this render
+    // 2. Add the artifact immediately (tab appears in the tab bar right away)
+    // 3. Show skeleton overlay for 900 ms (loading feedback)
+    suppressTransitionRef.current = true
+    addArtifact(artifactRef)
+    if (artifactRef.type === 'topology') setTopologyHighlight(null)
+    setPendingArtifactRef(artifactRef)          // skeleton overlay
+    setLocalViewMode('split')
+    requestAnimationFrame(() => { suppressTransitionRef.current = false })
+    setTimeout(() => setPendingArtifactRef(null), 900)
+  }, [externalArtifact]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRenameSession = useCallback((name) => {
     setSessionNameOverride(name)
@@ -711,7 +735,7 @@ export default function AIWorkspace({
           width: !isSplit ? 0 : showChat ? `calc(100% - ${chatPaneWidth + 5}px)` : '100%',
           overflow: 'hidden',
           position: 'relative',
-          transition: isDraggingSash.current ? 'none' : 'width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: (isDraggingSash.current || suppressTransitionRef.current) ? 'none' : 'width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
           {/* Skeleton: shown while artifact is loading during the split transition */}
           {pendingArtifactRef !== null && (
