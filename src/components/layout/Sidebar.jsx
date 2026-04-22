@@ -610,8 +610,9 @@ export default function Sidebar({
           onMouseLeave={() => setUserBtnHovered(false)}
           style={{
             display: 'flex', alignItems: 'center',
+            justifyContent: expanded ? 'flex-start' : 'center',
             width: '100%', height: 36,
-            padding: '0 6px',
+            padding: expanded ? '0 6px' : 0,
             background: accountMenuOpen || userBtnHovered ? '#f0ede7' : 'transparent',
             border: 'none', borderRadius: 0, cursor: 'pointer',
             transition: 'background 0.12s',
