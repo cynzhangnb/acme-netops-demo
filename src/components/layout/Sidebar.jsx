@@ -547,13 +547,13 @@ export default function Sidebar({
                         flexShrink: 0, width: 20, height: 20,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
-                        color: '#6b7280',
+                        color: '#555',
                         opacity: isPinned || showIcons ? 1 : 0,
                         pointerEvents: isPinned || showIcons ? 'auto' : 'none',
                         transition: 'opacity 0.1s, color 0.1s, background 0.1s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
                     >
                       {isPinned ? <PinFilledIcon /> : <PinOutlineIcon />}
                     </button>
@@ -566,13 +566,13 @@ export default function Sidebar({
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         background: openMenuId === s.id ? '#e0e0e0' : 'none',
                         border: 'none', cursor: 'pointer', borderRadius: 3,
-                        color: '#6b7280',
+                        color: '#555',
                         opacity: showIcons ? 1 : 0,
                         pointerEvents: showIcons ? 'auto' : 'none',
                         transition: 'opacity 0.1s, background 0.1s, color 0.1s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#555' }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                         <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>

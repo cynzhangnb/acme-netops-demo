@@ -172,13 +172,13 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
               position: 'absolute', right: 22, width: 20, height: 20,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
-              color: '#6b7280',
+              color: '#555',
               opacity: isHovered || openMenuId === s.id ? 1 : 0,
               pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
               transition: 'opacity 0.12s, background 0.1s, color 0.1s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
           >
             {isPinned
               ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
@@ -194,13 +194,13 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: openMenuId === s.id ? '#e0e0e0' : 'none',
               border: 'none', cursor: 'pointer', borderRadius: 3,
-              color: '#6b7280',
+              color: '#555',
               opacity: isHovered || openMenuId === s.id ? 1 : 0,
               pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
               transition: 'opacity 0.12s, background 0.1s, color 0.1s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#555' }}
           >
             <SessionOverflowIcon />
           </button>
