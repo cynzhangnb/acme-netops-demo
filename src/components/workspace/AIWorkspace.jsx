@@ -177,14 +177,15 @@ export default function AIWorkspace({
       setLocalViewMode('split')
       return
     }
-    // New artifact: animate chat right first, show skeleton, then load content
+    // New artifact: slide chat pane right (380 ms), add artifact behind skeleton,
+    // then clear skeleton at 900 ms so the loading state is clearly visible.
     setPendingArtifactRef(artifactRef)
     setLocalViewMode('split')
     setTimeout(() => {
       addArtifact(artifactRef)
       if (artifactRef.type === 'topology') setTopologyHighlight(null)
-      setPendingArtifactRef(null)
-    }, 380) // matches the CSS transition duration
+    }, 380) // add content once slide animation finishes
+    setTimeout(() => setPendingArtifactRef(null), 900) // hold loading state for 900 ms
   }, [artifacts, addArtifact, setActiveArtifactId])
 
   /* ── Open artifact from outside (e.g. network pane, CA sidebar) ──────────── */
@@ -598,13 +599,13 @@ export default function AIWorkspace({
                           position: 'absolute', right: 22, width: 20, height: 20,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: 'none', border: 'none', cursor: 'pointer', borderRadius: 3,
-                          color: '#6b7280',
+                          color: '#555',
                           opacity: isHovered || sessionMenuOpenId === s.id ? 1 : 0,
                           pointerEvents: isHovered || sessionMenuOpenId === s.id ? 'auto' : 'none',
                           transition: 'opacity 0.12s, background 0.1s, color 0.1s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
                       >
                         {isPinned
                           ? <svg width="11" height="11" viewBox="0 0 32 32" fill="currentColor"><path d="M28.5858,13.3137,30,11.9,20,2,18.6858,3.415l1.1858,1.1857L8.38,14.3225,6.6641,12.6067,5.25,14l5.6572,5.6773L2,28.5831,3.41,30l8.9111-8.9087L18,26.7482l1.3929-1.414L17.6765,23.618l9.724-11.4895Z"/></svg>
@@ -619,13 +620,13 @@ export default function AIWorkspace({
                           position: 'absolute', right: -2, width: 20, height: 20,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: sessionMenuOpenId === s.id ? '#e0e0e0' : 'none',
-                          border: 'none', cursor: 'pointer', borderRadius: 3, color: '#6b7280',
+                          border: 'none', cursor: 'pointer', borderRadius: 3, color: '#555',
                           opacity: isHovered || sessionMenuOpenId === s.id ? 1 : 0,
                           pointerEvents: isHovered || sessionMenuOpenId === s.id ? 'auto' : 'none',
                           transition: 'opacity 0.12s, background 0.1s, color 0.1s',
                         }}
                         onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = sessionMenuOpenId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#6b7280' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = sessionMenuOpenId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#555' }}
                       >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
                           <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
@@ -737,22 +738,28 @@ export default function AIWorkspace({
           position: 'relative',
           transition: (isDraggingSash.current || suppressTransitionRef.current) ? 'none' : 'width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
-          {/* Skeleton: shown while artifact is loading during the split transition */}
+          {/* Loading overlay: shown while a new artifact tab is opening */}
           {pendingArtifactRef !== null && (
-            <div style={{ position: 'absolute', inset: 0, background: '#f8f9fa', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ height: 40, borderBottom: '1px solid #e8e8e8', background: '#fff', display: 'flex', alignItems: 'center', padding: '0 12px', gap: 8 }}>
-                <div style={{ width: 130, height: 20, borderRadius: 5, background: '#eaecef', animation: 'skeleton-pulse 1.4s ease-in-out infinite' }} />
+            <div style={{
+              position: 'absolute', inset: 0, zIndex: 10,
+              background: '#fff',
+              display: 'flex', flexDirection: 'column',
+            }}>
+              {/* Indeterminate progress bar */}
+              <div style={{ height: 2, overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ height: '100%', background: '#378ADD', animation: 'progress-indeterminate 1.4s ease-in-out infinite' }} />
               </div>
-              <div style={{ flex: 1, padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ height: 16, borderRadius: 4, background: '#eaecef', width: '45%', animation: 'skeleton-pulse 1.4s ease-in-out infinite' }} />
-                <div style={{ height: 1, background: '#e8e8e8', margin: '4px 0' }} />
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#eaecef', flexShrink: 0, animation: 'skeleton-pulse 1.4s ease-in-out infinite' }} />
-                    <div style={{ flex: 1, height: 14, borderRadius: 4, background: '#eaecef', animation: 'skeleton-pulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.07}s` }} />
-                    <div style={{ width: '25%', height: 14, borderRadius: 4, background: '#eaecef', animation: 'skeleton-pulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.07}s` }} />
-                  </div>
-                ))}
+              {/* Centered spinner + label */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                <svg width="32" height="32" viewBox="0 0 36 36" fill="none"
+                  style={{ animation: 'spin 0.9s linear infinite' }}>
+                  <circle cx="18" cy="18" r="15" stroke="#e8e8e8" strokeWidth="3"/>
+                  <circle cx="18" cy="18" r="15" stroke="#378ADD" strokeWidth="3"
+                    strokeLinecap="round" strokeDasharray="28 66"/>
+                </svg>
+                <span style={{ fontSize: 12, color: '#767676' }}>
+                  Opening {pendingArtifactRef.label}…
+                </span>
               </div>
             </div>
           )}
