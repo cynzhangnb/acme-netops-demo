@@ -602,7 +602,7 @@ export default function Sidebar({
       </div>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <div style={{ borderTop: '1px solid #ebebeb', flexShrink: 0 }}>
+      <div style={{ borderTop: '1px solid #ebebeb', flexShrink: 0, position: 'relative' }}>
         <button
           ref={userBtnRef}
           onClick={toggleAccountMenu}
@@ -639,6 +639,7 @@ export default function Sidebar({
             Account
           </span>
         </button>
+        {showTooltip && userBtnHovered && <Tooltip label="Account" />}
       </div>
 
       {/* Account menu — fixed position, opens above footer button */}
