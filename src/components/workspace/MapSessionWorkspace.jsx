@@ -186,7 +186,7 @@ function BlankMapEmptyState({ onOpenDevicePane }) {
 
         {/* ── Hint ── */}
         <div style={{ fontSize: 12.5, color: '#555', lineHeight: 1.55, marginBottom: 16 }}>
-          Browse devices in the Network pane and add them to the canvas to start building.
+          Browse devices and sites in the Network pane and add them to the canvas to start exploring.
         </div>
 
         {/* ── CTA — compact, left-aligned ── */}
@@ -197,18 +197,16 @@ function BlankMapEmptyState({ onOpenDevicePane }) {
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '5px 12px', border: 'none', borderRadius: 6,
-            background: btnHovered ? '#2b6fb5' : '#378ADD',
+            background: btnHovered ? '#333' : '#1a1a1a',
             color: '#fff', fontSize: 12, fontWeight: 500,
             cursor: 'pointer', transition: 'background 0.15s',
             letterSpacing: '-0.01em',
           }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="2" width="8" height="8" rx="1.5"/>
-            <rect x="14" y="2" width="8" height="8" rx="1.5"/>
-            <rect x="8" y="14" width="8" height="8" rx="1.5"/>
-            <line x1="6" y1="10" x2="12" y2="14"/>
-            <line x1="18" y1="10" x2="12" y2="14"/>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
           Browse devices
         </button>
