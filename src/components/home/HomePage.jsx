@@ -298,28 +298,50 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
             {/* Network topology icon */}
             {(() => {
               const cx = 22, cy = 22, r = 15
-              const nodes = [270, 330, 30, 90, 150, 210].map(deg => {
+              const rHub = 5, rNode = 2.6
+              const angleDeg = [270, 330, 30, 90, 150, 210]
+              const nodes = angleDeg.map(deg => {
                 const rad = (deg * Math.PI) / 180
-                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad), rad }
               })
               return (
-                <svg width="72" height="72" viewBox="0 0 44 44" fill="none">
-                  <circle cx={cx} cy={cy} r={r} stroke="#bbb" strokeWidth="0.9" strokeDasharray="2.5 3"/>
+                <svg width="78" height="78" viewBox="0 0 44 44" fill="none">
+                  {/* Dashed straight lines connecting adjacent node circles — trimmed to edges */}
+                  {nodes.map((n, i) => {
+                    const next = nodes[(i + 1) % nodes.length]
+                    const dx = next.x - n.x, dy = next.y - n.y
+                    const dist = Math.sqrt(dx * dx + dy * dy)
+                    const ux = dx / dist, uy = dy / dist
+                    return (
+                      <line key={`edge${i}`}
+                        x1={(n.x + ux * rNode).toFixed(4)}    y1={(n.y + uy * rNode).toFixed(4)}
+                        x2={(next.x - ux * rNode).toFixed(4)} y2={(next.y - uy * rNode).toFixed(4)}
+                        stroke="#bbb" strokeWidth="0.9" strokeDasharray="2 2.5" fill="none"/>
+                    )
+                  })}
+                  {/* Spokes: trimmed from hub edge to node edge */}
+                  {nodes.map((n, i) => {
+                    const dx = n.x - cx, dy = n.y - cy
+                    return (
+                      <line key={`s${i}`}
+                        x1={(cx + dx / r * rHub).toFixed(4)}  y1={(cy + dy / r * rHub).toFixed(4)}
+                        x2={(n.x - dx / r * rNode).toFixed(4)} y2={(n.y - dy / r * rNode).toFixed(4)}
+                        stroke="#ccc" strokeWidth="1" strokeLinecap="round"/>
+                    )
+                  })}
+                  {/* Outer node circles */}
                   {nodes.map((n, i) => (
-                    <line key={`s${i}`} x1={cx} y1={cy} x2={n.x} y2={n.y}
-                      stroke="#ccc" strokeWidth="1" strokeLinecap="round"/>
+                    <circle key={`n${i}`} cx={n.x.toFixed(4)} cy={n.y.toFixed(4)} r={rNode}
+                      fill="none" stroke="#888" strokeWidth="0.9"/>
                   ))}
-                  {nodes.map((n, i) => (
-                    <circle key={`n${i}`} cx={n.x} cy={n.y} r="2.6"
-                      fill="#fff" stroke="#aaa" strokeWidth="1.2"/>
-                  ))}
-                  <circle cx={cx} cy={cy} r="5" fill="#fff" stroke="#666" strokeWidth="1.5"/>
+                  {/* Center hub */}
+                  <circle cx={cx} cy={cy} r={rHub} fill="none" stroke="#666" strokeWidth="1"/>
                   <circle cx={cx} cy={cy} r="2" fill="#888"/>
                 </svg>
               )
             })()}
             <div>
-              <div style={{ fontSize: 20, fontWeight: 600, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
+              <div style={{ fontSize: 24, fontWeight: 400, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
                 Welcome to NB Workspace
               </div>
             </div>
