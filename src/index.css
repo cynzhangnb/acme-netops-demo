@@ -103,7 +103,7 @@
     min-height: 90px;
     overflow-y: auto;
   }
-  .ai-input-box textarea::placeholder { color: #767676; }
+  .ai-input-box textarea::placeholder { color: #555; }
   .ai-input-footer {
     display: flex;
     align-items: center;
