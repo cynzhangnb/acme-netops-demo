@@ -295,36 +295,29 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
 
           {/* Icon + Title */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center', marginBottom: 40 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: 16,
-              background: '#fff', border: '1px solid #e4e4e4',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {/* Network topology icon — same as AI Workspace, stronger contrast */}
-              {(() => {
-                const cx = 22, cy = 22, r = 15
-                const nodes = [270, 330, 30, 90, 150, 210].map(deg => {
-                  const rad = (deg * Math.PI) / 180
-                  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
-                })
-                return (
-                  <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-                    <circle cx={cx} cy={cy} r={r} stroke="#999" strokeWidth="1" strokeDasharray="2.5 3"/>
-                    {nodes.map((n, i) => (
-                      <line key={`s${i}`} x1={cx} y1={cy} x2={n.x} y2={n.y}
-                        stroke="#aaa" strokeWidth="1.1" strokeLinecap="round"/>
-                    ))}
-                    {nodes.map((n, i) => (
-                      <circle key={`n${i}`} cx={n.x} cy={n.y} r="2.6"
-                        fill="#fff" stroke="#777" strokeWidth="1.3"/>
-                    ))}
-                    <circle cx={cx} cy={cy} r="5" fill="#fff" stroke="#444" strokeWidth="1.6"/>
-                    <circle cx={cx} cy={cy} r="2" fill="#555"/>
-                  </svg>
-                )
-              })()}
-            </div>
+            {/* Network topology icon */}
+            {(() => {
+              const cx = 22, cy = 22, r = 15
+              const nodes = [270, 330, 30, 90, 150, 210].map(deg => {
+                const rad = (deg * Math.PI) / 180
+                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
+              })
+              return (
+                <svg width="72" height="72" viewBox="0 0 44 44" fill="none">
+                  <circle cx={cx} cy={cy} r={r} stroke="#bbb" strokeWidth="0.9" strokeDasharray="2.5 3"/>
+                  {nodes.map((n, i) => (
+                    <line key={`s${i}`} x1={cx} y1={cy} x2={n.x} y2={n.y}
+                      stroke="#ccc" strokeWidth="1" strokeLinecap="round"/>
+                  ))}
+                  {nodes.map((n, i) => (
+                    <circle key={`n${i}`} cx={n.x} cy={n.y} r="2.6"
+                      fill="#fff" stroke="#aaa" strokeWidth="1.2"/>
+                  ))}
+                  <circle cx={cx} cy={cy} r="5" fill="#fff" stroke="#666" strokeWidth="1.5"/>
+                  <circle cx={cx} cy={cy} r="2" fill="#888"/>
+                </svg>
+              )
+            })()}
             <div>
               <div style={{ fontSize: 20, fontWeight: 600, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
                 Welcome to NB Workspace
