@@ -909,6 +909,7 @@ function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onD
 export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoNetwork, onGoChangeAnalysis, currentSessionName, activeSessionListId, onOpenSession, networkPanel, onNetworkPanelClick, isTransitioning, onOpenTab, onOpenReportTab, onDragMapStateChange, openNetworkPaneRequest, onDeviceDrop }) {
   const [sidebarExpanded, setSidebarExpanded]   = useState(true)
   const [showHistory, setShowHistory]           = useState(false)
+  const [historyBtnHovered, setHistoryBtnHovered] = useState(false)
   const [networkPaneOpen, setNetworkPaneOpen]   = useState(false)
   const [networkPinned, setNetworkPinned]       = useState(false)
   const [networkTab, setNetworkTab]             = useState('site')
@@ -1100,28 +1101,53 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
 
         {/* History button — top-left of home screen, only when sidebar is collapsed */}
         {!sidebarExpanded && activeView === 'home' && (
-          <button
-            onClick={handleHistoryToggle}
-            title="Show Sessions"
-            style={{
-              position: 'absolute', left: 8, top: 8, zIndex: 50,
-              width: 30, height: 30, borderRadius: 7,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: showHistory ? '#ece9e2' : 'transparent',
-              border: '1px solid',
-              borderColor: showHistory ? '#ddd9d0' : 'transparent',
-              cursor: 'pointer', color: '#555',
-              transition: 'background 0.12s, border-color 0.12s, color 0.12s',
-            }}
-            onMouseEnter={e => { if (!showHistory) { e.currentTarget.style.background = '#f0ede7'; e.currentTarget.style.borderColor = '#e5e1db'; e.currentTarget.style.color = '#222' } }}
-            onMouseLeave={e => { if (!showHistory) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#555' } }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9"/>
-              <polyline points="12 7 12 12 15.5 15.5"/>
-            </svg>
-          </button>
+          <div style={{ position: 'absolute', left: 8, top: 8, zIndex: 50 }}>
+            <button
+              onClick={handleHistoryToggle}
+              onMouseEnter={e => {
+                setHistoryBtnHovered(true)
+                if (!showHistory) { e.currentTarget.style.background = '#f0ede7'; e.currentTarget.style.borderColor = '#e5e1db'; e.currentTarget.style.color = '#222' }
+              }}
+              onMouseLeave={e => {
+                setHistoryBtnHovered(false)
+                if (!showHistory) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#555' }
+              }}
+              style={{
+                width: 30, height: 30, borderRadius: 7,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: showHistory ? '#ece9e2' : 'transparent',
+                border: '1px solid',
+                borderColor: showHistory ? '#ddd9d0' : 'transparent',
+                cursor: 'pointer', color: '#555',
+                transition: 'background 0.12s, border-color 0.12s, color 0.12s',
+              }}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <polyline points="12 7 12 12 15.5 15.5"/>
+              </svg>
+            </button>
+            {historyBtnHovered && (
+              <div style={{
+                position: 'absolute', left: 38, top: '50%', transform: 'translateY(-50%)',
+                background: '#1a1a1a', color: '#fff',
+                fontSize: 11, padding: '4px 8px',
+                borderRadius: 4, whiteSpace: 'nowrap',
+                pointerEvents: 'none', zIndex: 400,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+              }}>
+                <div style={{
+                  position: 'absolute', left: -4, top: '50%', transform: 'translateY(-50%)',
+                  width: 0, height: 0,
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  borderRight: '4px solid #1a1a1a',
+                }} />
+                Sessions
+              </div>
+            )}
+          </div>
         )}
 
         {/* Floating network pane */}
