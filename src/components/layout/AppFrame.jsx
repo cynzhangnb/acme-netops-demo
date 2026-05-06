@@ -304,7 +304,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
 }
 
 /* ── Network Browser Pane ────────────────────────────────────────────────── */
-const NETWORK_TABS = ['Site', 'Device', 'Map']
+const NETWORK_TABS = ['Site', 'Device']
 
 const MAP_INSTANCES = [
   { id: 'map-boston-dc',     name: 'Boston DC'          },
@@ -558,7 +558,7 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                 </svg>
                 <CategoryIcon type={type} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#222', flex: 1 }}>{type}</span>
-                <span style={{ fontSize: 11, color: '#888', flexShrink: 0 }}>{items.length}</span>
+                <span style={{ fontSize: 11, color: '#888', flexShrink: 0 }}>({items.length})</span>
               </div>
 
               {/* Device rows — single line, same density, no IP, no status */}
@@ -605,6 +605,178 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
         })}
       </div>
 
+    </div>
+  )
+}
+
+/* ── Site tree data + components ─────────────────────────────────────────── */
+const SITE_TREE = {
+  id: 'root', label: 'Acme Network', count: 2844, defaultOpen: true,
+  children: [
+    {
+      id: 'auto-site', label: 'Auto Site', count: 812, defaultOpen: false,
+      children: [
+        { id: 'aci',   label: 'ACI',   count: 241 },
+        { id: 'aws',   label: 'AWS',   count: 312 },
+        { id: 'azure', label: 'Azure', count: 189 },
+        { id: 'gcp',   label: 'GCP',   count: 70  },
+      ],
+    },
+    {
+      id: 'infoblox', label: 'Infoblox', count: 2, defaultOpen: false,
+      children: [
+        { id: 'infoblox-demo', label: 'Demo_Site', count: 2 },
+      ],
+    },
+    {
+      id: 'acme-dc', label: 'Acme DC', count: 96, defaultOpen: true,
+      children: [
+        { id: 'site-atlanta',   label: 'Atlanta',       count: 14 },
+        { id: 'site-baltimore', label: 'Baltimore',     count: 5  },
+        { id: 'site-boston',    label: 'Boston',        count: 9  },
+        { id: 'site-chicago',   label: 'Chicago',       count: 6  },
+        { id: 'site-dallas',    label: 'Dallas',        count: 15 },
+        { id: 'site-nyc',       label: 'New York',      count: 11 },
+        { id: 'site-philly',    label: 'Philadelphia',  count: 9  },
+        { id: 'site-sac',       label: 'Sacramento',    count: 7  },
+        { id: 'site-sf',        label: 'San Francisco', count: 4  },
+        { id: 'site-sj',        label: 'San Jose',      count: 12 },
+        { id: 'site-seattle',   label: 'Seattle',       count: 7  },
+        { id: 'site-toronto',   label: 'Toronto',       count: 3  },
+      ],
+    },
+    {
+      id: 'international', label: 'International', count: 79, defaultOpen: false,
+      children: [
+        { id: 'site-berlin',    label: 'Berlin',    count: 8  },
+        { id: 'site-london',    label: 'London',    count: 22 },
+        { id: 'site-munich',    label: 'Munich',    count: 6  },
+        { id: 'site-paris',     label: 'Paris',     count: 14 },
+        { id: 'site-singapore', label: 'Singapore', count: 18 },
+        { id: 'site-tokyo',     label: 'Tokyo',     count: 11 },
+      ],
+    },
+    { id: 'lab',        label: 'Lab',              count: 0    },
+    { id: 'mysite',     label: 'mysite',           count: 3    },
+    { id: 'unassigned', label: 'Unassigned',       count: 1855 },
+    { id: 'excluded',   label: 'Excluded from site', count: 0  },
+  ],
+}
+
+function SiteFolderIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}>
+      <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+    </svg>
+  )
+}
+
+function SiteLeafIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}>
+      <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  )
+}
+
+function SiteTreeNode({ node, depth, searchQuery }) {
+  const isFolder = node.children && node.children.length > 0
+  const [open, setOpen] = useState(node.defaultOpen ?? false)
+  const [hovered, setHovered] = useState(false)
+
+  // Filter children when searching
+  const matchesQuery = !searchQuery || node.label.toLowerCase().includes(searchQuery)
+  const filteredChildren = isFolder
+    ? node.children.filter(child =>
+        !searchQuery ||
+        child.label.toLowerCase().includes(searchQuery) ||
+        (child.children && child.children.some(gc => gc.label.toLowerCase().includes(searchQuery)))
+      )
+    : []
+  const visibleChildren = searchQuery ? filteredChildren : node.children
+
+  if (searchQuery && !matchesQuery && filteredChildren.length === 0) return null
+
+  const forceOpen = searchQuery && filteredChildren.length > 0
+
+  return (
+    <div>
+      <div
+        onClick={() => isFolder && setOpen(o => !o)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          padding: `4px 10px 4px ${10 + depth * 14}px`,
+          cursor: isFolder ? 'pointer' : 'default',
+          background: hovered ? '#f0f0f0' : 'transparent',
+          transition: 'background 0.1s',
+          userSelect: 'none',
+        }}
+      >
+        {/* Expand chevron for folders */}
+        {isFolder ? (
+          <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: (forceOpen || open) ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: '#aaa' }}>
+            <polyline points="2.5,1.5 6.5,4.5 2.5,7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        ) : (
+          <span style={{ width: 8, flexShrink: 0 }} />
+        )}
+
+        {/* Icon */}
+        {isFolder ? <SiteFolderIcon open={forceOpen || open} /> : <SiteLeafIcon />}
+
+        {/* Label */}
+        <span style={{ flex: 1, fontSize: 12, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
+          {node.label}
+        </span>
+
+        {/* Count */}
+        <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>({node.count})</span>
+      </div>
+
+      {/* Children */}
+      {isFolder && (forceOpen || open) && visibleChildren.map(child => (
+        <SiteTreeNode key={child.id} node={child} depth={depth + 1} searchQuery={searchQuery} />
+      ))}
+    </div>
+  )
+}
+
+function SiteTreeTab() {
+  const [search, setSearch] = useState('')
+  const query = search.trim().toLowerCase()
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Search */}
+      <div style={{ padding: '5px 10px', flexShrink: 0 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          padding: '3px 8px',
+        }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+          </svg>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search sites…"
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12, color: '#222' }}
+          />
+        </div>
+      </div>
+
+      {/* Tree */}
+      <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
+        <SiteTreeNode node={SITE_TREE} depth={0} searchQuery={query} />
+      </div>
     </div>
   )
 }
@@ -690,15 +862,72 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
       </div>
 
       {/* Content area */}
-      {tab === 'map' ? (
-        <MapList onOpenTab={onOpenTab} onMapDragStart={onMapDragStart} onMapDragEnd={onMapDragEnd} />
-      ) : tab === 'device' ? (
+      {tab === 'device' ? (
         <DeviceTreeTab onOpenDeviceInMap={onOpenDeviceInMap} onDeviceDragStart={onDeviceDragStart} onDeviceDragEnd={onDeviceDragEnd} />
       ) : (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 12, color: '#bbb' }}>{NETWORK_TABS.find(t => t.toLowerCase() === tab)} view</span>
-        </div>
+        <SiteTreeTab />
       )}
+    </div>
+  )
+}
+
+/* ── Map Browser Pane ────────────────────────────────────────────────────── */
+function MapBrowserPane({ onPin, onClose, pinned, onOpenTab, onMapDragStart, onMapDragEnd }) {
+  return (
+    <div style={{
+      width: 280, flexShrink: 0,
+      background: '#fff',
+      display: 'flex', flexDirection: 'column',
+      height: '100%',
+      ...(pinned
+        ? { borderRight: '1px solid #e8e8e8' }
+        : {
+            border: '1px solid #e8e8e8',
+            borderRadius: 10,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+          }
+      ),
+    }}>
+      {/* Header */}
+      <div style={{
+        height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Map</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <button
+            onClick={onPin}
+            title={pinned ? 'Unpin' : 'Pin to sidebar'}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#6b7280',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            <PinIcon pinned={pinned} />
+          </button>
+          <button
+            onClick={onClose}
+            title="Close"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#6b7280',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Map list fills the rest */}
+      <MapList onOpenTab={onOpenTab} onMapDragStart={onMapDragStart} onMapDragEnd={onMapDragEnd} />
     </div>
   )
 }
@@ -913,6 +1142,8 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   const [networkPaneOpen, setNetworkPaneOpen]   = useState(false)
   const [networkPinned, setNetworkPinned]       = useState(false)
   const [networkTab, setNetworkTab]             = useState('site')
+  const [mapPaneOpen,   setMapPaneOpen]         = useState(false)
+  const [mapPinned,     setMapPinned]           = useState(false)
   const [inventoryPaneOpen, setInventoryPaneOpen] = useState(false)
   const [inventoryPinned,   setInventoryPinned]   = useState(false)
   const [draggingMap,    setDraggingMap]    = useState(null)  // { id, name }
@@ -943,6 +1174,14 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       // swap: inventory was pinned → close it, open network as pinned
       setInventoryPinned(false)
       setInventoryPaneOpen(false)
+      setMapPaneOpen(false)
+      setMapPinned(false)
+      setNetworkPinned(true)
+      setShowHistory(false)
+    } else if (mapPinned) {
+      // swap: map was pinned → close it, open network as pinned
+      setMapPinned(false)
+      setMapPaneOpen(false)
       setNetworkPinned(true)
       setShowHistory(false)
     } else {
@@ -950,6 +1189,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       setNetworkPaneOpen(prev => !prev)
       if (opening) {
         setInventoryPaneOpen(false)
+        setMapPaneOpen(false)
         setShowHistory(false)
       }
     }
@@ -975,6 +1215,14 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       // swap: network was pinned → close it, open inventory as pinned
       setNetworkPinned(false)
       setNetworkPaneOpen(false)
+      setMapPaneOpen(false)
+      setMapPinned(false)
+      setInventoryPinned(true)
+      setShowHistory(false)
+    } else if (mapPinned) {
+      // swap: map was pinned → close it, open inventory as pinned
+      setMapPinned(false)
+      setMapPaneOpen(false)
       setInventoryPinned(true)
       setShowHistory(false)
     } else {
@@ -982,6 +1230,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       setInventoryPaneOpen(prev => !prev)
       if (opening) {
         setNetworkPaneOpen(false)
+        setMapPaneOpen(false)
         setShowHistory(false)
       }
     }
@@ -997,6 +1246,46 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
   }
 
   const inventoryActive = inventoryPaneOpen || inventoryPinned
+
+  function handleMapToggle() {
+    if (mapPinned) {
+      setMapPinned(false)
+      setMapPaneOpen(false)
+    } else if (networkPinned) {
+      setNetworkPinned(false)
+      setNetworkPaneOpen(false)
+      setInventoryPaneOpen(false)
+      setInventoryPinned(false)
+      setMapPinned(true)
+      setShowHistory(false)
+    } else if (inventoryPinned) {
+      setInventoryPinned(false)
+      setInventoryPaneOpen(false)
+      setNetworkPaneOpen(false)
+      setNetworkPinned(false)
+      setMapPinned(true)
+      setShowHistory(false)
+    } else {
+      const opening = !mapPaneOpen
+      setMapPaneOpen(prev => !prev)
+      if (opening) {
+        setNetworkPaneOpen(false)
+        setInventoryPaneOpen(false)
+        setShowHistory(false)
+      }
+    }
+  }
+
+  function handleMapClose() {
+    setMapPaneOpen(false)
+    setMapPinned(false)
+  }
+
+  function handleMapPin() {
+    setMapPinned(p => !p)
+  }
+
+  const mapActive = mapPaneOpen || mapPinned
 
   /* Open NetworkBrowserPane to a specific tab when requested externally (e.g. from blank canvas) */
   useEffect(() => {
@@ -1047,6 +1336,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       width: '100%', height: '100%',
       display: 'flex', flexDirection: 'row',
       background: '#fff',
+      position: 'relative',
     }}>
       {/* ── Left sidebar ── */}
       <Sidebar
@@ -1056,6 +1346,8 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         onGoHome={onGoHome}
         onGoNetwork={handleNetworkToggle}
         networkActive={networkActive}
+        onGoMap={handleMapToggle}
+        mapActive={mapActive}
         onGoInventory={handleInventoryToggle}
         inventoryActive={inventoryActive}
         onGoChangeAnalysis={onGoChangeAnalysis}
@@ -1084,6 +1376,18 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         />
       )}
 
+      {/* ── Pinned map pane — part of flex flow ── */}
+      {mapPinned && (
+        <MapBrowserPane
+          onPin={handleMapPin}
+          onClose={handleMapClose}
+          pinned={true}
+          onOpenTab={onOpenTab}
+          onMapDragStart={handleMapDragStart}
+          onMapDragEnd={handleMapDragEnd}
+        />
+      )}
+
       {/* ── Pinned inventory pane — part of flex flow ── */}
       {inventoryPinned && (
         <InventoryBrowserPane
@@ -1099,9 +1403,9 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
       {/* ── Content area (position:relative so floats are relative to it) ── */}
       <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
-        {/* History button — top-left of home screen, only when sidebar is collapsed */}
+        {/* History button — outside the sidebar, vertically aligned with hamburger */}
         {!sidebarExpanded && activeView === 'home' && (
-          <div style={{ position: 'absolute', left: 8, top: 8, zIndex: 50 }}>
+          <div style={{ position: 'absolute', left: 8, top: 5, zIndex: 50 }}>
             <button
               onClick={handleHistoryToggle}
               onMouseEnter={e => {
@@ -1176,6 +1480,32 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
                 onDeviceDragStart={handleDeviceDragStart}
                 onDeviceDragEnd={handleDeviceDragEnd}
                 onOpenDeviceInMap={handleOpenDeviceInMap}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Floating map pane */}
+        {mapPaneOpen && !mapPinned && (
+          <>
+            {!isDragging && (
+              <div
+                onClick={() => setMapPaneOpen(false)}
+                style={{ position: 'absolute', inset: 0, zIndex: 199 }}
+              />
+            )}
+            <div style={{
+              position: 'absolute', left: 8, top: 8,
+              height: 'calc(100% - 16px)',
+              zIndex: 200,
+            }}>
+              <MapBrowserPane
+                onPin={handleMapPin}
+                onClose={handleMapClose}
+                pinned={false}
+                onOpenTab={onOpenTab}
+                onMapDragStart={handleMapDragStart}
+                onMapDragEnd={handleMapDragEnd}
               />
             </div>
           </>

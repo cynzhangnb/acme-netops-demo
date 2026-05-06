@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import DomainSwitcher from './DomainSwitcher'
+import netBrainLogo from '../../../logo/logo.svg'
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 
@@ -28,13 +30,11 @@ function LogoMark() {
   )
 }
 
-/** Collapse icon — chevrons pointing left */
+/** Left sidebar icon — IBM Carbon-style outline */
 function CollapseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="11 17 6 12 11 7"/>
-      <polyline points="18 17 13 12 18 7"/>
+    <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor" style={{ display: 'block', transform: 'translateY(1px)' }}>
+      <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6h6V26H4ZM28,26H12V6H28Z" />
     </svg>
   )
 }
@@ -49,6 +49,16 @@ function PlusIcon() {
   )
 }
 function NetworkIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor">
+      <circle cx="21" cy="21" r="2"/>
+      <circle cx="7" cy="7" r="2"/>
+      <path d="M27,31a4,4,0,1,1,4-4A4.0118,4.0118,0,0,1,27,31Zm0-6a2,2,0,1,0,2,2A2.0059,2.0059,0,0,0,27,25Z"/>
+      <path d="M30,16A14.0412,14.0412,0,0,0,16,2,13.0426,13.0426,0,0,0,9.2,3.8l1.1,1.7a24.4254,24.4254,0,0,1,2.4-1A25.1349,25.1349,0,0,0,10,15H4a11.1489,11.1489,0,0,1,1.4-4.7L3.9,9A13.8418,13.8418,0,0,0,2,16,13.9983,13.9983,0,0,0,16,30a13.3656,13.3656,0,0,0,5.2-1l-.6-1.9a11.4416,11.4416,0,0,1-5.2.9h0A21.0713,21.0713,0,0,1,12,17H29.9A3.4019,3.4019,0,0,0,30,16ZM12.8,27.6h0a13.02,13.02,0,0,1-5.3-3.1A12.5053,12.5053,0,0,1,4,17h6A25.0022,25.0022,0,0,0,12.8,27.6ZM12,15A21.4461,21.4461,0,0,1,15.3,4h1.4A21.4461,21.4461,0,0,1,20,15Zm10,0A23.2777,23.2777,0,0,0,19.2,4.4,12.0919,12.0919,0,0,1,27.9,15Z"/>
+    </svg>
+  )
+}
+function MapIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -140,6 +150,26 @@ function UserIcon() {
     </svg>
   )
 }
+
+const MOCK_TENANTS = [
+  {
+    id: 'tenant-nblive',
+    name: 'NBLIVE',
+    domains: [
+      { id: 'd1', name: 'Hybrid Network' },
+      { id: 'd2', name: 'CVE Ongoing Project' },
+      { id: 'd3', name: 'CVE Release Domain' },
+      { id: 'd4', name: 'Dongxu-Demo' },
+    ],
+  },
+  {
+    id: 'tenant-playground',
+    name: 'NetBrain Playground',
+    domains: [
+      { id: 'd5', name: 'Playground-1' },
+    ],
+  },
+]
 
 /* ── Tooltip bubble ─────────────────────────────────────────────────────── */
 function Tooltip({ label }) {
@@ -234,6 +264,8 @@ export default function Sidebar({
   onGoHome,
   onGoNetwork,
   networkActive,
+  onGoMap,
+  mapActive,
   onGoInventory,
   inventoryActive,
   onGoChangeAnalysis,
@@ -262,6 +294,16 @@ export default function Sidebar({
   const accountMenuRef = useRef(null)
   const userBtnRef     = useRef(null)
 
+  /* Domain switcher */
+  const [switcherOpen,    setSwitcherOpen]    = useState(false)
+  const [switcherPos,     setSwitcherPos]     = useState(null)
+  const [activeTenantId,  setActiveTenantId]  = useState('tenant-nblive')
+  const [activeDomainId,  setActiveDomainId]  = useState('d1')
+  const domainBtnRef = useRef(null)
+  const switcherRef = useRef(null)
+  const activeTenant = MOCK_TENANTS.find(tenant => tenant.id === activeTenantId) ?? MOCK_TENANTS[0]
+  const activeDomain = activeTenant?.domains.find(domain => domain.id === activeDomainId) ?? activeTenant?.domains[0]
+
   useEffect(() => {
     if (!accountMenuOpen) return
     const handler = e => {
@@ -276,10 +318,47 @@ export default function Sidebar({
 
   function toggleAccountMenu(e) {
     e.stopPropagation()
+    setSwitcherOpen(false)
     if (accountMenuOpen) { setAccountMenuOpen(false); return }
     const rect = userBtnRef.current.getBoundingClientRect()
     setAccountMenuPos({ bottom: window.innerHeight - rect.top + 4, left: rect.left })
     setAccountMenuOpen(true)
+  }
+
+  useEffect(() => {
+    if (!switcherOpen) return
+    const handler = e => {
+      const path = e.composedPath ? e.composedPath() : []
+      if (!path.includes(switcherRef.current) && !path.includes(domainBtnRef.current)) {
+        setSwitcherOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [switcherOpen])
+
+  useEffect(() => {
+    if (!expanded) setSwitcherOpen(false)
+  }, [expanded])
+
+  function toggleDomainSwitcher(e) {
+    e.stopPropagation()
+    setAccountMenuOpen(false)
+    setOpenMenuId(null)
+    setDeleteConfirmId(null)
+    setMenuPos(null)
+    if (switcherOpen) {
+      setSwitcherOpen(false)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    setSwitcherPos({ top: rect.top, left: rect.left, bottom: rect.bottom, right: rect.right })
+    setSwitcherOpen(true)
+  }
+
+  function handleDomainSelect(tenantId, domainId) {
+    setActiveTenantId(tenantId)
+    setActiveDomainId(domainId)
   }
 
   /* Close overflow menu on outside click */
@@ -302,6 +381,7 @@ export default function Sidebar({
 
   function openOverflow(e, s) {
     e.preventDefault(); e.stopPropagation()
+    setSwitcherOpen(false)
     if (openMenuId === s.id) { setOpenMenuId(null); setMenuPos(null); return }
     const rect = e.currentTarget.getBoundingClientRect()
     setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
@@ -330,6 +410,7 @@ export default function Sidebar({
 
   function handleToggle() {
     setIsAnimating(true)
+    setSwitcherOpen(false)
     onToggle()
     setTimeout(() => setIsAnimating(false), 260)
   }
@@ -358,30 +439,25 @@ export default function Sidebar({
         {expanded ? (
           /* Expanded: logo mark + name + collapse button — padded to match nav items */
           <>
-            {/* Logo + name — click navigates home */}
+            {/* Product logo — navigates home */}
             <div
               onClick={onGoHome}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8,
+                display: 'flex', alignItems: 'center',
                 flex: 1, minWidth: 0, cursor: 'pointer',
-                padding: '0 5px 0 11px', height: '100%',
+                padding: '0 5px 0 16px', height: '100%',
               }}
-              onMouseEnter={e => { e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#4b5563' }}
-              onMouseLeave={e => { e.currentTarget.querySelector('[data-role=\"brand-name\"]').style.color = '#111' }}
             >
-              <LogoMark />
-              <span
-                data-role="brand-name"
+              <img
+                src={netBrainLogo}
+                alt="NetBrain"
                 style={{
-                fontSize: 13, fontWeight: 600, color: '#111',
-                letterSpacing: '-0.01em', whiteSpace: 'nowrap',
-                overflow: 'hidden', textOverflow: 'ellipsis',
-                lineHeight: 1,
-                transition: 'color 0.12s',
-              }}
-              >
-                ACME NetOps
-              </span>
+                  width: 86,
+                  height: 20,
+                  display: 'block',
+                  flexShrink: 0,
+                }}
+              />
             </div>
 
             {/* Collapse button — right side */}
@@ -392,11 +468,11 @@ export default function Sidebar({
                 flexShrink: 0, width: 28, height: 28, marginRight: 4,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#666', borderRadius: 5,
+                color: '#1a1a1a', borderRadius: 5,
                 transition: 'background 0.12s, color 0.12s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#ebebeb'; e.currentTarget.style.color = '#222' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#666' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#ebebeb'; e.currentTarget.style.color = '#1a1a1a' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#1a1a1a' }}
             >
               <CollapseIcon />
             </button>
@@ -420,8 +496,53 @@ export default function Sidebar({
         )}
       </div>
 
+      {expanded && (
+        <button
+          ref={domainBtnRef}
+          onClick={toggleDomainSwitcher}
+          title={activeDomain?.name}
+          style={{
+            height: 30,
+            margin: '8px 7px 2px',
+            padding: '0 8px 0 9px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            flexShrink: 0,
+            border: 'none',
+            borderRadius: 7,
+            background: switcherOpen ? '#ece9e2' : '#f3f1ec',
+            color: '#111',
+            cursor: 'pointer',
+            textAlign: 'left',
+            transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#ece9e2' }}
+          onMouseLeave={e => { e.currentTarget.style.background = switcherOpen ? '#ece9e2' : '#f3f1ec' }}
+        >
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
+          <span style={{ minWidth: 0, flex: 1, fontSize: 12.5, fontWeight: 500, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.1 }}>
+            {activeDomain?.name ?? 'No domain'}
+          </span>
+        </button>
+      )}
+
+      {switcherOpen && switcherPos && (
+        <div ref={switcherRef}>
+          <DomainSwitcher
+            tenants={MOCK_TENANTS}
+            activeTenantId={activeTenantId}
+            activeDomainId={activeDomainId}
+            isAdmin={true}
+            anchorRect={switcherPos}
+            onSelect={handleDomainSelect}
+            onClose={() => setSwitcherOpen(false)}
+          />
+        </div>
+      )}
+
       {/* ── Nav items ─────────────────────────────────────────────────── */}
-      <div style={{ padding: '8px 5px 4px', display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
+      <div style={{ padding: '4px 5px 4px', display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
         <SideNavItem
           icon={<PlusIcon />}
           label="New Session"
@@ -434,6 +555,14 @@ export default function Sidebar({
           label="Network"
           onClick={onGoNetwork}
           active={networkActive}
+          expanded={expanded}
+          showTooltip={showTooltip}
+        />
+        <SideNavItem
+          icon={<MapIcon />}
+          label="Map"
+          onClick={onGoMap}
+          active={mapActive}
           expanded={expanded}
           showTooltip={showTooltip}
         />
@@ -717,8 +846,36 @@ export default function Sidebar({
             </div>
           ))}
 
-          {/* Divider before log out */}
-          <div style={{ height: 1, background: '#f0f0f0', margin: '3px 0' }} />
+          {/* Admin Tools section */}
+          <div style={{ background: '#f7f6f3', borderTop: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0', marginTop: 3 }}>
+            <div style={{ padding: '6px 14px 3px', fontSize: 10.5, fontWeight: 600, color: '#8a8a8a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Admin Tools
+            </div>
+            {[
+              { label: 'Account Manager' },
+              { label: 'Tenant Manager' },
+              { label: 'Domain Manager' },
+            ].map(({ label }) => (
+              <div
+                key={label}
+                onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
+                onMouseEnter={e => e.currentTarget.style.background = '#eeece8'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+                  cursor: 'pointer', background: 'transparent',
+                }}
+              >
+                <span>{label}</span>
+                <span style={{ display: 'flex', color: '#999' }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  </svg>
+                </span>
+              </div>
+            ))}
+          </div>
 
           {/* Log out */}
           <div
