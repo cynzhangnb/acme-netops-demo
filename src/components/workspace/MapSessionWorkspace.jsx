@@ -965,6 +965,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     <SplitScreenIcon />
                   </button>
                 )}
+                {/* Share + AI toggle — always visible in tab bar when no session header */}
+                {!sessionActive && ShareAndAIButtons}
               </div>
 
               {/* Map canvas — single or split view */}
