@@ -484,7 +484,9 @@ export default function TopologyMap({ highlight, widgetMode = false, onNodeActio
       ref={outerRef}
       style={{
         position: 'relative', width: '100%', height: '100%', overflow: 'hidden',
-        background: '#fff',
+        background: 'var(--t-canvas-bg)',
+        backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)',
+        backgroundSize: '24px 24px',
         cursor: panning ? 'grabbing' : spaceDown ? 'grab' : undefined,
       }}
       onMouseDown={e => {

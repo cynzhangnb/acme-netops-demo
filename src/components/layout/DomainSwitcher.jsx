@@ -85,47 +85,47 @@ export default function DomainSwitcher({
         width: 252,
         maxHeight: 400,
         zIndex: 1200,
-        background: '#fff',
-        border: '1px solid #e5e5e5',
+        background: 'var(--t-bg)',
+        border: '1px solid var(--t-border)',
         borderRadius: 10,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 1.5px 6px rgba(0,0,0,0.07)',
+        boxShadow: 'var(--t-shadow-menu)',
         overflow: 'hidden',
         fontFamily: 'Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        color: '#1a1a1a',
+        color: 'var(--t-tx-2)',
       }}
     >
       {/* Menu title */}
-      <div style={{ padding: '9px 12px 6px', fontSize: 10, fontWeight: 550, color: '#aaa', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+      <div style={{ padding: '9px 12px 6px', fontSize: 10, fontWeight: 550, color: 'var(--t-tx-7)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
         Switch Domain
       </div>
 
       {showSearch && (
         <>
           <div style={{ padding: '7px 8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, height: 28, padding: '0 8px', border: '1px solid #e6e2dc', borderRadius: 7, background: '#fafafa', color: '#8a8a8a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, height: 28, padding: '0 8px', border: '1px solid var(--t-border)', borderRadius: 7, background: 'var(--t-bg-2)', color: 'var(--t-tx-8)' }}>
               <SearchIcon />
               <input
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder="Search domains..."
                 autoFocus
-                style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12, color: '#1a1a1a', fontFamily: 'inherit' }}
+                style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontSize: 12, color: 'var(--t-tx-2)', fontFamily: 'inherit' }}
               />
             </div>
           </div>
-          <div style={{ height: 1, background: '#f0f0f0' }} />
+          <div style={{ height: 1, background: 'var(--t-border-3)' }} />
         </>
       )}
 
       <div style={{ maxHeight: 340, overflowY: 'auto', padding: '4px 0' }} className="scrollbar-thin">
         {filteredTenants.length === 0 ? (
-          <div style={{ padding: '18px 14px', fontSize: 12.5, color: '#8a8a8a', textAlign: 'center' }}>
+          <div style={{ padding: '18px 14px', fontSize: 12.5, color: 'var(--t-tx-8)', textAlign: 'center' }}>
             No domains match
           </div>
         ) : (
           filteredTenants.map((tenant, tenantIndex) => (
             <div key={tenant.id}>
-              {tenantIndex > 0 && <div style={{ height: 1, background: '#f0f0f0', margin: '3px 0' }} />}
+              {tenantIndex > 0 && <div style={{ height: 1, background: 'var(--t-border-3)', margin: '3px 0' }} />}
               {multipleTenants && (
                 <button
                   onClick={() => toggleTenant(tenant.id)}
@@ -139,7 +139,7 @@ export default function DomainSwitcher({
                     gap: 8,
                     border: 'none',
                     background: 'transparent',
-                    color: '#8a8a8a',
+                    color: 'var(--t-tx-8)',
                     fontSize: 11,
                     fontWeight: 550,
                     letterSpacing: '0.02em',
@@ -173,14 +173,14 @@ export default function DomainSwitcher({
                       border: 'none',
                       borderRadius: 0,
                       background: 'transparent',
-                      color: '#1a1a1a',
+                      color: 'var(--t-tx-2)',
                       fontSize: 12.5,
                       fontWeight: active ? 500 : 400,
                       fontFamily: 'inherit',
                       cursor: 'pointer',
                       textAlign: 'left',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#f0ede7' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover-w)' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
                     {/* Blue dot on the left for active domain */}

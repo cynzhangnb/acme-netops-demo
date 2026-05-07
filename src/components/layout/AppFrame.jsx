@@ -136,7 +136,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
           display: 'flex', alignItems: 'center',
           padding: '5px 8px 5px 14px',
           cursor: isInteractive && !isEditing ? 'pointer' : 'default',
-          background: isHovered ? '#f0f0f0' : 'transparent',
+          background: isHovered ? 'var(--t-bg-hover)' : 'transparent',
           transition: 'background 0.1s',
         }}
       >
@@ -154,7 +154,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
             style={{ flex: 1, minWidth: 0, fontSize: 12, color: '#111', border: '1px solid #c8c8c8', borderRadius: 4, padding: '1px 5px', outline: 'none', background: '#fff' }}
           />
         ) : (
-          <span style={{ fontSize: 12, fontWeight: 400, color: '#222', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--t-tx-3)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {displayName}
           </span>
         )}
@@ -177,7 +177,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
               pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
               transition: 'opacity 0.12s, background 0.1s, color 0.1s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
           >
             {isPinned
@@ -199,7 +199,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
               pointerEvents: isHovered || openMenuId === s.id ? 'auto' : 'none',
               transition: 'opacity 0.12s, background 0.1s, color 0.1s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
             onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#555' }}
           >
             <SessionOverflowIcon />
@@ -212,22 +212,22 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
   return (
     <div style={{
       width: 280, flexShrink: 0,
-      background: '#fff',
+      background: 'var(--t-bg)',
       display: 'flex', flexDirection: 'column',
       height: '100%',
-      border: '1px solid #e8e8e8',
+      border: '1px solid var(--t-border)',
       borderRadius: 10,
-      boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+      boxShadow: 'var(--t-shadow)',
       overflow: 'hidden',
     }}>
       {/* Header */}
-      <div style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Sessions</span>
+      <div style={{ height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: '1px solid var(--t-border-3)', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t-tx-1)' }}>Sessions</span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t-tx-6)' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -239,9 +239,9 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
       <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
         {pinned.length > 0 && (
           <>
-            <div style={{ padding: '5px 14px 3px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Pinned</div>
+            <div style={{ padding: '5px 14px 3px', fontSize: 10.5, fontWeight: 500, color: 'var(--t-tx-7)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Pinned</div>
             {pinned.map(renderRow)}
-            {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px' }} />}
+            {recent.length > 0 && <div style={{ height: 1, background: 'var(--t-border-2)', margin: '4px 8px' }} />}
           </>
         )}
         {recent.map(renderRow)}
@@ -254,7 +254,7 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
           style={{
             position: 'fixed', top: menuPos.top, right: menuPos.right,
             zIndex: 1000,
-            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            background: 'var(--t-bg)', border: '1px solid var(--t-border)', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 160, overflow: 'hidden',
           }}
         >
@@ -281,8 +281,8 @@ function SessionHistoryPane({ onClose, currentSessionName, onSelectSession, pinn
             <>
               <div
                 onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const s = sessions.find(x => x.id === openMenuId); if (s) startRename(s) }}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: 'var(--t-tx-3)', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <SessionRenameIcon /> Rename
@@ -382,10 +382,10 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
       <div style={{ padding: '5px 10px', flexShrink: 0 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          background: 'var(--t-bg)', border: '1px solid var(--t-border)', borderRadius: 6,
           padding: '3px 8px',
         }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t-tx-7)" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
           </svg>
           <input
@@ -394,7 +394,7 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
             placeholder="Search maps…"
             style={{
               flex: 1, border: 'none', outline: 'none', background: 'transparent',
-              fontSize: 12, color: '#222',
+              fontSize: 12, color: 'var(--t-tx-3)',
             }}
           />
         </div>
@@ -402,7 +402,7 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
 
       <div style={{ flex: 1, overflowY: 'auto' }} className="scrollbar-thin">
       {filteredMaps.length === 0 && (
-        <div style={{ padding: '12px 14px', fontSize: 12, color: '#aaa' }}>No maps found</div>
+        <div style={{ padding: '12px 14px', fontSize: 12, color: 'var(--t-tx-7)' }}>No maps found</div>
       )}
       {filteredMaps.map((map, i) => {
         const isOpening = openingId === map.id
@@ -421,14 +421,14 @@ function MapList({ onOpenTab, onMapDragStart, onMapDragEnd }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '5px 14px',
-              background: isOpening ? '#f0f6ff' : hoveredId === map.id ? '#f0f0f0' : 'transparent',
+              background: isOpening ? 'var(--t-bg-hover)' : hoveredId === map.id ? 'var(--t-bg-hover)' : 'transparent',
               transition: 'background 0.15s',
               cursor: 'grab',
               userSelect: 'none',
             }}
           >
             <MapItemIcon />
-            <span style={{ flex: 1, fontSize: 12, color: isOpening ? '#378ADD' : '#222', lineHeight: 1.4, transition: 'color 0.15s' }}>{map.name}</span>
+            <span style={{ flex: 1, fontSize: 12, color: isOpening ? '#378ADD' : 'var(--t-tx-3)', lineHeight: 1.4, transition: 'color 0.15s' }}>{map.name}</span>
             {/* plain text link — no button chrome whatsoever */}
             <span
               onClick={(e) => handleOpen(e, map)}
@@ -518,10 +518,10 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
       <div style={{ padding: '5px 10px', flexShrink: 0 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          background: 'var(--t-bg)', border: '1px solid var(--t-border)', borderRadius: 6,
           padding: '3px 8px',
         }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t-tx-7)" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
           </svg>
           <input
@@ -530,7 +530,7 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
             placeholder="Search devices…"
             style={{
               flex: 1, border: 'none', outline: 'none', background: 'transparent',
-              fontSize: 12, color: '#222',
+              fontSize: 12, color: 'var(--t-tx-3)',
             }}
           />
         </div>
@@ -550,15 +550,15 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                   padding: '5px 14px', cursor: 'pointer', userSelect: 'none',
                   background: 'transparent', transition: 'background 0.12s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: '#bbb' }}>
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: 'var(--t-tx-7)' }}>
                   <polyline points="2.5,1.5 6.5,4.5 2.5,7.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <CategoryIcon type={type} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#222', flex: 1 }}>{type}</span>
-                <span style={{ fontSize: 11, color: '#888', flexShrink: 0 }}>({items.length})</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t-tx-3)', flex: 1 }}>{type}</span>
+                <span style={{ fontSize: 11, color: 'var(--t-tx-6)', flexShrink: 0 }}>({items.length})</span>
               </div>
 
               {/* Device rows — single line, same density, no IP, no status */}
@@ -579,11 +579,11 @@ function DeviceTreeTab({ onOpenDeviceInMap, onDeviceDragStart, onDeviceDragEnd }
                     padding: '5px 14px 5px 31px',
                     cursor: dragging ? 'grabbing' : 'grab',
                     userSelect: 'none',
-                    background: hoveredId === d.id ? '#f0f0f0' : 'transparent',
+                    background: hoveredId === d.id ? 'var(--t-bg-hover)' : 'transparent',
                     transition: 'background 0.12s',
                   }}
                 >
-                  <span style={{ fontSize: 12, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{d.hostname}</span>
+                  <span style={{ fontSize: 12, color: 'var(--t-tx-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{d.hostname}</span>
                   {/* "Open in map" hover link */}
                   <span
                     onClick={(e) => { e.stopPropagation(); onOpenDeviceInMap?.(d) }}
@@ -714,14 +714,14 @@ function SiteTreeNode({ node, depth, searchQuery }) {
           display: 'flex', alignItems: 'center', gap: 5,
           padding: `4px 10px 4px ${10 + depth * 14}px`,
           cursor: isFolder ? 'pointer' : 'default',
-          background: hovered ? '#f0f0f0' : 'transparent',
+          background: hovered ? 'var(--t-bg-hover)' : 'transparent',
           transition: 'background 0.1s',
           userSelect: 'none',
         }}
       >
         {/* Expand chevron for folders */}
         {isFolder ? (
-          <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: (forceOpen || open) ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: '#aaa' }}>
+          <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, transform: (forceOpen || open) ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.14s', color: 'var(--t-tx-7)' }}>
             <polyline points="2.5,1.5 6.5,4.5 2.5,7.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         ) : (
@@ -732,12 +732,12 @@ function SiteTreeNode({ node, depth, searchQuery }) {
         {isFolder ? <SiteFolderIcon open={forceOpen || open} /> : <SiteLeafIcon />}
 
         {/* Label */}
-        <span style={{ flex: 1, fontSize: 12, color: '#222', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
+        <span style={{ flex: 1, fontSize: 12, color: 'var(--t-tx-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
           {node.label}
         </span>
 
         {/* Count */}
-        <span style={{ fontSize: 11, color: '#aaa', flexShrink: 0 }}>({node.count})</span>
+        <span style={{ fontSize: 11, color: 'var(--t-tx-7)', flexShrink: 0 }}>({node.count})</span>
       </div>
 
       {/* Children */}
@@ -758,17 +758,17 @@ function SiteTreeTab() {
       <div style={{ padding: '5px 10px', flexShrink: 0 }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          background: '#fff', border: '1px solid #e4e4e4', borderRadius: 6,
+          background: 'var(--t-bg)', border: '1px solid var(--t-border)', borderRadius: 6,
           padding: '3px 8px',
         }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2" strokeLinecap="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t-tx-7)" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
           </svg>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search sites…"
-            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12, color: '#222' }}
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 12, color: 'var(--t-tx-3)' }}
           />
         </div>
       </div>
@@ -785,24 +785,24 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
   return (
     <div style={{
       width: 280, flexShrink: 0,
-      background: '#fff',
+      background: 'var(--t-bg)',
       display: 'flex', flexDirection: 'column',
       height: '100%',
       ...(pinned
-        ? { borderRight: '1px solid #e8e8e8' }
+        ? { borderRight: '1px solid var(--t-border)' }
         : {
-            border: '1px solid #e8e8e8',
+            border: '1px solid var(--t-border)',
             borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--t-shadow)',
           }
       ),
     }}>
       {/* Header */}
       <div style={{
         height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
+        padding: '0 12px', borderBottom: '1px solid var(--t-border-3)', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Network</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t-tx-1)' }}>Network</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
             onClick={onPin}
@@ -810,10 +810,10 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280',
+              color: 'var(--t-tx-6)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <PinIcon pinned={pinned} />
           </button>
@@ -823,10 +823,10 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280',
+              color: 'var(--t-tx-6)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -847,13 +847,13 @@ function NetworkBrowserPane({ tab, onTabChange, onPin, onClose, pinned, onOpenTa
                 flex: 1, padding: '5px 0',
                 border: 'none', borderRadius: 6,
                 fontSize: 12, fontWeight: active ? 600 : 400,
-                background: active ? '#ececec' : 'transparent',
-                color: active ? '#111' : '#767676',
+                background: active ? 'var(--t-bg-hover)' : 'transparent',
+                color: active ? 'var(--t-tx-1)' : 'var(--t-tx-5)',
                 cursor: 'pointer',
                 transition: 'background 0.12s, color 0.12s',
               }}
-              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = '#f5f5f5'; e.currentTarget.style.color = '#333' } }}
-              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#767676' } }}
+              onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--t-bg-3)'; e.currentTarget.style.color = 'var(--t-tx-3)' } }}
+              onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--t-tx-5)' } }}
             >
               {t}
             </button>
@@ -876,24 +876,24 @@ function MapBrowserPane({ onPin, onClose, pinned, onOpenTab, onMapDragStart, onM
   return (
     <div style={{
       width: 280, flexShrink: 0,
-      background: '#fff',
+      background: 'var(--t-bg)',
       display: 'flex', flexDirection: 'column',
       height: '100%',
       ...(pinned
-        ? { borderRight: '1px solid #e8e8e8' }
+        ? { borderRight: '1px solid var(--t-border)' }
         : {
-            border: '1px solid #e8e8e8',
+            border: '1px solid var(--t-border)',
             borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--t-shadow)',
           }
       ),
     }}>
       {/* Header */}
       <div style={{
         height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 12px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
+        padding: '0 12px', borderBottom: '1px solid var(--t-border-3)', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Map</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t-tx-1)' }}>Map</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
             onClick={onPin}
@@ -901,10 +901,10 @@ function MapBrowserPane({ onPin, onClose, pinned, onOpenTab, onMapDragStart, onM
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280',
+              color: 'var(--t-tx-6)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <PinIcon pinned={pinned} />
           </button>
@@ -914,10 +914,10 @@ function MapBrowserPane({ onPin, onClose, pinned, onOpenTab, onMapDragStart, onM
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280',
+              color: 'var(--t-tx-6)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -996,15 +996,15 @@ function ReportTreeNode({ node, depth = 0, onOpen, onDragStart, onDragEnd }) {
           padding: `5px 14px 5px ${indent}px`,
           cursor: isFolder ? 'pointer' : 'grab',
           userSelect: 'none',
-          background: hovered ? '#f0f0f0' : 'transparent',
-          color: '#222',
+          background: hovered ? 'var(--t-bg-hover)' : 'transparent',
+          color: 'var(--t-tx-3)',
         }}
       >
         {/* Chevron */}
         <span style={{
           width: 10, flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#aaa',
+          color: 'var(--t-tx-7)',
           transform: isFolder && open ? 'rotate(90deg)' : 'rotate(0)',
           transition: 'transform 0.14s',
           visibility: isFolder ? 'visible' : 'hidden',
@@ -1070,25 +1070,25 @@ function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onD
   return (
     <div style={{
       width: 280, flexShrink: 0,
-      background: '#fff',
+      background: 'var(--t-bg)',
       display: 'flex', flexDirection: 'column',
       height: '100%',
       overflow: 'hidden',
       ...(pinned
-        ? { borderRight: '1px solid #e8e8e8' }
+        ? { borderRight: '1px solid var(--t-border)' }
         : {
-            border: '1px solid #e8e8e8',
+            border: '1px solid var(--t-border)',
             borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--t-shadow)',
           }
       ),
     }}>
       {/* Header */}
       <div style={{
         height: 40, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 10px 0 14px', borderBottom: '1px solid #f0f0f0', flexShrink: 0,
+        padding: '0 10px 0 14px', borderBottom: '1px solid var(--t-border-3)', flexShrink: 0,
       }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>Inventory</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--t-tx-1)' }}>Inventory</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <button
             onClick={onPin}
@@ -1096,19 +1096,19 @@ function InventoryBrowserPane({ onClose, onOpen, onPin, pinned, onDragStart, onD
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
               width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#6b7280',
+              color: 'var(--t-tx-6)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <PinIcon pinned={pinned} />
           </button>
           <button
             onClick={onClose}
             title="Close"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#374151' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', width: 26, height: 26, borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t-tx-6)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1335,7 +1335,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
     <div style={{
       width: '100%', height: '100%',
       display: 'flex', flexDirection: 'row',
-      background: '#fff',
+      background: 'var(--t-bg)',
       position: 'relative',
     }}>
       {/* ── Left sidebar ── */}
@@ -1410,19 +1410,19 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
               onClick={handleHistoryToggle}
               onMouseEnter={e => {
                 setHistoryBtnHovered(true)
-                if (!showHistory) { e.currentTarget.style.background = '#f0ede7'; e.currentTarget.style.borderColor = '#e5e1db'; e.currentTarget.style.color = '#222' }
+                if (!showHistory) { e.currentTarget.style.background = 'var(--t-bg-hover-w)'; e.currentTarget.style.borderColor = 'var(--t-border)'; e.currentTarget.style.color = 'var(--t-tx-2)' }
               }}
               onMouseLeave={e => {
                 setHistoryBtnHovered(false)
-                if (!showHistory) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = '#555' }
+                if (!showHistory) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--t-tx-4)' }
               }}
               style={{
                 width: 30, height: 30, borderRadius: 7,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: showHistory ? '#ece9e2' : 'transparent',
+                background: showHistory ? 'var(--t-bg-active-w)' : 'transparent',
                 border: '1px solid',
-                borderColor: showHistory ? '#ddd9d0' : 'transparent',
-                cursor: 'pointer', color: '#555',
+                borderColor: showHistory ? 'var(--t-border)' : 'transparent',
+                cursor: 'pointer', color: 'var(--t-tx-4)',
                 transition: 'background 0.12s, border-color 0.12s, color 0.12s',
               }}
             >
@@ -1612,11 +1612,11 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
           {activeView === 'network' && (
             <aside style={{
               width: 44, flexShrink: 0, height: '100%',
-              background: '#fafafa', borderRight: '1px solid #ebebeb',
+              background: 'var(--t-bg-2)', borderRight: '1px solid var(--t-border-2)',
               display: 'flex', flexDirection: 'column', padding: '10px 0', gap: 2,
             }}>
               {NET_RAIL.map((slot) => {
-                if (slot.id === 'divider') return <div key="div" style={{ height: 1, background: '#e8e8e8', margin: '6px 10px' }} />
+                if (slot.id === 'divider') return <div key="div" style={{ height: 1, background: 'var(--t-border)', margin: '6px 10px' }} />
                 const active = networkPanel === slot.id
                 const Icon = slot.Icon
                 return (

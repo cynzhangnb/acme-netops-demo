@@ -7,7 +7,7 @@ import AIWorkspace from '../workspace/AIWorkspace'
 function Chevron({ open }) {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-      stroke="#b0b0b0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      stroke="var(--t-tx-7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
       <polyline points="6 9 12 15 18 9"/>
     </svg>
@@ -19,7 +19,7 @@ function SkBar({ w = '100%', h = 8, radius = 4, style }) {
   return (
     <div style={{
       width: w, height: h, borderRadius: radius,
-      background: '#e8e8e8', flexShrink: 0, ...style,
+      background: 'var(--t-border)', flexShrink: 0, ...style,
     }} />
   )
 }
@@ -29,7 +29,7 @@ function SkDot({ color = '#d4d4d4', size = 8 }) {
 }
 
 function SkTag() {
-  return <div style={{ width: 34, height: 14, borderRadius: 4, background: '#ececec', flexShrink: 0 }} />
+  return <div style={{ width: 34, height: 14, borderRadius: 4, background: 'var(--t-bg-hover)', flexShrink: 0 }} />
 }
 
 /* ── Skeleton row layouts ─────────────────────────────────────────────────── */
@@ -45,7 +45,7 @@ function WhatsNewRows() {
         <div key={i} style={{
           display: 'flex', alignItems: 'center', gap: 9,
           padding: '9px 14px',
-          borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--t-border-3)' : 'none',
         }}>
           <SkDot color={r.dot} size={7} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -64,8 +64,8 @@ function DeviceSummaryRows() {
     <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
       {/* Two stat badges */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 2 }}>
-        <div style={{ width: 72, height: 32, borderRadius: 7, background: '#efefef' }} />
-        <div style={{ width: 72, height: 32, borderRadius: 7, background: '#efefef' }} />
+        <div style={{ width: 72, height: 32, borderRadius: 7, background: 'var(--t-bg-hover)' }} />
+        <div style={{ width: 72, height: 32, borderRadius: 7, background: 'var(--t-bg-hover)' }} />
       </div>
       {/* List rows */}
       {[['60%','28%'],['70%','20%'],['55%','28%'],['65%','22%']].map(([w1, w2], i) => (
@@ -95,7 +95,7 @@ function RecentChangesRows() {
         <div key={i} style={{
           display: 'flex', alignItems: 'center', gap: 9,
           padding: '8px 14px',
-          borderBottom: i < rows.length - 1 ? '1px solid #f5f5f5' : 'none',
+          borderBottom: i < rows.length - 1 ? '1px solid var(--t-border-3)' : 'none',
         }}>
           <SkDot color={r.dot} size={8} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -117,7 +117,7 @@ function NetworkDiscoveryRows() {
         <div key={i} style={{
           display: 'flex', alignItems: 'center', gap: 9,
           padding: '8px 14px',
-          borderBottom: i < widths.length - 1 ? '1px solid #f5f5f5' : 'none',
+          borderBottom: i < widths.length - 1 ? '1px solid var(--t-border-3)' : 'none',
         }}>
           <SkDot color="#d0d0d0" size={8} />
           <SkBar w={w1} h={7} />
@@ -134,8 +134,8 @@ function Section({ title, defaultOpen = true, children }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div style={{
-      background: '#fff',
-      border: '1px solid #e6e6e6',
+      background: 'var(--t-bg)',
+      border: '1px solid var(--t-border)',
       borderRadius: 10,
       overflow: 'hidden',
     }}>
@@ -146,10 +146,10 @@ function Section({ title, defaultOpen = true, children }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '10px 14px',
           background: 'none', border: 'none', cursor: 'pointer',
-          borderBottom: open ? '1px solid #f0f0f0' : 'none',
+          borderBottom: open ? '1px solid var(--t-border-3)' : 'none',
         }}
       >
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#222', letterSpacing: '-0.01em' }}>{title}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--t-tx-3)', letterSpacing: '-0.01em' }}>{title}</span>
         <Chevron open={open} />
       </button>
       {open && children}
@@ -232,7 +232,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
   // ── Active session: render AIWorkspace inline, full-height ──────────────
   if (sessionKey > 0) {
     return (
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f5f5' }}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--t-bg-3)' }}>
         <AIWorkspace
           key={sessionKey}
           initialPrompt={initialPrompt}
@@ -273,7 +273,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
     <div style={{
       flex: 1,
       overflow: 'hidden',
-      background: '#f6f6f7',
+      background: 'var(--t-bg-3)',
       display: 'flex',
       flexDirection: 'row',
       position: 'relative',
@@ -341,7 +341,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               )
             })()}
             <div>
-              <div style={{ fontSize: 24, fontWeight: 400, color: '#111', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
+              <div style={{ fontSize: 24, fontWeight: 400, color: 'var(--t-tx-1)', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: 6 }}>
                 Welcome to NB Workspace
               </div>
             </div>
@@ -385,16 +385,16 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
           {/* Shortcut area — layer 1 or layer 2 */}
           {activeShortcut ? (
             /* ── Second layer: drill-down prompts ── */
-            <div ref={shortcutMenuRef} style={{ border: '1px solid #e2e2e2', borderRadius: 12, background: '#fff', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div ref={shortcutMenuRef} style={{ border: '1px solid var(--t-border)', borderRadius: 12, background: 'var(--t-bg)', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               {/* Header — click anywhere to go back */}
               <div
                 onClick={() => { setActiveShortcut(null); setHoverPrompt(null) }}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderBottom: '1px solid #f0f0f0', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 14px', borderBottom: '1px solid var(--t-border-3)', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-2)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                <span style={{ fontSize: 12, fontWeight: 500, color: '#555', lineHeight: 1 }}>{activeShortcut}</span>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--t-tx-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--t-tx-4)', lineHeight: 1 }}>{activeShortcut}</span>
               </div>
               {/* Prompt rows */}
               {SECOND_LAYER[activeShortcut].map(({ label, prompt }, i) => {
@@ -408,15 +408,15 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       width: '100%', padding: '11px 16px',
-                      border: 'none', borderBottom: isLast ? 'none' : '1px solid #f5f5f5',
+                      border: 'none', borderBottom: isLast ? 'none' : '1px solid var(--t-border-3)',
                       background: 'transparent', cursor: 'pointer', textAlign: 'left',
-                      fontSize: 13, color: '#222', lineHeight: 1.4,
+                      fontSize: 13, color: 'var(--t-tx-3)', lineHeight: 1.4,
                       transition: 'background 0.12s',
                     }}
-                    onMouseOver={e => { e.currentTarget.style.background = '#f7f7f7' }}
+                    onMouseOver={e => { e.currentTarget.style.background = 'var(--t-bg-hover)' }}
                     onMouseOut={e => { e.currentTarget.style.background = 'transparent' }}
-                    onMouseDown={e => e.currentTarget.style.background = '#efefef'}
-                    onMouseUp={e => e.currentTarget.style.background = '#f7f7f7'}
+                    onMouseDown={e => e.currentTarget.style.background = 'var(--t-bg-hover)'}
+                    onMouseUp={e => e.currentTarget.style.background = 'var(--t-bg-hover)'}
                   >
                     <span>{label}</span>
                   </button>
@@ -433,13 +433,13 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                   style={{
                     flex: 1,
                     padding: '8px 12px',
-                    border: '1px solid #e0e0e0', borderRadius: 7,
-                    fontSize: 12, fontWeight: 500, color: '#555',
-                    cursor: 'pointer', background: '#fff', whiteSpace: 'nowrap',
+                    border: '1px solid var(--t-border)', borderRadius: 7,
+                    fontSize: 12, fontWeight: 500, color: 'var(--t-tx-4)',
+                    cursor: 'pointer', background: 'var(--t-bg)', whiteSpace: 'nowrap',
                     transition: 'border-color 0.12s, background 0.12s, color 0.12s',
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#efefef'; e.currentTarget.style.borderColor = '#ccc'; e.currentTarget.style.color = '#111' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.borderColor = 'var(--t-border-2)'; e.currentTarget.style.color = 'var(--t-tx-1)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--t-bg)'; e.currentTarget.style.borderColor = 'var(--t-border)'; e.currentTarget.style.color = 'var(--t-tx-4)' }}
                 >
                   {label}
                 </button>
@@ -460,11 +460,11 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               width: 5, flexShrink: 0, cursor: 'col-resize', position: 'relative',
               display: 'flex', alignItems: 'stretch', justifyContent: 'center',
             }}
-            onMouseEnter={e => e.currentTarget.querySelector('span').style.background = '#c8c8c8'}
-            onMouseLeave={e => e.currentTarget.querySelector('span').style.background = '#e8e8e8'}
+            onMouseEnter={e => e.currentTarget.querySelector('span').style.background = 'var(--t-tx-7)'}
+            onMouseLeave={e => e.currentTarget.querySelector('span').style.background = 'var(--t-border)'}
           >
             <span style={{
-              display: 'block', width: 1, background: '#e8e8e8',
+              display: 'block', width: 1, background: 'var(--t-border)',
               transition: 'background 0.15s',
             }} />
           </div>
@@ -476,7 +476,7 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            background: '#f6f6f7',
+            background: 'var(--t-bg-3)',
           }}>
             {/* Panel header */}
             <div style={{
@@ -484,16 +484,16 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
               padding: '12px 14px 8px',
               flexShrink: 0,
             }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t-tx-6)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Quick Insights
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {/* Gear icon button */}
                 <button
                   title="Settings"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', color: '#6b7280' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#333' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', color: 'var(--t-tx-6)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
                 >
                   <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor">
                     <path d="M27,16.76c0-.25,0-.5,0-.76s0-.51,0-.77l1.92-1.68A2,2,0,0,0,29.3,11L26.94,7a2,2,0,0,0-1.73-1,2,2,0,0,0-.64.1l-2.43.82a11.35,11.35,0,0,0-1.31-.75l-.51-2.52a2,2,0,0,0-2-1.61H13.64a2,2,0,0,0-2,1.61l-.51,2.52a11.48,11.48,0,0,0-1.32.75L7.43,6.06A2,2,0,0,0,6.79,6,2,2,0,0,0,5.06,7L2.7,11a2,2,0,0,0,.41,2.51L5,15.24c0,.25,0,.5,0,.76s0,.51,0,.77L3.11,18.45A2,2,0,0,0,2.7,21L5.06,25a2,2,0,0,0,1.73,1,2,2,0,0,0,.64-.1l2.43-.82a11.35,11.35,0,0,0,1.31.75l.51,2.52a2,2,0,0,0,2,1.61h4.72a2,2,0,0,0,2-1.61l.51-2.52a11.48,11.48,0,0,0,1.32-.75l2.42.82a2,2,0,0,0,.64.1,2,2,0,0,0,1.73-1L29.3,21a2,2,0,0,0-.41-2.51ZM25.21,24l-3.43-1.16a8.86,8.86,0,0,1-2.71,1.57L18.36,28H13.64l-.71-3.55a9.36,9.36,0,0,1-2.7-1.57L6.79,24,4.43,20l2.72-2.4a8.9,8.9,0,0,1,0-3.13L4.43,12,6.79,8l3.43,1.16a8.86,8.86,0,0,1,2.71-1.57L13.64,4h4.72l.71,3.55a9.36,9.36,0,0,1,2.7,1.57L25.21,8,27.57,12l-2.72,2.4a8.9,8.9,0,0,1,0,3.13L27.57,20Z"/><path d="M16,22a6,6,0,1,1,6-6A5.94,5.94,0,0,1,16,22Zm0-10a3.91,3.91,0,0,0-4,4,3.91,3.91,0,0,0,4,4,3.91,3.91,0,0,0,4-4A3.91,3.91,0,0,0,16,12Z"/>
@@ -503,9 +503,9 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
                 <button
                   onClick={() => setInsightPaneVisible(false)}
                   title="Hide panel"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', color: '#6b7280' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#333' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 4, display: 'flex', alignItems: 'center', color: 'var(--t-tx-6)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
                 >
                   <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor">
                     <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4ZM28,26H22V6h6Z"/>
@@ -546,10 +546,10 @@ export default function HomePage({ onStartAI, initialPrompt = '', sessionKey = 0
             background: 'none', border: 'none', cursor: 'pointer',
             padding: '3px 4px', borderRadius: 4,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#6b7280', zIndex: 10,
+            color: 'var(--t-tx-6)', zIndex: 10,
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#333' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-6)' }}
         >
           <svg width="15" height="15" viewBox="0 0 32 32" fill="currentColor">
             <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4ZM28,26H22V6h6Z"/>

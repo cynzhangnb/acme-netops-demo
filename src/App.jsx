@@ -168,14 +168,14 @@ function AIPane({ onClose, onAsk }) {
   return (
     <div style={{
       width: 320, flexShrink: 0,
-      borderLeft: '1px solid #e4e4e4',
-      background: '#fff',
+      borderLeft: '1px solid var(--t-border)',
+      background: 'var(--t-bg)',
       display: 'flex', flexDirection: 'column',
       height: '100%',
     }}>
       {/* Header */}
       <div style={{
-        height: 44, borderBottom: '1px solid #f0f0f0',
+        height: 44, borderBottom: '1px solid var(--t-border-3)',
         padding: '0 14px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexShrink: 0,
@@ -226,9 +226,9 @@ function MapTabView({ name, isLoading }) {
   return (
     <div style={{
       flex: 1, height: '100%', position: 'relative', overflow: 'hidden',
-      background: '#fff',
-      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
-      backgroundSize: '22px 22px',
+      background: 'var(--t-canvas-bg)',
+      backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)',
+      backgroundSize: '24px 24px',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexDirection: 'column', gap: 16,
     }}>
@@ -295,9 +295,9 @@ function NetworkView({ onStartAI }) {
       {/* Dot-grid canvas */}
       <div style={{
         flex: 1, overflow: 'hidden', position: 'relative',
-        background: '#fff',
-        backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
-        backgroundSize: '22px 22px',
+        background: 'var(--t-canvas-bg)',
+        backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)',
+        backgroundSize: '24px 24px',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'flex-start',
         padding: '10% 40px 40px',
@@ -643,8 +643,8 @@ export default function App() {
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '0 12px 0 8px',
-              borderBottom: '1px solid #e8e8e8',
-              background: '#fff',
+              borderBottom: '1px solid var(--t-border)',
+              background: 'var(--t-bg)',
             }}>
               <div style={{ maxWidth: '30%', minWidth: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <span
@@ -716,7 +716,7 @@ export default function App() {
             {/* Tab bar */}
             <div style={{
               height: 40, display: 'flex', alignItems: 'center',
-              borderBottom: '1px solid #e8e8e8', background: '#fff',
+              borderBottom: '1px solid var(--t-border)', background: 'var(--t-bg)',
               padding: '0 8px', gap: 2, flexShrink: 0,
             }}>
               {openTabs.map(tab => {

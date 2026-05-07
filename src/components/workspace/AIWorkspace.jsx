@@ -24,12 +24,16 @@ function ChevronIcon() {
     </svg>
   )
 }
-function AIPaneIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="0.75" y="0.75" width="14.5" height="14.5" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M9.59998 10.6667V9.6H10.1333V5.86667H9.59998V4.8H11.7333V5.86667H11.2V9.6H11.7333V10.6667H9.59998Z" fill="currentColor"/>
-      <path d="M7.73363 10.6667H8.80029L6.93336 4.8H5.33336L3.46851 10.6667H4.53453L4.85549 9.6H7.40381L7.73363 10.6667ZM5.17645 8.53333L6.04493 5.64741L6.18141 5.64613L7.074 8.53339L5.17645 8.53333Z" fill="currentColor"/>
+function AIPaneIcon({ open = false }) {
+  return open ? (
+    /* Filled — pane is open */
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4Z"/>
+    </svg>
+  ) : (
+    /* Outline — pane is closed */
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4ZM28,26H22V6h6Z"/>
     </svg>
   )
 }
@@ -49,6 +53,46 @@ function ArchiveIcon() {
       <line x1="10" y1="12" x2="14" y2="12"/>
     </svg>
   )
+}
+
+function ArtifactTabIconInline({ type }) {
+  const s = { width: 12, height: 12, style: { flexShrink: 0, display: 'block' } }
+  if (type === 'topology' || type === 'changesMap' || type === 'networkMap') return (
+    <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="2" width="8" height="5" rx="1"/><line x1="12" y1="7" x2="12" y2="11"/>
+      <line x1="4" y1="11" x2="20" y2="11"/><line x1="4" y1="11" x2="4" y2="16"/>
+      <line x1="12" y1="11" x2="12" y2="16"/><line x1="20" y1="11" x2="20" y2="16"/>
+      <circle cx="4" cy="19" r="2.5"/><circle cx="12" cy="19" r="2.5"/><circle cx="20" cy="19" r="2.5"/>
+    </svg>
+  )
+  if (type === 'chart' || type === 'trafficChart') return (
+    <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>
+  )
+  if (type === 'table' || type === 'qosTable' || type === 'crcTable' || type === 'iosTable') return (
+    <svg {...s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/>
+    </svg>
+  )
+  if (type === 'changeAnalysis' || type === 'compare') return (
+    <svg {...s} viewBox="0 0 32 32" fill="currentColor">
+      <path d="m24,21v2h1.7483c-2.2363,3.1196-5.8357,5-9.7483,5-6.6169,0-12-5.3833-12-12h-2c0,7.7197,6.2803,14,14,14,4.355,0,8.3743-2.001,11-5.3452v1.3452h2v-5h-5Z"/>
+      <path d="m16,2c-4.355,0-8.3743,2.001-11,5.3452v-1.3452h-2v5h5v-2h-1.7483c2.2363-3.1196,5.8357-5,9.7483-5,6.6169,0,12,5.3833,12,12h2c0-7.7197-6.2803-14-14-14Z"/>
+      <line x1="13" y1="11.5" x2="19" y2="11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="16" x2="19" y2="16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+      <line x1="13" y1="20.5" x2="19" y2="20.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  )
+  if (type === 'report') return (
+    <svg {...s} viewBox="0 0 32 32" fill="currentColor">
+      <path d="M25.7,9.3l-7-7C18.5,2.1,18.3,2,18,2H8C6.9,2,6,2.9,6,4v24c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V10C26,9.7,25.9,9.5,25.7,9.3z M18,4.4l5.6,5.6H18V4.4z M24,28H8V4h8v6c0,1.1,0.9,2,2,2h6V28z"/>
+      <rect x="10" y="22" width="12" height="2"/><rect x="10" y="16" width="12" height="2"/>
+    </svg>
+  )
+  return null
 }
 
 const DEFAULT_CHAT_W = 400   /* width of the right AI pane when split */
@@ -126,6 +170,7 @@ export default function AIWorkspace({
   const [nameAreaHovered, setNameAreaHovered] = useState(false)
 
   const [hoveredSessionId,    setHoveredSessionId]    = useState(null)
+  const [hoveredTabId,        setHoveredTabId]        = useState(null)
   const [pinnedSessionIds,    setPinnedSessionIds]    = useState(new Set())
   const [sessionMenuOpenId,   setSessionMenuOpenId]   = useState(null)
   const [sessionDelConfirmId, setSessionDelConfirmId] = useState(null)
@@ -365,20 +410,23 @@ export default function AIWorkspace({
   /* ════════════════════════════════════════════════════════════════════════ */
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff', position: 'relative' }}>
 
-      {/* ── Session header — slides in when session activates, hidden when free-floating ── */}
+      {/* ── Session header — scoped to left column width when chat is open ── */}
       <div ref={headerRef} style={{
         height: sessionActive ? 40 : 0,
         overflow: sessionActive ? 'visible' : 'hidden',
         flexShrink: 0, position: 'relative',
-        transition: 'height 380ms cubic-bezier(0.4, 0, 0.2, 1)',
+        width: (isSplit && showChat) ? `calc(100% - ${chatPaneWidth + 5}px)` : '100%',
+        transition: (isDraggingSash.current || suppressTransitionRef.current)
+          ? 'height 380ms cubic-bezier(0.4, 0, 0.2, 1)'
+          : 'height 380ms cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
       <div style={{
         height: 40,
         display: 'flex', alignItems: 'center',
-        padding: '0 8px', borderBottom: '1px solid #e8e8e8',
-        background: '#fff',
+        padding: '0 8px',
+        background: 'var(--t-bg)',
         opacity: sessionActive ? 1 : 0,
         transition: 'opacity 260ms ease 120ms',
       }}>
@@ -656,8 +704,8 @@ export default function AIWorkspace({
           </div>
         )}
 
-        {/* Right: controls — stretch container so AI button can fill full height */}
-        <div style={{ display: 'flex', alignItems: 'stretch', gap: 2, flexShrink: 0, alignSelf: 'stretch' }}>
+        {/* Right: controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
           {/* + New — only once a session exists */}
           {sessionActive && (
             <button
@@ -665,62 +713,50 @@ export default function AIWorkspace({
               title="New session"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                height: 26, padding: '0 9px', border: 'none', borderRadius: 5,
-                background: 'transparent', color: '#444', alignSelf: 'center',
+                height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+                background: 'transparent', color: '#555',
                 fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.1s, color 0.1s', flexShrink: 0, marginRight: 2,
+                transition: 'background 0.1s', flexShrink: 0,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0'; e.currentTarget.style.color = '#1a1a1a' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#444' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              <PlusIcon />&nbsp;New
+              <PlusIcon />New
             </button>
           )}
 
-          {/* Share */}
+          {/* Share — text button */}
           <button
             title="Share"
             style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              height: 28, width: 28, padding: 0, border: 'none', borderRadius: 5,
-              background: 'transparent', color: '#1a1a1a',
-              cursor: 'pointer', transition: 'background 0.1s', alignSelf: 'center', flexShrink: 0,
+              display: 'inline-flex', alignItems: 'center',
+              height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+              background: 'transparent', color: '#555',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              transition: 'background 0.1s', flexShrink: 0,
             }}
             onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
           >
-            <svg width="15" height="17" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 18v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
-              <polyline points="16 9 12 4 8 9"/>
-              <line x1="12" y1="4" x2="12" y2="17"/>
-            </svg>
+            Share
           </button>
 
-          {/* AI toggle — 40×40 square flush to right edge, same as MapSessionWorkspace */}
+          {/* AI toggle */}
           {isSplit && (
             <button
               onClick={() => setShowChat(v => !v)}
               title={showChat ? 'Hide AI pane' : 'Show AI pane'}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                padding: 0,
-                alignSelf: 'stretch',
-                height: 'auto',
-                width: 40,
-                border: 'none',
-                borderLeft: showChat ? '1px solid #e0e0e0' : 'none',
-                borderRadius: 0,
-                background: showChat ? '#e8e8e8' : 'transparent',
-                color: showChat ? '#111' : '#333',
-                cursor: 'pointer',
-                transition: 'background 0.1s, color 0.1s',
-                marginRight: -8,
-                flexShrink: 0,
+                padding: 0, height: 28, width: 28,
+                border: 'none', borderRadius: 5,
+                background: 'transparent', color: '#555',
+                cursor: 'pointer', transition: 'background 0.1s', flexShrink: 0,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = showChat ? '#dedede' : '#f0f0f0' }}
-              onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#e8e8e8' : 'transparent' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              <AIPaneIcon />
+              <AIPaneIcon open={showChat} />
             </button>
           )}
         </div>
@@ -736,8 +772,69 @@ export default function AIWorkspace({
           width: !isSplit ? 0 : showChat ? `calc(100% - ${chatPaneWidth + 5}px)` : '100%',
           overflow: 'hidden',
           position: 'relative',
+          display: 'flex', flexDirection: 'column',
           transition: (isDraggingSash.current || suppressTransitionRef.current) ? 'none' : 'width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
+
+          {/* ── Folder tab bar — scoped to artifact column ── */}
+          {artifacts.length > 0 && (
+            <div style={{
+              height: 36,
+              display: 'flex', alignItems: 'flex-end',
+              padding: '0 8px 0',
+              background: 'var(--t-bg)',
+              borderBottom: '1px solid var(--t-border)',
+              flexShrink: 0,
+              gap: 2,
+            }}>
+              {artifacts.map(artifact => {
+                const isActive = artifact.id === activeArtifactId
+                return (
+                  <div
+                    key={artifact.id}
+                    onClick={() => setActiveArtifactId(artifact.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '0 24px 0 10px', height: 28,
+                      borderRadius: '7px 7px 0 0',
+                      background: isActive ? 'var(--t-bg)' : 'transparent',
+                      border: isActive ? '1px solid var(--t-border)' : '1px solid transparent',
+                      borderBottom: isActive ? '1px solid var(--t-bg)' : '1px solid transparent',
+                      marginBottom: -1, position: 'relative', zIndex: isActive ? 1 : 0,
+                      cursor: 'pointer', userSelect: 'none', flexShrink: 0, overflow: 'hidden',
+                      fontSize: 12, fontWeight: isActive ? 500 : 400,
+                      color: isActive ? 'var(--t-tx-2)' : 'var(--t-tx-5)',
+                      transition: 'background 0.1s, color 0.1s',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--t-bg-hover)'; setHoveredTabId(artifact.id) }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; setHoveredTabId(null) }}
+                  >
+                    <ArtifactTabIconInline type={artifact.type} />
+                    {artifact.label}
+                    {(isActive || hoveredTabId === artifact.id) && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleRemoveArtifact(artifact.id) }}
+                        style={{
+                          position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                          background: isActive ? 'var(--t-bg)' : 'var(--t-bg-hover)',
+                          border: 'none', cursor: 'pointer',
+                          padding: '1px 2px', borderRadius: 3,
+                          color: 'var(--t-tx-5)',
+                          display: 'flex', alignItems: 'center',
+                          transition: 'color 0.1s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--t-tx-2)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'var(--t-tx-5)' }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
           {/* Loading overlay: shown while a new artifact tab is opening */}
           {pendingArtifactRef !== null && (
             <div style={{
@@ -769,6 +866,7 @@ export default function AIWorkspace({
               activeArtifactId={activeArtifactId}
               onSetActive={setActiveArtifactId}
               onRemove={handleRemoveArtifact}
+              hideTabBar={true}
               topologyHighlight={topologyHighlight}
               onClearTopologyOverlay={() => setTopologyHighlight(null)}
               changesMapOverlay={changesMapOverlay}
@@ -801,16 +899,15 @@ export default function AIWorkspace({
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       padding: 0, alignSelf: 'stretch', height: 'auto', width: 40,
                       border: 'none', borderRadius: 0,
-                      borderLeft: showChat ? '1px solid #e0e0e0' : 'none',
-                      background: showChat ? '#e8e8e8' : 'transparent',
-                      color: showChat ? '#111' : '#333',
+                      background: 'transparent',
+                      color: showChat ? '#111' : '#666',
                       cursor: 'pointer', transition: 'background 0.1s, color 0.1s',
-                      marginRight: -8, flexShrink: 0,
+                      marginRight: -4, flexShrink: 0,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = showChat ? '#dedede' : '#f0f0f0' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = showChat ? '#e8e8e8' : 'transparent' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                   >
-                    <AIPaneIcon />
+                    <AIPaneIcon open={showChat} />
                   </button>
                 </div>
               ) : null}
@@ -818,46 +915,63 @@ export default function AIWorkspace({
           )}
         </div>
 
-        {/* Sash — same pattern as HomePage: 1px visible line with 5px grab area */}
-        {isSplit && showChat && (
-          <div
-            onMouseDown={artifacts.length > 0 ? handleSashMouseDown : undefined}
-            style={{
-              flexShrink: 0,
-              width: 5,
-              cursor: artifacts.length > 0 ? 'col-resize' : 'default',
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'stretch',
-              justifyContent: 'flex-start',
-              zIndex: 10,
-            }}
-            onMouseEnter={e => {
-              if (!artifacts.length) return
-              e.currentTarget.querySelector('span').style.background = '#c8c8c8'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.querySelector('span').style.background = '#e8e8e8'
-            }}
-          >
-            <span style={{
-              display: 'block',
-              width: 1,
-              background: '#e8e8e8',
-              transition: 'background 0.15s',
-            }} />
+        {/* RIGHT: Chat — only in normal flex flow when no artifacts (free-floating chat) */}
+        {!isSplit && (
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', background: '#fff' }}>
+            <ChatPane
+              hideHeader
+              messages={messages}
+              isStreaming={isStreaming}
+              onSend={handleSend}
+              onSaveArtifact={handleSaveArtifact}
+              onOpenArtifact={handleOpenArtifact}
+              onAddWidget={handleAddWidget}
+              inputPrefill={inputPrefill}
+              canAddToCanvas={false}
+              commandSet={commandSet}
+              isNarrowLayout={false}
+            />
           </div>
         )}
+      </div>
 
-        {/* RIGHT: Chat pane — flex:1 fills whatever width is left.
-            In full chat mode it's 100%. In split mode it's chatPaneWidth.
-            The artifact growing from the left naturally pushes this pane right. */}
+      {/* ── Sash — absolutely positioned so it spans full height incl. above session header ── */}
+      {isSplit && showChat && (
+        <div
+          onMouseDown={artifacts.length > 0 ? handleSashMouseDown : undefined}
+          style={{
+            position: 'absolute',
+            top: 0, right: chatPaneWidth, bottom: 0,
+            width: 5,
+            cursor: artifacts.length > 0 ? 'col-resize' : 'default',
+            zIndex: 10,
+            display: 'flex', alignItems: 'stretch', justifyContent: 'flex-start',
+          }}
+          onMouseEnter={e => {
+            if (!artifacts.length) return
+            e.currentTarget.querySelector('span').style.background = '#c8c8c8'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.querySelector('span').style.background = '#e8e8e8'
+          }}
+        >
+          <span style={{ display: 'block', width: 1, background: '#e8e8e8', transition: 'background 0.15s' }} />
+        </div>
+      )}
+
+      {/* ── Chat pane — always in DOM when split; slides in/out from the right edge ── */}
+      {isSplit && (
         <div style={{
-          flex: 1,
-          minWidth: 0,
+          position: 'absolute',
+          top: 0, right: 0, bottom: 0,
+          width: chatPaneWidth,
           overflow: 'hidden',
           background: '#fff',
-          borderLeft: 'none',
+          zIndex: 1,
+          transform: showChat ? 'translateX(0)' : 'translateX(100%)',
+          transition: (isDraggingSash.current || suppressTransitionRef.current)
+            ? 'none'
+            : 'transform 0.32s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1)',
         }}>
           <ChatPane
             hideHeader
@@ -873,7 +987,7 @@ export default function AIWorkspace({
             isNarrowLayout={isSplit}
           />
         </div>
-      </div>
+      )}
 
       {/* Session overflow menu — fixed so it escapes overflow:hidden */}
       {sessionMenuOpenId && sessionMenuPos && (

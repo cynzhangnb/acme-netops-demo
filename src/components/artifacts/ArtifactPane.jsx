@@ -1086,7 +1086,7 @@ function ArtifactTabIcon({ type }) {
   return null
 }
 
-export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction, headerRight = null }) {
+export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive, onRemove, topologyHighlight, onClearTopologyOverlay, changesMapOverlay, widgets = [], onTopologyNodeAction, headerRight = null, hideTabBar = false }) {
   const active = artifacts.find(a => a.id === activeArtifactId)
   const [modal, setModal] = useState(null)
   const [propertiesPane, setPropertiesPane] = useState(null)
@@ -1651,9 +1651,9 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
         </div>
       ) : (
         <>
-        {/* Normal mode tab bar */}
-        <div
-          style={{ height: 40, background: '#fff', borderBottom: '1px solid #e8e8e8', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0 }}
+        {/* Normal mode tab bar — hidden when parent renders it full-width */}
+        {!hideTabBar && <div
+          style={{ height: 40, background: 'var(--t-bg)', borderBottom: '1px solid var(--t-border)', display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, flexShrink: 0 }}
           onDragOver={e => e.preventDefault()}
           onDrop={e => {
             // Drop onto empty space at end of tab bar → move tab to last position
@@ -1731,7 +1731,7 @@ export default function ArtifactPane({ artifacts, activeArtifactId, onSetActive,
           )}
           {/* Injected right controls (e.g. Share + AI toggle when free-floating) */}
           {headerRight}
-        </div>
+        </div>}
         {/* Normal mode content */}
         {(
         /* ── Normal mode: original content area ── */

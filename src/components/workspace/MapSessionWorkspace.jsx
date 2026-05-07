@@ -16,12 +16,14 @@ function ChevronIcon() {
     </svg>
   )
 }
-function AIPaneIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="0.75" y="0.75" width="14.5" height="14.5" rx="1.2" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M9.59998 10.6667V9.6H10.1333V5.86667H9.59998V4.8H11.7333V5.86667H11.2V9.6H11.7333V10.6667H9.59998Z" fill="currentColor"/>
-      <path d="M7.73363 10.6667H8.80029L6.93336 4.8H5.33336L3.46851 10.6667H4.53453L4.85549 9.6H7.40381L7.73363 10.6667ZM5.17645 8.53333L6.04493 5.64741L6.18141 5.64613L7.074 8.53339L5.17645 8.53333Z" fill="currentColor"/>
+function AIPaneIcon({ open = false }) {
+  return open ? (
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4Z"/>
+    </svg>
+  ) : (
+    <svg width="16" height="16" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+      <path d="M28,4H4A2,2,0,0,0,2,6V26a2,2,0,0,0,2,2H28a2,2,0,0,0,2-2V6A2,2,0,0,0,28,4ZM4,6H20V26H4ZM28,26H22V6h6Z"/>
     </svg>
   )
 }
@@ -106,9 +108,9 @@ function BlankMapEmptyState({ onOpenDevicePane }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#fff',
-      backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)',
-      backgroundSize: '22px 22px',
+      background: 'var(--t-canvas-bg)',
+      backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)',
+      backgroundSize: '24px 24px',
       animation: 'fadeInMsg 0.4s ease both',
     }}>
       {/* Left-aligned content block, directly on canvas */}
@@ -349,6 +351,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   const [mapSaveState, setMapSaveState] = useState('idle')
   const [loadingTabId, setLoadingTabId] = useState(null)
   const [splitMode, setSplitMode] = useState(false)
+  const [hoveredTabId, setHoveredTabId] = useState(null)
   function handleMapSave() {
     setMapSaveState('saved')
     setTimeout(() => setMapSaveState('idle'), 1600)
@@ -674,27 +677,21 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           padding: 0,
-          alignSelf: 'stretch',
-          height: 'auto',
-          width: 40,
+          alignSelf: 'center',
+          height: 28,
+          width: 28,
           border: 'none',
-          borderLeft: showAiPane ? '1px solid #e0e0e0' : 'none',
-          borderRadius: 0,
-          background: showAiPane ? '#e8e8e8' : 'transparent',
-          color: showAiPane ? '#111' : '#333',
+          borderRadius: 5,
+          background: 'transparent',
+          color: '#555',
           cursor: 'pointer',
-          transition: 'background 0.1s, color 0.1s',
-          marginRight: -8,
+          transition: 'background 0.1s',
           flexShrink: 0,
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.background = showAiPane ? '#dedede' : '#f0f0f0'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.background = showAiPane ? '#e8e8e8' : 'transparent'
-        }}
+        onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
       >
-        <AIPaneIcon />
+        <AIPaneIcon open={showAiPane} />
       </button>
     </div>
   )
@@ -702,26 +699,23 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
 
-      {/* ── Session header — slides in from top when session activates ── */}
+      {/* ── Session header — always visible; session name fades in once session activates ── */}
       <div ref={headerRef} style={{
-        height: sessionActive ? 40 : 0,
-        /* overflow:hidden only during the slide-in; once open, must be visible so the Share dropdown can escape */
-        overflow: sessionActive ? 'visible' : 'hidden',
+        height: 40,
+        overflow: 'visible',
         flexShrink: 0,
-        transition: 'height 380ms cubic-bezier(0.4, 0, 0.2, 1)',
         position: 'relative',
+        borderBottom: '1px solid var(--t-border)',
       }}>
-        {/* Inner content fades in after the container opens — feels natural, not abrupt */}
         <div style={{
           height: 40,
           display: 'flex', alignItems: 'center',
-          padding: '0 8px', borderBottom: '1px solid #e8e8e8',
+          padding: '0 8px',
           gap: 4,
-          opacity: sessionActive ? 1 : 0,
-          transition: 'opacity 260ms ease 120ms',
+          background: 'var(--t-bg)',
         }}>
-          {/* ── Left: session name + chevron ── */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1 }}>
+          {/* ── Left: session name + chevron — fades in once session activates ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1, opacity: sessionActive ? 1 : 0, transition: 'opacity 260ms ease' }}>
             {isEditingName ? (
               <input
                 ref={renameInputRef}
@@ -889,13 +883,14 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             </div>
           ) : (
             <>
-              {/* Map tab bar — Share+AI live here when free-floating, move up to session header once active */}
+              {/* Map tab bar — folder style */}
               <div style={{
-                height: 40, display: 'flex', alignItems: 'center',
-                padding: '0 8px', gap: 2,
-                borderBottom: '1px solid #e8e8e8', background: '#fff', flexShrink: 0,
+                height: 36, display: 'flex', alignItems: 'flex-end',
+                padding: '0 8px 0', gap: 2,
+                background: 'var(--t-bg)',
+                borderBottom: '1px solid var(--t-border)', flexShrink: 0,
               }}>
-                {/* Tab chips — hidden in split mode (mini-labels inside panes serve that role) */}
+                {/* Folder tabs — hidden in split mode */}
                 {!splitMode && mapTabs.map(tab => {
                   const isActive = tab.id === activeMapTab
                   const isLoading = tab.id === loadingTabId
@@ -905,16 +900,21 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                       onClick={() => setActiveMapTab(tab.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 4,
-                        padding: '0 6px 0 12px', height: 28, borderRadius: 6,
-                        background: isActive ? '#f0f0f0' : 'transparent',
+                        padding: '0 24px 0 10px', height: 28,
+                        borderRadius: '7px 7px 0 0',
+                        background: isActive ? 'var(--t-bg)' : 'transparent',
+                        border: isActive ? '1px solid var(--t-border)' : '1px solid transparent',
+                        borderBottom: isActive ? '1px solid var(--t-bg)' : '1px solid transparent',
+                        marginBottom: -1, position: 'relative', zIndex: isActive ? 1 : 0,
                         cursor: 'pointer', userSelect: 'none',
                         fontSize: 12, fontWeight: isActive ? 500 : 400,
-                        color: isActive ? '#111' : '#767676',
-                        transition: 'background 0.1s',
+                        color: isActive ? 'var(--t-tx-2)' : 'var(--t-tx-5)',
+                        transition: 'background 0.1s, color 0.1s',
                         animation: isLoading ? 'skeleton-pulse 1.1s ease-in-out infinite' : 'none',
+                        whiteSpace: 'nowrap', flexShrink: 0, overflow: 'hidden',
                       }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = '#f8f8f8' }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--t-bg-hover)'; setHoveredTabId(tab.id) }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; setHoveredTabId(null) }}
                     >
                       {isLoading && (
                         <span style={{
@@ -924,19 +924,24 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                         }} />
                       )}
                       {tab.name}
-                      <button
-                        onClick={e => { e.stopPropagation(); closeMapTab(tab.id) }}
-                        style={{
-                          background: 'none', border: 'none', cursor: 'pointer',
-                          padding: '2px 3px', borderRadius: 4, color: '#bbb',
-                          display: 'flex', alignItems: 'center',
-                          transition: 'background 0.1s, color 0.1s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#e0e0e0'; e.currentTarget.style.color = '#555' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#bbb' }}
-                      >
-                        <CloseTabIcon />
-                      </button>
+                      {(isActive || hoveredTabId === tab.id) && (
+                        <button
+                          onClick={e => { e.stopPropagation(); closeMapTab(tab.id) }}
+                          style={{
+                            position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                            background: isActive ? 'var(--t-bg)' : 'var(--t-bg-hover)',
+                            border: 'none', cursor: 'pointer',
+                            padding: '1px 2px', borderRadius: 3,
+                            color: 'var(--t-tx-5)',
+                            display: 'flex', alignItems: 'center',
+                            transition: 'color 0.1s',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.color = 'var(--t-tx-2)' }}
+                          onMouseLeave={e => { e.currentTarget.style.color = 'var(--t-tx-5)' }}
+                        >
+                          <CloseTabIcon />
+                        </button>
+                      )}
                     </div>
                   )
                 })}
@@ -950,18 +955,16 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     style={{
                       width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: 'none', borderRadius: 5, cursor: 'pointer', flexShrink: 0,
-                      background: splitMode ? '#e8e8e8' : 'transparent',
-                      color: splitMode ? '#111' : '#2e2c28',
+                      background: splitMode ? 'var(--t-bg-hover)' : 'transparent',
+                      color: splitMode ? 'var(--t-tx-2)' : 'var(--t-tx-4)',
                       transition: 'background 0.1s, color 0.1s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = splitMode ? '#e0e0e0' : '#f0f0f0'; e.currentTarget.style.color = '#111' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = splitMode ? '#e8e8e8' : 'transparent'; e.currentTarget.style.color = splitMode ? '#111' : '#2e2c28' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = splitMode ? 'var(--t-bg-hover)' : 'transparent'; e.currentTarget.style.color = splitMode ? 'var(--t-tx-2)' : 'var(--t-tx-4)' }}
                   >
                     <SplitScreenIcon />
                   </button>
                 )}
-                {/* Share/AI — only visible when no session header yet */}
-                {!sessionActive && ShareAndAIButtons}
               </div>
 
               {/* Map canvas — single or split view */}
@@ -974,7 +977,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
 
                   if (isLoading) {
                     return (
-                      <div key={tabId} style={{ ...style, background: '#f8f8f8', backgroundImage: 'radial-gradient(circle, #d8d8d8 1px, transparent 1px)', backgroundSize: '22px 22px', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                      <div key={tabId} style={{ ...style, background: 'var(--t-canvas-bg)', backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
                         <div style={{ width: 32, height: 32, flexShrink: 0, border: '2.5px solid #e0e0e0', borderTopColor: '#aaa', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
                         <span style={{ fontSize: 12, color: '#aaa' }}>Loading map…</span>
                       </div>

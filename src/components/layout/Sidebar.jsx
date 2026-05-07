@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import DomainSwitcher from './DomainSwitcher'
 import netBrainLogo from '../../../logo/logo.svg'
+import { useTheme } from '../../ThemeContext'
 
 /* ── Icons ──────────────────────────────────────────────────────────────── */
 
@@ -197,10 +198,118 @@ function Tooltip({ label }) {
   )
 }
 
+/* ── Theme toggle ────────────────────────────────────────────────────────── */
+function SunIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4"/>
+      <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  )
+}
+function MoonIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  )
+}
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme()
+  const [open, setOpen] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = e => {
+      if (!ref.current?.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        title="Appearance"
+        style={{
+          width: 32, height: 36,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: open || hovered ? 'var(--t-bg-hover-w)' : 'transparent',
+          border: 'none', cursor: 'pointer',
+          color: 'var(--t-tx-6)',
+          transition: 'background 0.12s, color 0.12s',
+          flexShrink: 0,
+        }}
+      >
+        {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 4px)',
+          right: 0,
+          zIndex: 1300,
+          background: 'var(--t-bg)',
+          border: '1px solid var(--t-border)',
+          borderRadius: 8,
+          boxShadow: 'var(--t-shadow-menu)',
+          minWidth: 130,
+          overflow: 'hidden',
+          padding: '3px 0',
+        }}>
+          <div style={{ padding: '5px 10px 3px', fontSize: 10.5, fontWeight: 600, color: 'var(--t-tx-8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Appearance
+          </div>
+          {[
+            { key: 'light', label: 'Light', icon: <SunIcon /> },
+            { key: 'dark',  label: 'Dark',  icon: <MoonIcon /> },
+          ].map(({ key, label, icon }) => {
+            const isActive = theme === key
+            return (
+              <div
+                key={key}
+                onClick={() => { setTheme(key); setOpen(false) }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover-w)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 12px',
+                  fontSize: 13, cursor: 'pointer',
+                  color: isActive ? 'var(--t-tx-1)' : 'var(--t-tx-2)',
+                  fontWeight: isActive ? 500 : 400,
+                  background: 'transparent',
+                }}
+              >
+                <span style={{ color: isActive ? 'var(--t-tx-2)' : 'var(--t-tx-6)' }}>{icon}</span>
+                {label}
+                {isActive && (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto', color: '#378ADD' }}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ── Unified nav item (works for both expanded and collapsed) ────────────── */
 function SideNavItem({ icon, label, active, onClick, expanded, showTooltip, rightSlot }) {
   const [hovered, setHovered] = useState(false)
-  const bg = active ? '#ece9e2' : hovered ? '#f0ede7' : 'transparent'
+  const bg = active ? 'var(--t-bg-active-w)' : hovered ? 'var(--t-bg-hover-w)' : 'transparent'
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -220,14 +329,14 @@ function SideNavItem({ icon, label, active, onClick, expanded, showTooltip, righ
         {/* Icon — always at a fixed left position so it never shifts */}
         <span style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 22, flexShrink: 0, color: '#1a1a1a',
+          width: 22, flexShrink: 0, color: 'var(--t-tx-2)',
         }}>
           {icon}
         </span>
 
         {/* Label — fades in/out; max-width clamps it so it never wraps outside */}
         <span style={{
-          fontSize: 13, color: '#1a1a1a', fontWeight: 400,
+          fontSize: 13, color: 'var(--t-tx-2)', fontWeight: 400,
           whiteSpace: 'nowrap', overflow: 'hidden',
           maxWidth: expanded ? 160 : 0,
           opacity: expanded ? 1 : 0,
@@ -422,7 +531,7 @@ export default function Sidebar({
     <aside style={{
       width: expanded ? 220 : 44,
       flexShrink: 0, height: '100%',
-      background: '#fafafa', borderRight: '1px solid #ebebeb',
+      background: 'var(--t-bg-2)', borderRight: '1px solid var(--t-border-2)',
       display: 'flex', flexDirection: 'column',
       /* clip labels during animation; let tooltips overflow when static */
       overflow: isAnimating ? 'hidden' : 'visible',
@@ -468,11 +577,11 @@ export default function Sidebar({
                 flexShrink: 0, width: 28, height: 28, marginRight: 4,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#1a1a1a', borderRadius: 5,
+                color: 'var(--t-tx-2)', borderRadius: 5,
                 transition: 'background 0.12s, color 0.12s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#ebebeb'; e.currentTarget.style.color = '#1a1a1a' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#1a1a1a' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
             >
               <CollapseIcon />
             </button>
@@ -486,9 +595,9 @@ export default function Sidebar({
               width: 44, height: 40, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#333',
+              color: 'var(--t-tx-2)',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f0ede7'}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover-w)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             <HamburgerIcon />
@@ -511,17 +620,17 @@ export default function Sidebar({
             flexShrink: 0,
             border: 'none',
             borderRadius: 7,
-            background: switcherOpen ? '#ece9e2' : '#f3f1ec',
-            color: '#111',
+            background: switcherOpen ? 'var(--t-bg-active-w)' : 'var(--t-bg-domain)',
+            color: 'var(--t-tx-1)',
             cursor: 'pointer',
             textAlign: 'left',
             transition: 'background 0.12s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#ece9e2' }}
-          onMouseLeave={e => { e.currentTarget.style.background = switcherOpen ? '#ece9e2' : '#f3f1ec' }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-active-w)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = switcherOpen ? 'var(--t-bg-active-w)' : 'var(--t-bg-domain)' }}
         >
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#378ADD', flexShrink: 0 }} />
-          <span style={{ minWidth: 0, flex: 1, fontSize: 12.5, fontWeight: 500, color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.1 }}>
+          <span style={{ minWidth: 0, flex: 1, fontSize: 12.5, fontWeight: 500, color: 'var(--t-tx-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.1 }}>
             {activeDomain?.name ?? 'No domain'}
           </span>
         </button>
@@ -584,7 +693,7 @@ export default function Sidebar({
       </div>
 
       {/* divider */}
-      <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px', flexShrink: 0 }} />
+      <div style={{ height: 1, background: 'var(--t-border-2)', margin: '4px 8px', flexShrink: 0 }} />
 
       {/* ── Sessions section ──────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
@@ -604,7 +713,7 @@ export default function Sidebar({
               }}
             >
               <span style={{
-                fontSize: 10.5, fontWeight: 500, color: '#8a8a8a',
+                fontSize: 10.5, fontWeight: 500, color: 'var(--t-tx-8)',
                 letterSpacing: '0.05em', textTransform: 'uppercase',
               }}>
                 Sessions
@@ -636,7 +745,7 @@ export default function Sidebar({
                     style={{
                       padding: '5px 4px 5px 11px',
                       borderRadius: 5, margin: '0 3px',
-                      background: isHovered && !isActive ? '#f0ede7' : 'transparent',
+                      background: isHovered && !isActive ? 'var(--t-bg-hover-w)' : 'transparent',
                       cursor: isActive || isEditing ? 'default' : 'pointer',
                       transition: 'background 0.1s',
                       display: 'flex', alignItems: 'center', gap: 4,
@@ -660,7 +769,7 @@ export default function Sidebar({
                       />
                     ) : (
                       <span style={{
-                        fontSize: 12, color: isActive ? '#111' : '#333',
+                        fontSize: 12, color: isActive ? 'var(--t-tx-1)' : 'var(--t-tx-3)',
                         fontWeight: isActive ? 500 : 400,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         lineHeight: 1.4, flex: 1, minWidth: 0,
@@ -681,7 +790,7 @@ export default function Sidebar({
                         pointerEvents: isPinned || showIcons ? 'auto' : 'none',
                         transition: 'opacity 0.1s, color 0.1s, background 0.1s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#555' }}
                     >
                       {isPinned ? <PinFilledIcon /> : <PinOutlineIcon />}
@@ -700,7 +809,7 @@ export default function Sidebar({
                         pointerEvents: showIcons ? 'auto' : 'none',
                         transition: 'opacity 0.1s, background 0.1s, color 0.1s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#e5e1da'; e.currentTarget.style.color = '#374151' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = openMenuId === s.id ? '#e0e0e0' : 'none'; e.currentTarget.style.color = '#555' }}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
@@ -715,11 +824,11 @@ export default function Sidebar({
                 <div style={{ flex: 1, overflowY: 'auto', marginTop: 1, animation: 'fadeInMsg 0.18s ease both' }} className="scrollbar-thin">
                   {pinned.length > 0 && (
                     <>
-                      <div style={{ padding: '4px 11px 2px', fontSize: 10.5, fontWeight: 500, color: '#aaa', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      <div style={{ padding: '4px 11px 2px', fontSize: 10.5, fontWeight: 500, color: 'var(--t-tx-7)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                         Pinned
                       </div>
                       {pinned.map(renderSession)}
-                      {recent.length > 0 && <div style={{ height: 1, background: '#ebebeb', margin: '4px 8px 4px' }} />}
+                      {recent.length > 0 && <div style={{ height: 1, background: 'var(--t-border-2)', margin: '4px 8px 4px' }} />}
                     </>
                   )}
                   {recent.map(renderSession)}
@@ -731,7 +840,7 @@ export default function Sidebar({
       </div>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <div style={{ borderTop: '1px solid #ebebeb', flexShrink: 0, position: 'relative' }}>
+      <div style={{ borderTop: '1px solid var(--t-border-2)', flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center' }}>
         <button
           ref={userBtnRef}
           onClick={toggleAccountMenu}
@@ -740,24 +849,18 @@ export default function Sidebar({
           style={{
             display: 'flex', alignItems: 'center',
             justifyContent: expanded ? 'flex-start' : 'center',
-            width: '100%', height: 36,
+            flex: 1, minWidth: 0, height: 36,
             padding: expanded ? '0 6px' : 0,
-            background: accountMenuOpen || userBtnHovered ? '#f0ede7' : 'transparent',
+            background: accountMenuOpen || userBtnHovered ? 'var(--t-bg-hover-w)' : 'transparent',
             border: 'none', borderRadius: 0, cursor: 'pointer',
             transition: 'background 0.12s',
           }}
         >
-          {/* Icon — matches other nav icon alignment */}
-          <span style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 22, flexShrink: 0, color: '#1a1a1a',
-          }}>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 22, flexShrink: 0, color: 'var(--t-tx-2)' }}>
             <UserIcon />
           </span>
-
-          {/* "Account" label — fades in when expanded */}
           <span style={{
-            fontSize: 13, color: '#1a1a1a', fontWeight: 400,
+            fontSize: 13, color: 'var(--t-tx-2)', fontWeight: 400,
             whiteSpace: 'nowrap', overflow: 'hidden',
             maxWidth: expanded ? 160 : 0,
             opacity: expanded ? 1 : 0,
@@ -769,6 +872,9 @@ export default function Sidebar({
           </span>
         </button>
         {showTooltip && userBtnHovered && <Tooltip label="Account" />}
+
+        {/* Theme toggle — only when expanded */}
+        {expanded && <ThemeToggle />}
       </div>
 
       {/* Account menu — fixed position, opens above footer button */}
@@ -780,10 +886,10 @@ export default function Sidebar({
             bottom: accountMenuPos.bottom,
             left: accountMenuPos.left,
             zIndex: 1200,
-            background: '#fff',
-            border: '1px solid #e5e5e5',
+            background: 'var(--t-bg)',
+            border: '1px solid var(--t-border)',
             borderRadius: 10,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.13), 0 1.5px 6px rgba(0,0,0,0.07)',
+            boxShadow: 'var(--t-shadow-menu)',
             minWidth: 220,
             overflow: 'hidden',
             padding: '4px 0',
@@ -792,13 +898,13 @@ export default function Sidebar({
           {/* Email header — compact, tight, gray */}
           <div style={{
             padding: '7px 14px 5px',
-            fontSize: 11.5, color: '#555', fontWeight: 400,
+            fontSize: 11.5, color: 'var(--t-tx-4)', fontWeight: 400,
           }}>
             cynthia.zhang@netbrain.com
           </div>
 
           {/* Divider after email */}
-          <div style={{ height: 1, background: '#f0f0f0', margin: '3px 0' }} />
+          <div style={{ height: 1, background: 'var(--t-border-3)', margin: '3px 0' }} />
 
           {/* Menu items */}
           {[
@@ -833,22 +939,22 @@ export default function Sidebar({
             <div
               key={label}
               onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f5f4f1'}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover-w)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               style={{
                 display: 'flex', alignItems: 'center', gap: 9,
-                padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+                padding: '5px 14px', fontSize: 13, color: 'var(--t-tx-2)',
                 cursor: 'pointer', background: 'transparent',
               }}
             >
-              <span style={{ color: '#555', display: 'flex' }}>{icon}</span>
+              <span style={{ color: 'var(--t-tx-4)', display: 'flex' }}>{icon}</span>
               {label}
             </div>
           ))}
 
           {/* Admin Tools section */}
-          <div style={{ background: '#f7f6f3', borderTop: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0', marginTop: 3 }}>
-            <div style={{ padding: '6px 14px 3px', fontSize: 10.5, fontWeight: 600, color: '#8a8a8a', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <div style={{ background: 'var(--t-bg-section)', borderTop: '1px solid var(--t-border-3)', borderBottom: '1px solid var(--t-border-3)', marginTop: 3 }}>
+            <div style={{ padding: '6px 14px 3px', fontSize: 10.5, fontWeight: 600, color: 'var(--t-tx-8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               Admin Tools
             </div>
             {[
@@ -859,16 +965,16 @@ export default function Sidebar({
               <div
                 key={label}
                 onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
-                onMouseEnter={e => e.currentTarget.style.background = '#eeece8'}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover-w)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+                  padding: '5px 14px', fontSize: 13, color: 'var(--t-tx-2)',
                   cursor: 'pointer', background: 'transparent',
                 }}
               >
                 <span>{label}</span>
-                <span style={{ display: 'flex', color: '#999' }}>
+                <span style={{ display: 'flex', color: 'var(--t-tx-7)' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                   </svg>
@@ -880,15 +986,15 @@ export default function Sidebar({
           {/* Log out */}
           <div
             onMouseDown={e => { e.preventDefault(); setAccountMenuOpen(false) }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f5f4f1'}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover-w)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             style={{
               display: 'flex', alignItems: 'center', gap: 9,
-              padding: '5px 14px', fontSize: 13, color: '#1a1a1a',
+              padding: '5px 14px', fontSize: 13, color: 'var(--t-tx-2)',
               cursor: 'pointer', background: 'transparent',
             }}
           >
-            <span style={{ color: '#555', display: 'flex' }}>
+            <span style={{ color: 'var(--t-tx-4)', display: 'flex' }}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
@@ -907,7 +1013,7 @@ export default function Sidebar({
           style={{
             position: 'fixed', top: menuPos.top, right: menuPos.right,
             zIndex: 1000,
-            background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+            background: 'var(--t-bg)', border: '1px solid var(--t-border)', borderRadius: 8,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)', minWidth: 160, overflow: 'hidden',
           }}
         >
@@ -934,8 +1040,8 @@ export default function Sidebar({
             <>
               <div
                 onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const s = sessions.find(x => x.id === openMenuId); if (s) startRename(s) }}
-                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: '#222', cursor: 'pointer' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 12px', fontSize: 12, color: 'var(--t-tx-3)', cursor: 'pointer' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--t-bg-hover)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
