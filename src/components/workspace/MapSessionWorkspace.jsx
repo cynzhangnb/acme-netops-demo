@@ -533,6 +533,16 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
     if (isEditingName) renameInputRef.current?.select()
   }, [isEditingName])
 
+  /* Dismiss Share menu on outside click */
+  useEffect(() => {
+    if (!showShareMenu) return
+    const handler = (e) => {
+      if (!e.target.closest('[data-share-menu]')) setShowShareMenu(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showShareMenu])
+
   function startEdit() {
     setEditValue(displayName)
     setIsEditingName(true)
@@ -585,10 +595,26 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   const displayName = nameOverride ?? sessionName
   const activeTabName = mapTabs.find(t => t.id === activeMapTab)?.name ?? 'Workspace'
 
-  /* Share + AI toggle — absolutely positioned at right of tab bar, never moves */
+  /* Share + AI toggle (+ New when session active) */
   const ShareAndAIButtons = (
-    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2, zIndex: 2 }}>
-      <div style={{ position: 'relative' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+      {sessionActive && (
+        <button
+          onClick={() => { onNew?.() }}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+            background: 'transparent', color: '#555',
+            fontSize: 12, fontWeight: 500, cursor: 'pointer',
+            transition: 'background 0.1s', flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+        >
+          <PlusIcon />New
+        </button>
+      )}
+      <div data-share-menu style={{ position: 'relative' }}>
         <button
           onClick={() => { setShowShareMenu(m => !m); setShowMenu(false); setShowSessions(false) }}
           title={sessionActive ? 'Share' : 'Share this artifact'}
@@ -696,6 +722,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
           padding: '0 8px',
           gap: 4,
           background: 'var(--t-bg)',
+          width: (sessionActive && showAiPane) ? `calc(100% - ${aiPaneWidth}px)` : '100%',
+          transition: 'width 0.38s cubic-bezier(0.4,0,0.2,1)',
         }}>
           {/* ── Left: session name + chevron — fades in once session activates ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1, opacity: sessionActive ? 1 : 0, transition: 'opacity 260ms ease' }}>
@@ -818,23 +846,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             </div>
           )}
 
-          {/* ── Right: + New only — Share and AI pane toggle stay in tab bar ── */}
-          {sessionActive && (
-            <button
-              onClick={() => { onNew?.() }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
-                background: 'transparent', color: '#555', alignSelf: 'center',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                transition: 'background 0.1s', flexShrink: 0,
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-            >
-              <PlusIcon />New
-            </button>
-          )}
+          {/* ── Right: + New + Share + AI — all in session header ── */}
+          {sessionActive && ShareAndAIButtons}
         </div>
       </div>
 
@@ -965,8 +978,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     <SplitScreenIcon />
                   </button>
                 )}
-                {/* Share + AI toggle — absolutely positioned at right edge, never moves */}
-                {ShareAndAIButtons}
+                {/* Share + AI toggle — in tab bar only when no session header */}
+                {!sessionActive && ShareAndAIButtons}
               </div>
 
               {/* Map canvas — single or split view */}
