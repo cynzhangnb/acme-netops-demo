@@ -699,13 +699,14 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
 
-      {/* ── Session header — always visible; session name fades in once session activates ── */}
+      {/* ── Session header — hidden until session activates ── */}
       <div ref={headerRef} style={{
-        height: 40,
-        overflow: 'visible',
+        height: sessionActive ? 40 : 0,
+        overflow: sessionActive ? 'visible' : 'hidden',
         flexShrink: 0,
         position: 'relative',
-        borderBottom: '1px solid var(--t-border)',
+        borderBottom: sessionActive ? '1px solid var(--t-border)' : 'none',
+        transition: 'height 300ms cubic-bezier(0.4,0,0.2,1)',
       }}>
         <div style={{
           height: 40,
