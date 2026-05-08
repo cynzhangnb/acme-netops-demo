@@ -896,7 +896,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             <>
               {/* Map tab bar — folder style */}
               <div style={{
-                height: 36, display: 'flex', alignItems: 'flex-end',
+                height: 44, display: 'flex', alignItems: 'flex-end',
                 padding: '0 8px 0', gap: 2,
                 background: 'var(--t-bg)',
                 borderBottom: '1px solid var(--t-border)', flexShrink: 0,

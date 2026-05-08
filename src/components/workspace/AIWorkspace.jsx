@@ -779,7 +779,7 @@ export default function AIWorkspace({
           {/* ── Folder tab bar — scoped to artifact column ── */}
           {artifacts.length > 0 && (
             <div style={{
-              height: 36,
+              height: 44,
               display: 'flex', alignItems: 'flex-end',
               padding: '0 8px 0',
               background: 'var(--t-bg)',
