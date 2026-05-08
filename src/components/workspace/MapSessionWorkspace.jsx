@@ -585,9 +585,9 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   const displayName = nameOverride ?? sessionName
   const activeTabName = mapTabs.find(t => t.id === activeMapTab)?.name ?? 'Workspace'
 
-  /* Share + AI toggle — always in tab bar, never moves */
+  /* Share + AI toggle — absolutely positioned at right of tab bar, never moves */
   const ShareAndAIButtons = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, alignSelf: 'center' }}>
+    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2, zIndex: 2 }}>
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => { setShowShareMenu(m => !m); setShowMenu(false); setShowSessions(false) }}
@@ -887,6 +887,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                 padding: '0 8px 0', gap: 2,
                 background: 'var(--t-bg)',
                 borderBottom: '1px solid var(--t-border)', flexShrink: 0,
+                position: 'relative',
               }}>
                 {/* Folder tabs — hidden in split mode */}
                 {!splitMode && mapTabs.map(tab => {
@@ -953,6 +954,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     style={{
                       width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: 'none', borderRadius: 5, cursor: 'pointer', flexShrink: 0,
+                      marginRight: 64,
                       background: splitMode ? 'var(--t-bg-hover)' : 'transparent',
                       color: splitMode ? 'var(--t-tx-2)' : 'var(--t-tx-4)',
                       transition: 'background 0.1s, color 0.1s',
@@ -963,7 +965,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     <SplitScreenIcon />
                   </button>
                 )}
-                {/* Share + AI toggle — always in tab bar, position never changes */}
+                {/* Share + AI toggle — absolutely positioned at right edge, never moves */}
                 {ShareAndAIButtons}
               </div>
 
