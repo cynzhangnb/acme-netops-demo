@@ -585,26 +585,9 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   const displayName = nameOverride ?? sessionName
   const activeTabName = mapTabs.find(t => t.id === activeMapTab)?.name ?? 'Workspace'
 
-  /* Share + AI toggle (+ New Session when active) — in session header or tab bar */
+  /* Share + AI toggle — always in tab bar, never moves */
   const ShareAndAIButtons = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, alignSelf: 'center' }}>
-      {/* + New — only once a session exists */}
-      {sessionActive && (
-        <button
-          onClick={() => { onNew?.() }}
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
-            background: 'transparent', color: '#555', alignSelf: 'center',
-            fontSize: 12, fontWeight: 500, cursor: 'pointer',
-            transition: 'background 0.1s', flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-        >
-          <PlusIcon />New
-        </button>
-      )}
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => { setShowShareMenu(m => !m); setShowMenu(false); setShowSessions(false) }}
@@ -835,8 +818,23 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             </div>
           )}
 
-          {/* ── Right: + New + Share + AI pane toggle — only when session is active ── */}
-          {sessionActive && ShareAndAIButtons}
+          {/* ── Right: + New only — Share and AI pane toggle stay in tab bar ── */}
+          {sessionActive && (
+            <button
+              onClick={() => { onNew?.() }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                height: 28, padding: '0 10px', border: 'none', borderRadius: 5,
+                background: 'transparent', color: '#555', alignSelf: 'center',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                transition: 'background 0.1s', flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0f0f0' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
+              <PlusIcon />New
+            </button>
+          )}
         </div>
       </div>
 
@@ -965,8 +963,8 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     <SplitScreenIcon />
                   </button>
                 )}
-                {/* Share + AI toggle — in tab bar only when no session header */}
-                {!sessionActive && ShareAndAIButtons}
+                {/* Share + AI toggle — always in tab bar, position never changes */}
+                {ShareAndAIButtons}
               </div>
 
               {/* Map canvas — single or split view */}
