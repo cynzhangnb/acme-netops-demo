@@ -4,6 +4,7 @@ import HomePage from './components/home/HomePage'
 import InputArea from './components/workspace/InputArea'
 import ChangeAnalysisPage from './components/changeanalysis/ChangeAnalysisPage'
 import MapSessionWorkspace from './components/workspace/MapSessionWorkspace'
+import ArtifactPane from './components/artifacts/ArtifactPane'
 import ShareModal from './components/modals/ShareModal'
 import DocumentModal from './components/modals/DocumentModal'
 import { useSessionManager } from './hooks/useSessionManager'
@@ -281,6 +282,21 @@ function MapTabView({ name, isLoading }) {
   )
 }
 
+function ReportTabView({ id, label }) {
+  const artifactId = `report-artifact-${id}`
+  return (
+    <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <ArtifactPane
+        artifacts={[{ id: artifactId, type: 'report', label, dataKey: id }]}
+        activeArtifactId={artifactId}
+        onSetActive={() => {}}
+        onRemove={() => {}}
+        hideTabBar={true}
+      />
+    </div>
+  )
+}
+
 /* ── Network View ───────────────────────────────────────────────────────── */
 function NetworkView({ onStartAI }) {
   const [aiPaneOpen, setAiPaneOpen] = useState(false)
@@ -408,6 +424,16 @@ export default function App() {
   }, [navigate, startSession])
 
   const enterChangeAnalysis = useCallback(() => {
+    if (viewModeRef.current === 'map-session') {
+      setExternalMapSessionArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
+      return
+    }
+    if (openTabsRef.current.length > 0) {
+      setChangeAnalysisMounted(true)
+      setOpenTabs(prev => prev.some(t => t.id === 'change-analysis') ? prev : [...prev, { id: 'change-analysis', label: 'Change Analysis' }])
+      setActiveTabId('change-analysis')
+      return
+    }
     if (viewModeRef.current === 'workspace') {
       /* Already in workspace — inject artifact without touching session key */
       setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
@@ -421,20 +447,28 @@ export default function App() {
       })
       return
     }
-    /* No active session yet — create one */
+    /* No active session yet — open Change Analysis inside the same
+       map-session tab system used by other sidebar panes */
     navigate(() => {
       setShowHomeInsights(true)
+      setCurrentSessionName('New Session')
       setActiveSessionListId(null)
-      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
-      setInitialPrompt('')
-      startSession()
-      setHomeSessionKey(k => k + 1)
-      setViewMode('workspace')
-      setExternalArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
+      setViewMode('map-session')
+      setExternalMapSessionArtifactToOpen({ _key: Date.now(), type: 'changeAnalysis', label: 'Change Analysis', dataKey: 'sidebar' })
     })
   }, [navigate, startSession])
 
   const openReportInSession = useCallback((id, label) => {
+    if (viewModeRef.current === 'map-session') {
+      setExternalMapSessionArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
+      return
+    }
+    if (openTabsRef.current.length > 0) {
+      const tabId = `report-${id}`
+      setOpenTabs(prev => prev.some(t => t.id === tabId) ? prev : [...prev, { id: tabId, label }])
+      setActiveTabId(tabId)
+      return
+    }
     if (viewModeRef.current === 'workspace') {
       /* Active AI session — inject report as a new artifact tab */
       setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
@@ -448,17 +482,14 @@ export default function App() {
       })
       return
     }
-    /* No active session — navigate to workspace, then inject artifact through
-       handleOpenArtifact so the skeleton loading state always shows first */
+    /* No active session — open report inside the map-session workspace so it
+       shares the same session header / tab styling as device-driven sessions */
     navigate(() => {
       setShowHomeInsights(true)
+      setCurrentSessionName('New Session')
       setActiveSessionListId(null)
-      setRestoredSession({ messages: [], artifacts: [], activeArtifactId: null })
-      setInitialPrompt('')
-      startSession()
-      setHomeSessionKey(k => k + 1)
-      setViewMode('workspace')
-      setExternalArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
+      setViewMode('map-session')
+      setExternalMapSessionArtifactToOpen({ _key: Date.now(), type: 'report', label, dataKey: id })
     })
   }, [navigate, startSession])
 
@@ -486,6 +517,7 @@ export default function App() {
 
   /* When in map-session mode, maps from the network pane open inside MapSessionWorkspace */
   const [externalMapToOpen, setExternalMapToOpen] = useState(null)
+  const [externalMapSessionArtifactToOpen, setExternalMapSessionArtifactToOpen] = useState(null)
 
   /* Artifact to inject into active AIWorkspace (from drag-drop while in workspace mode) */
   const [externalArtifactToOpen, setExternalArtifactToOpen] = useState(null)
@@ -715,9 +747,10 @@ export default function App() {
 
             {/* Tab bar */}
             <div style={{
-              height: 40, display: 'flex', alignItems: 'center',
+              height: 36, display: 'flex', alignItems: 'center',
               borderBottom: '1px solid var(--t-border)', background: 'var(--t-bg)',
               padding: '0 8px', gap: 2, flexShrink: 0,
+              marginTop: -8,
             }}>
               {openTabs.map(tab => {
                 const isActive = tab.id === activeTabId
@@ -769,6 +802,11 @@ export default function App() {
                 <MapTabView name={tab.label} isLoading={loadingTabId === tab.id} />
               </div>
             ))}
+            {openTabs.filter(t => t.id.startsWith('report-')).map(tab => (
+              <div key={tab.id} style={{ display: activeTabId === tab.id ? 'flex' : 'none', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                <ReportTabView id={tab.id.replace(/^report-/, '')} label={tab.label} />
+              </div>
+            ))}
           </div>
         ) : (
           /* ── Normal view modes ── */
@@ -809,6 +847,8 @@ export default function App() {
                 onOpenDevicePane={() => setOpenNetworkPaneRequest({ tab: 'device', t: Date.now() })}
                 externalDeviceToAdd={externalDeviceToAdd}
                 onExternalDeviceConsumed={() => setExternalDeviceToAdd(null)}
+                externalArtifactToOpen={externalMapSessionArtifactToOpen}
+                onExternalArtifactConsumed={() => setExternalMapSessionArtifactToOpen(null)}
               />
             ) : null}
           </>

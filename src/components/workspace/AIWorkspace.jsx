@@ -779,13 +779,14 @@ export default function AIWorkspace({
           {/* ── Folder tab bar — scoped to artifact column ── */}
           {artifacts.length > 0 && (
             <div style={{
-              height: 44,
+              height: sessionActive ? 36 : 44,
               display: 'flex', alignItems: 'flex-end',
               padding: '0 8px 0',
               background: 'var(--t-bg)',
               borderBottom: '1px solid var(--t-border)',
               flexShrink: 0,
               gap: 2,
+              marginTop: sessionActive ? -8 : 0,
             }}>
               {artifacts.map(artifact => {
                 const isActive = artifact.id === activeArtifactId

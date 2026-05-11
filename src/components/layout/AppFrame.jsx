@@ -1308,6 +1308,17 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
     }
   }
 
+  function handleChangeAnalysisToggle() {
+    setNetworkPaneOpen(false)
+    setNetworkPinned(false)
+    setInventoryPaneOpen(false)
+    setInventoryPinned(false)
+    setMapPaneOpen(false)
+    setMapPinned(false)
+    setShowHistory(false)
+    onGoChangeAnalysis?.()
+  }
+
   function handleMapDragStart(map)       { setDraggingMap(map); onDragMapStateChange?.(true) }
   function handleMapDragEnd()            { setDraggingMap(null); setIsDragOver(false); onDragMapStateChange?.(false) }
   function handleReportDragStart(report) { setDraggingReport(report) }
@@ -1350,7 +1361,7 @@ export default function AppFrame({ children, activeView, onGoHome, onGoAI, onGoN
         mapActive={mapActive}
         onGoInventory={handleInventoryToggle}
         inventoryActive={inventoryActive}
-        onGoChangeAnalysis={onGoChangeAnalysis}
+        onGoChangeAnalysis={handleChangeAnalysisToggle}
         sessions={FAKE_SESSIONS}
         currentSessionName={currentSessionName}
         activeSessionListId={activeSessionListId}

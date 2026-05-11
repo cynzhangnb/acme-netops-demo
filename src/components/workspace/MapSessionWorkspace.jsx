@@ -6,7 +6,7 @@ import MessageBubble from './MessageBubble'
 import SkeletonMessage from './SkeletonMessage'
 import TopologyMap from '../artifacts/TopologyMap'
 import ChangeAnalysisPage from '../changeanalysis/ChangeAnalysisPage'
-import { DevicePropertiesPane, buildDeviceProperties, buildConfigPaneState, ConfigWorkspacePane } from '../artifacts/ArtifactPane'
+import ArtifactPane, { DevicePropertiesPane, buildDeviceProperties, buildConfigPaneState, ConfigWorkspacePane } from '../artifacts/ArtifactPane'
 
 /* ── Header icons ─────────────────────────────────────────────────────────── */
 function ChevronIcon() {
@@ -87,14 +87,6 @@ function CloseTabIcon() {
       strokeWidth="2.5" strokeLinecap="round">
       <line x1="18" y1="6" x2="6" y2="18"/>
       <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  )
-}
-function SplitScreenIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="18" rx="2"/>
-      <line x1="12" y1="3" x2="12" y2="21"/>
     </svg>
   )
 }
@@ -318,7 +310,7 @@ const MAP_TOOLS = [
 ]
 
 /* ── Map Session Workspace ────────────────────────────────────────────────── */
-export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllTabsClosed, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false, initialPrompt, onInitialPromptConsumed, onOpenDevicePane, externalDeviceToAdd, onExternalDeviceConsumed }) {
+export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllTabsClosed, sessions = [], onSwitchSession, onDeleteSession, externalMapToOpen, onExternalMapConsumed, isDraggingMap = false, initialPrompt, onInitialPromptConsumed, onOpenDevicePane, externalDeviceToAdd, onExternalDeviceConsumed, externalArtifactToOpen, onExternalArtifactConsumed }) {
   const [sessionName, setSessionName]   = useState('')
   const [nameOverride, setNameOverride] = useState(null)
 
@@ -349,8 +341,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   /* Map toolbar state */
   const [activeTool, setActiveTool] = useState('select')
   const [mapSaveState, setMapSaveState] = useState('idle')
-  const [loadingTabId, setLoadingTabId] = useState(null)
-  const [splitMode, setSplitMode] = useState(false)
+  const [loadingTabIds, setLoadingTabIds] = useState(new Set())
   const [hoveredTabId, setHoveredTabId] = useState(null)
   function handleMapSave() {
     setMapSaveState('saved')
@@ -391,27 +382,97 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   const bottomRef = useRef(null)
 
   /* ── Extra device nodes dropped from NetworkBrowserPane ─────────────────── */
-  const [extraDeviceNodes, setExtraDeviceNodes] = useState([])
+  const [extraDeviceNodesByTab, setExtraDeviceNodesByTab] = useState({})
+
+  const ensureTopologyTargetTab = useCallback(() => {
+    const currentTabId = activeMapTabRef.current
+    const currentArtifact = mapArtifactsRef.current[currentTabId]
+
+    if (!currentArtifact) {
+      setMapArtifacts(prev => ({
+        ...prev,
+        [currentTabId]: { type: 'topology', label: 'Network Map', dataKey: 'manual-topology' },
+      }))
+      return currentTabId
+    }
+
+    if (currentArtifact.type === 'topology') {
+      return currentTabId
+    }
+
+    const existingTopologyTabId = Object.keys(mapArtifactsRef.current).find(
+      id => mapArtifactsRef.current[id]?.type === 'topology'
+    )
+    if (existingTopologyTabId) {
+      setActiveMapTab(existingTopologyTabId)
+      return existingTopologyTabId
+    }
+
+    const tabId = `map-${Date.now()}`
+    setMapTabs(tabs => [...tabs, { id: tabId, name: 'Network Map' }])
+    setActiveMapTab(tabId)
+    setMapArtifacts(prev => ({
+      ...prev,
+      [tabId]: { type: 'topology', label: 'Network Map', dataKey: 'manual-topology' },
+    }))
+    return tabId
+  }, [])
 
   useEffect(() => {
     if (!externalDeviceToAdd) return
-    const index = extraDeviceNodes.length
-    const px = 10 + (index % 6) * 16  // 10,26,42,58,74,90 then wrap
-    const py = 90 + Math.floor(index / 6) * 10
-    setExtraDeviceNodes(prev => [...prev, {
-      id: externalDeviceToAdd.id,
-      label: externalDeviceToAdd.hostname,
-      type: externalDeviceToAdd.type ?? 'Access Switch',
-      px, py,
-    }])
+    const targetTabId = ensureTopologyTargetTab()
+    setExtraDeviceNodesByTab(prev => {
+      const existingNodes = prev[targetTabId] ?? []
+      const alreadyExists = existingNodes.some(node => node.id === externalDeviceToAdd.id)
+      if (alreadyExists) return prev
+
+      const index = existingNodes.length
+      const px = 10 + (index % 6) * 16  // 10,26,42,58,74,90 then wrap
+      const py = 90 + Math.floor(index / 6) * 10
+
+      return {
+        ...prev,
+        [targetTabId]: [...existingNodes, {
+          id: externalDeviceToAdd.id,
+          label: externalDeviceToAdd.hostname,
+          type: externalDeviceToAdd.type ?? 'Access Switch',
+          px, py,
+        }],
+      }
+    })
     onExternalDeviceConsumed?.()
-  }, [externalDeviceToAdd]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [externalDeviceToAdd, ensureTopologyTargetTab]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startTabLoad = useCallback((tabId, { activateOnComplete = false, duration = 1500 } = {}) => {
+    setLoadingTabIds(prev => {
+      const next = new Set(prev)
+      next.add(tabId)
+      return next
+    })
+    setTimeout(() => {
+      setLoadingTabIds(prev => {
+        const next = new Set(prev)
+        next.delete(tabId)
+        return next
+      })
+      if (activateOnComplete) setActiveMapTab(tabId)
+    }, duration)
+  }, [])
 
   /* ── Artifact handlers ──────────────────────────────────────────────────── */
   const handleAddArtifact = useCallback((artifactRef) => {
     const currentTabId = activeMapTabRef.current
     /* Read current state from ref — never call setX inside a setState updater */
     let targetTabId
+    if (artifactRef.type === 'changeAnalysis') {
+      const existingChangeTabId = Object.keys(mapArtifactsRef.current).find(
+        id => mapArtifactsRef.current[id]?.type === 'changeAnalysis'
+      )
+      if (existingChangeTabId) {
+        setActiveMapTab(existingChangeTabId)
+        return
+      }
+    }
     if (!mapArtifactsRef.current[currentTabId]) {
       /* Active tab is empty — render artifact in it, rename it */
       setMapTabs(tabs => tabs.map(t =>
@@ -419,18 +480,17 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
       ))
       setMapArtifacts(prev => ({ ...prev, [currentTabId]: artifactRef }))
       targetTabId = currentTabId
+      setActiveMapTab(currentTabId)
     } else {
       /* Active tab already has content — open a new tab */
       const tabId = `artifact-${artifactRef.type}-${Date.now()}`
       setMapTabs(tabs => [...tabs, { id: tabId, name: artifactRef.label ?? 'Map' }])
-      setActiveMapTab(tabId)
       setMapArtifacts(prev => ({ ...prev, [tabId]: artifactRef }))
       targetTabId = tabId
     }
     /* Show loading state on the tab for 1500ms */
-    setLoadingTabId(targetTabId)
-    setTimeout(() => setLoadingTabId(null), 1500)
-  }, [])
+    startTabLoad(targetTabId, { activateOnComplete: targetTabId !== currentTabId || !mapArtifactsRef.current[currentTabId] ? targetTabId !== currentTabId : false })
+  }, [startTabLoad])
 
   /* Open a map pushed in from the network pane (drag-drop or click "Open") */
   useEffect(() => {
@@ -438,6 +498,12 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
     handleAddArtifact({ type: 'topology', label: externalMapToOpen.label, dataKey: externalMapToOpen.id })
     onExternalMapConsumed?.()
   }, [externalMapToOpen]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!externalArtifactToOpen) return
+    handleAddArtifact(externalArtifactToOpen)
+    onExternalArtifactConsumed?.()
+  }, [externalArtifactToOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenArtifact = useCallback((artifactRef) => {
     /* Read current state from ref — never call setX inside a setState updater */
@@ -457,9 +523,9 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
     /* No existing tab — create one */
     const tabId = `artifact-${artifactRef.type}-${Date.now()}`
     setMapTabs(tabs => [...tabs, { id: tabId, name: artifactRef.label ?? 'Map' }])
-    setActiveMapTab(tabId)
     setMapArtifacts(prev => ({ ...prev, [tabId]: artifactRef }))
-  }, [])
+    startTabLoad(tabId, { activateOnComplete: true })
+  }, [startTabLoad])
 
   /* Activates the session — called on first AI response OR manual "session with current tabs" */
   const activateSession = useCallback((nameHint) => {
@@ -594,6 +660,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
 
   const displayName = nameOverride ?? sessionName
   const activeTabName = mapTabs.find(t => t.id === activeMapTab)?.name ?? 'Workspace'
+  const sessionHeaderHeight = 40
 
   /* Share + AI toggle (+ New when session active) */
   const ShareAndAIButtons = (
@@ -637,11 +704,11 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 1000,
             background: '#fff', border: '1px solid #e8e8e8', borderRadius: 10,
             boxShadow: '0 4px 20px rgba(0,0,0,0.13)', overflow: 'hidden',
-            minWidth: sessionActive ? 230 : 260,
+            minWidth: sessionActive ? 220 : 260,
           }}>
             {sessionActive ? (
               <>
-                <div style={{ padding: '10px 14px 6px', fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Share as</div>
+                <div style={{ padding: '8px 12px 4px', fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Share</div>
                 {[
                   { label: 'Entire session with chat', desc: 'Includes all tabs + AI conversation' },
                   { label: 'Entire session without chat', desc: 'All tabs only, no chat history' },
@@ -650,12 +717,12 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                   <div
                     key={opt.label}
                     onMouseDown={e => { e.preventDefault(); setShowShareMenu(false) }}
-                    style={{ padding: '8px 14px 9px', cursor: 'pointer' }}
+                    style={{ padding: '6px 12px 7px', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#f7f7f7'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     <div style={{ fontSize: 13, fontWeight: 500, color: '#111' }}>{opt.label}</div>
-                    <div style={{ fontSize: 11.5, color: '#888', marginTop: 1 }}>{opt.desc}</div>
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 0, lineHeight: 1.3 }}>{opt.desc}</div>
                   </div>
                 ))}
               </>
@@ -705,25 +772,24 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fff' }}>
-
-      {/* ── Session header — hidden until session activates ── */}
-      <div ref={headerRef} style={{
-        height: sessionActive ? 40 : 0,
-        overflow: sessionActive ? 'visible' : 'hidden',
-        flexShrink: 0,
-        position: 'relative',
-        borderBottom: sessionActive ? '1px solid var(--t-border)' : 'none',
-        transition: 'height 300ms cubic-bezier(0.4,0,0.2,1)',
-      }}>
-        <div style={{
-          height: 40,
-          display: 'flex', alignItems: 'center',
-          padding: '0 8px',
-          gap: 4,
-          background: 'var(--t-bg)',
-          width: (sessionActive && showAiPane) ? `calc(100% - ${aiPaneWidth}px)` : '100%',
-          transition: 'width 0.38s cubic-bezier(0.4,0,0.2,1)',
+    <div style={{ display: 'flex', height: '100%', background: '#fff', overflow: 'hidden' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* ── Session header — hidden until session activates ── */}
+        <div ref={headerRef} style={{
+          height: sessionActive ? sessionHeaderHeight : 0,
+          overflow: sessionActive ? 'visible' : 'hidden',
+          flexShrink: 0,
+          position: 'relative',
+          borderBottom: sessionActive ? '1px solid var(--t-border)' : 'none',
+          transition: 'height 300ms cubic-bezier(0.4,0,0.2,1)',
+        }}>
+          <div style={{
+            height: sessionHeaderHeight,
+            display: 'flex', alignItems: 'center',
+            padding: '0 8px',
+            gap: 4,
+            background: 'var(--t-bg)',
+            width: '100%',
         }}>
           {/* ── Left: session name + chevron — fades in once session activates ── */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, minWidth: 0, flex: 1, opacity: sessionActive ? 1 : 0, transition: 'opacity 260ms ease' }}>
@@ -748,7 +814,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
               <>
                 {/* Shared hover zone — hovering either element highlights both */}
                 <div
-                  style={{ display: 'flex', alignItems: 'center', minWidth: 0, gap: 2, maxWidth: '40%' }}
+                  style={{ display: 'flex', alignItems: 'center', minWidth: 0, gap: 2, maxWidth: '65%' }}
                   onMouseEnter={() => setNameAreaHovered(true)}
                   onMouseLeave={() => setNameAreaHovered(false)}
                 >
@@ -790,11 +856,11 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                     <div style={{
                       position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 300,
                       background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 140,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 136,
                     }}>
                       <div
                         onMouseDown={e => { e.preventDefault(); startEdit() }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#222', cursor: 'pointer' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', fontSize: 12.5, color: '#222', cursor: 'pointer', lineHeight: 1.25 }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
@@ -802,7 +868,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                       </div>
                       <div
                         onMouseDown={e => { e.preventDefault(); setShowMenu(false) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', fontSize: 13, color: '#d32f2f', cursor: 'pointer' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 12px', fontSize: 12.5, color: '#d32f2f', cursor: 'pointer', lineHeight: 1.25 }}
                         onMouseEnter={e => e.currentTarget.style.background = '#fff5f5'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
@@ -817,42 +883,39 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
 
           </div>
 
-          {/* Sessions switcher dropdown */}
-          {showSessions && (
-            <div style={{
-              position: 'absolute', top: 40, left: 0, width: '50%', minWidth: 280, maxWidth: 520, zIndex: 300,
-              background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
-            }}>
-              {sessions.length > 0 ? sessions.filter(s => !s.current).map(s => (
-                <div
-                  key={s.id}
-                  onMouseEnter={e => { setHoveredSessionId(s.id); e.currentTarget.style.background = '#f5f5f5' }}
-                  onMouseLeave={e => { setHoveredSessionId(prev => prev === s.id ? null : prev); e.currentTarget.style.background = 'transparent' }}
-                  onMouseDown={e => { e.preventDefault(); onSwitchSession?.(s.id); setShowSessions(false) }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px', fontSize: 12.5, color: '#222', cursor: 'pointer', borderBottom: '1px solid #f5f5f5' }}
-                >
-                  <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
-                  <span
-                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onDeleteSession?.(s.id); setHoveredSessionId(null) }}
-                    style={{ flexShrink: 0, fontSize: 11, color: '#b42318', opacity: hoveredSessionId === s.id ? 1 : 0, pointerEvents: hoveredSessionId === s.id ? 'auto' : 'none', transition: 'opacity 0.12s' }}
+            {/* Sessions switcher dropdown */}
+            {showSessions && (
+              <div style={{
+                position: 'absolute', top: sessionHeaderHeight, left: 0, width: '50%', minWidth: 280, maxWidth: 520, zIndex: 300,
+                background: '#fff', border: '1px solid #e8e8e8', borderRadius: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)', overflow: 'hidden',
+              }}>
+                {sessions.length > 0 ? sessions.filter(s => !s.current).map(s => (
+                  <div
+                    key={s.id}
+                    onMouseEnter={e => { setHoveredSessionId(s.id); e.currentTarget.style.background = '#f5f5f5' }}
+                    onMouseLeave={e => { setHoveredSessionId(prev => prev === s.id ? null : prev); e.currentTarget.style.background = 'transparent' }}
+                    onMouseDown={e => { e.preventDefault(); onSwitchSession?.(s.id); setShowSessions(false) }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px', fontSize: 12.5, color: '#222', cursor: 'pointer', borderBottom: '1px solid #f5f5f5' }}
                   >
-                    Delete
-                  </span>
-                </div>
-              )) : (
-                <div style={{ padding: '10px 16px', fontSize: 12, color: '#999' }}>No other sessions</div>
-              )}
-            </div>
-          )}
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</span>
+                    <span
+                      onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onDeleteSession?.(s.id); setHoveredSessionId(null) }}
+                      style={{ flexShrink: 0, fontSize: 11, color: '#b42318', opacity: hoveredSessionId === s.id ? 1 : 0, pointerEvents: hoveredSessionId === s.id ? 'auto' : 'none', transition: 'opacity 0.12s' }}
+                    >
+                      Delete
+                    </span>
+                  </div>
+                )) : (
+                  <div style={{ padding: '10px 16px', fontSize: 12, color: '#999' }}>No other sessions</div>
+                )}
+              </div>
+            )}
 
-          {/* ── Right: + New + Share + AI — all in session header ── */}
-          {sessionActive && ShareAndAIButtons}
+            {/* ── Right: + New + Share + AI — all in session header ── */}
+            {sessionActive && ShareAndAIButtons}
+          </div>
         </div>
-      </div>
-
-      {/* ── Content row ── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
         {/* ── Left: Map canvas area — hidden during conversation-first phase ── */}
         {canvasVisible && <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', animation: canvasStartedHiddenRef.current ? 'canvasReveal 0.42s ease both' : undefined }}>
@@ -896,16 +959,16 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             <>
               {/* Map tab bar — folder style */}
               <div style={{
-                height: 44, display: 'flex', alignItems: 'flex-end',
+                height: sessionActive ? 36 : 44, display: 'flex', alignItems: 'flex-end',
                 padding: '0 8px 0', gap: 2,
                 background: 'var(--t-bg)',
                 borderBottom: '1px solid var(--t-border)', flexShrink: 0,
                 position: 'relative',
+                marginTop: sessionActive ? -8 : 0,
               }}>
-                {/* Folder tabs — hidden in split mode */}
-                {!splitMode && mapTabs.map(tab => {
+                {mapTabs.map(tab => {
                   const isActive = tab.id === activeMapTab
-                  const isLoading = tab.id === loadingTabId
+                  const isLoading = loadingTabIds.has(tab.id)
                   return (
                     <div
                       key={tab.id}
@@ -959,27 +1022,12 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                 })}
                 {/* Spacer */}
                 <div style={{ flex: 1 }} />
-                {/* Split view — only when 2+ tabs */}
-                {mapTabs.length >= 2 && (
-                  <button
-                    onClick={() => setSplitMode(v => !v)}
-                    title="Split view"
-                    style={{
-                      width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: 'none', borderRadius: 5, cursor: 'pointer', flexShrink: 0,
-                      marginRight: 64,
-                      background: splitMode ? 'var(--t-bg-hover)' : 'transparent',
-                      color: splitMode ? 'var(--t-tx-2)' : 'var(--t-tx-4)',
-                      transition: 'background 0.1s, color 0.1s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-bg-hover)'; e.currentTarget.style.color = 'var(--t-tx-2)' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = splitMode ? 'var(--t-bg-hover)' : 'transparent'; e.currentTarget.style.color = splitMode ? 'var(--t-tx-2)' : 'var(--t-tx-4)' }}
-                  >
-                    <SplitScreenIcon />
-                  </button>
-                )}
                 {/* Share + AI toggle — in tab bar only when no session header */}
-                {!sessionActive && ShareAndAIButtons}
+                {!sessionActive && (
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: 5 }}>
+                    {ShareAndAIButtons}
+                  </div>
+                )}
               </div>
 
               {/* Map canvas — single or split view */}
@@ -987,10 +1035,10 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                 /* Helper: render one canvas pane for a given tabId */
                 const renderPane = (tabId, opts = {}) => {
                   const artifact = mapArtifacts[tabId]
-                  const isLoading = loadingTabId === tabId
+                  const isLoading = loadingTabIds.has(tabId)
                   const style = opts.style ?? { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }
 
-                  if (isLoading) {
+                  if (isLoading && !artifact) {
                     return (
                       <div key={tabId} style={{ ...style, background: 'var(--t-canvas-bg)', backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
                         <div style={{ width: 32, height: 32, flexShrink: 0, border: '2.5px solid #e0e0e0', borderTopColor: '#aaa', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
@@ -1021,7 +1069,14 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                         )}
                         <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex' }}>
                           <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                            <TopologyMap onNodeAction={handleMapNodeAction} extraNodes={extraDeviceNodes} />
+                            {isLoading ? (
+                              <div style={{ width: '100%', height: '100%', background: 'var(--t-canvas-bg)', backgroundImage: 'radial-gradient(circle, var(--t-canvas-dot) 1.5px, transparent 1.5px)', backgroundSize: '24px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+                                <div style={{ width: 32, height: 32, flexShrink: 0, border: '2.5px solid #e0e0e0', borderTopColor: '#aaa', borderRadius: '50%', animation: 'spin 0.75s linear infinite' }} />
+                                <span style={{ fontSize: 12, color: '#aaa' }}>Loading map…</span>
+                              </div>
+                            ) : (
+                              <TopologyMap onNodeAction={handleMapNodeAction} extraNodes={extraDeviceNodesByTab[tabId] ?? []} />
+                            )}
                           </div>
                           {configPane && (
                             <>
@@ -1054,33 +1109,21 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
                   if (artifact?.type === 'changeAnalysis') {
                     return <div key={tabId} style={style}><ChangeAnalysisPage embedded={true} /></div>
                   }
+                  if (artifact?.type === 'report') {
+                    const artifactId = `report-artifact-${tabId}`
+                    return (
+                      <div key={tabId} style={style}>
+                        <ArtifactPane
+                          artifacts={[{ id: artifactId, type: 'report', label: artifact.label, dataKey: artifact.dataKey }]}
+                          activeArtifactId={artifactId}
+                          onSetActive={() => {}}
+                          onRemove={() => {}}
+                          hideTabBar={true}
+                        />
+                      </div>
+                    )
+                  }
                   return <BlankMapEmptyState key={tabId} onOpenDevicePane={onOpenDevicePane} />
-                }
-
-                /* ── Split mode: first two tabs side by side ── */
-                if (splitMode && mapTabs.length >= 2) {
-                  const [leftTab, rightTab] = mapTabs
-                  return (
-                    <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                      {/* Left pane */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                        {/* Mini tab label */}
-                        <div style={{ height: 30, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fafafa', fontSize: 11.5, fontWeight: 500, color: '#555', flexShrink: 0 }}>
-                          {leftTab.name}
-                        </div>
-                        {renderPane(leftTab.id, { hideToolbar: true, style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 } })}
-                      </div>
-                      {/* Divider */}
-                      <div style={{ width: 1, flexShrink: 0, background: '#e8e8e8' }} />
-                      {/* Right pane */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                        <div style={{ height: 30, display: 'flex', alignItems: 'center', padding: '0 12px', borderBottom: '1px solid #ebebeb', background: '#fafafa', fontSize: 11.5, fontWeight: 500, color: '#555', flexShrink: 0 }}>
-                          {rightTab.name}
-                        </div>
-                        {renderPane(rightTab.id, { hideToolbar: true, style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 } })}
-                      </div>
-                    </div>
-                  )
                 }
 
                 /* ── Normal single-tab mode ── */
@@ -1089,36 +1132,37 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             </>
           )}
         </div>}
+      </div>
 
-        {/* ── Resize sash — only when canvas is visible alongside AI pane ── */}
-        {showAiPane && canvasVisible && (
-          <div style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 11 }}>
-            <div
-              onMouseDown={handleResizeStart}
-              style={{
-                position: 'absolute', top: 0, bottom: 0,
-                left: -3, width: 6,
-                cursor: 'col-resize',
-                background: 'transparent',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            />
-          </div>
-        )}
+      {/* ── Resize sash — only when canvas is visible alongside AI pane ── */}
+      {showAiPane && canvasVisible && (
+        <div style={{ width: 0, flexShrink: 0, position: 'relative', zIndex: 11 }}>
+          <div
+            onMouseDown={handleResizeStart}
+            style={{
+              position: 'absolute', top: 0, bottom: 0,
+              left: -3, width: 6,
+              cursor: 'col-resize',
+              background: 'transparent',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.06)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          />
+        </div>
+      )}
 
-        {/* ── AI pane — full-width during conversation-first phase, sidebar when canvas visible ── */}
-        {showAiPane && (
-            <div style={{
-              ...(canvasVisible
-                ? { width: aiPaneWidth, flexShrink: 0, borderLeft: '1px solid #e8e8e8' }
-                : { flex: 1, borderLeft: 'none' }
-              ),
-              display: 'flex', flexDirection: 'column',
-              background: '#fff', overflow: 'hidden',
-              position: 'relative',
-              animation: 'slideInRight 0.28s ease both',
-            }}>
+      {/* ── AI pane — full-width during conversation-first phase, sidebar when canvas visible ── */}
+      {showAiPane && (
+          <div style={{
+            ...(canvasVisible
+              ? { width: aiPaneWidth, flexShrink: 0, borderLeft: '1px solid #e8e8e8' }
+              : { flex: 1, borderLeft: 'none' }
+            ),
+            display: 'flex', flexDirection: 'column',
+            background: '#fff', overflow: 'hidden',
+            position: 'relative',
+            animation: 'slideInRight 0.28s ease both',
+          }}>
               {/* Drag blocker — prevents the AppFrame drop zone from accepting drops on the AI pane */}
               {isDraggingMap && (
                 <div
@@ -1224,8 +1268,7 @@ export default function MapSessionWorkspace({ onSessionNameChange, onNew, onAllT
             />
           </div>
         </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }
